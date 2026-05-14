@@ -1,0 +1,56 @@
+# Render blueprint — `render.yaml`
+# Push this to GitHub and click "New Blueprint" in Render to provision the backend
+# from the same screen. Secrets are NOT included; set them in the Render dashboard
+# under Environment.
+
+services:
+  - type: web
+    name: up2code-backend
+    env: docker
+    plan: starter            # $7/mo, always-on. Use "free" for the free tier.
+    region: oregon
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: REQUIRE_AUTH
+        value: "true"
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "100"
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-7
+      - key: ANTHROPIC_MAX_TOKENS
+        value: "4096"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_STARTER
+        sync: false
+      - key: STRIPE_PRICE_PROFESSIONAL
+        sync: false
+      - key: STRIPE_PRICE_UNLIMITED
+        sync: false
+      - key: FRONTEND_URL
+        sync: false        # set to your Vercel URL after frontend deploys
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SUPPORT_EMAIL
+        value: esmith.marc@gmail.com
