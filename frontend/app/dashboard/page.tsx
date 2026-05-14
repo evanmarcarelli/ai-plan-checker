@@ -603,7 +603,7 @@ export default function Dashboard() {
                           border: `1px solid ${isDone ? "rgba(16,185,129,0.2)" : isActive ? "rgba(79,126,255,0.2)" : "transparent"}`,
                         }}
                       >
-                        <span className="text-lg">{agent.icon}</span>
+                        <agent.Icon className="w-5 h-5" />
                         <div className="flex-1 min-w-0">
                           <div
                             className="text-sm font-medium"

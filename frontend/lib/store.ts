@@ -15,11 +15,11 @@ interface AppState {
   selectedCategory: string | null;
   reportSearchQuery: string;
 
-  // Actions
+  // Actions — accept either a value or an updater function (React-style)
   setJobId: (id: string | null) => void;
-  setJobStatus: (status: JobStatus | null) => void;
+  setJobStatus: (status: JobStatus | null | ((prev: JobStatus | null) => JobStatus | null)) => void;
   setIsUploading: (v: boolean) => void;
-  setUploadProgress: (v: number) => void;
+  setUploadProgress: (v: number | ((prev: number) => number)) => void;
   addLog: (log: AgentLog) => void;
   setLogs: (logs: AgentLog[]) => void;
   setWsConnected: (v: boolean) => void;
@@ -45,9 +45,15 @@ export const useAppStore = create<AppState>((set) => ({
   ...initialState,
 
   setJobId: (id) => set({ jobId: id }),
-  setJobStatus: (status) => set({ jobStatus: status }),
+  setJobStatus: (status) =>
+    set((s) => ({
+      jobStatus: typeof status === "function" ? status(s.jobStatus) : status,
+    })),
   setIsUploading: (v) => set({ isUploading: v }),
-  setUploadProgress: (v) => set({ uploadProgress: v }),
+  setUploadProgress: (v) =>
+    set((s) => ({
+      uploadProgress: typeof v === "function" ? v(s.uploadProgress) : v,
+    })),
   addLog: (log) => set((s) => ({ logs: [...s.logs, log] })),
   setLogs: (logs) => set({ logs }),
   setWsConnected: (v) => set({ wsConnected: v }),
