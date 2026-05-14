@@ -3,7 +3,7 @@ import os
 import json
 import uuid
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, status, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from slowapi import Limiter
@@ -72,38 +72,58 @@ def _job_row_to_response(row: Dict[str, Any]) -> Dict[str, Any]:
 # Upload
 # ============================================================
 
+from pydantic import BaseModel as _BM
+
+
+class StartReviewBody(_BM):
+    """User has already uploaded the PDF to Supabase Storage; tell us where."""
+    storage_path: str       # e.g. "<user_id>/<uuid>.pdf"
+    filename: str           # original filename for display
+    file_size: int          # bytes
+
+
 @router.post("/upload", response_model=UploadResponse)
 @limiter.limit("10/minute")
-async def upload_plan(
+async def start_review(
     request: Request,
+    body: StartReviewBody,
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Upload a PDF plan set for compliance checking.
+    """Start a compliance review from a PDF already uploaded to Supabase Storage.
 
-    Rate limited to 10 uploads/min per user to protect LLM budget.
-    Validates PDF magic bytes — not just file extension.
+    The browser uploads the PDF directly to Supabase (bypassing this backend),
+    then calls this endpoint with the storage path. We download the file
+    here using the service role, then run the agent pipeline.
+
+    Rate limited to 10 uploads/min per user.
     """
-
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
+    if not body.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
-    content = await file.read()
-    file_size = len(content)
-
-    # Magic byte validation — reject renamed non-PDF files
-    if len(content) < 5 or not content[:4] == b"%PDF":
-        raise HTTPException(
-            status_code=400,
-            detail="File is not a valid PDF (failed magic-byte validation). Please upload an actual PDF.",
-        )
+    # Storage path must be under this user's folder (RLS enforces this on upload,
+    # but defense-in-depth here too).
+    if not body.storage_path.startswith(f"{user['id']}/"):
+        raise HTTPException(status_code=403, detail="Storage path does not belong to this user")
 
     max_size = settings.max_upload_size_mb * 1024 * 1024
-    if file_size > max_size:
+    if body.file_size > max_size:
         raise HTTPException(status_code=413, detail=f"File exceeds {settings.max_upload_size_mb}MB limit")
 
-    # Credit check (unless dev/auth disabled)
+    # Download the file once now to validate it's a real PDF.
+    try:
+        content = db.download_plan(body.storage_path)
+    except Exception as e:
+        logger.error(f"Storage download failed for {body.storage_path}: {e}")
+        raise HTTPException(status_code=404, detail="Uploaded file not found in storage. Please re-upload.")
+
+    if len(content) < 5 or content[:4] != b"%PDF":
+        raise HTTPException(
+            status_code=400,
+            detail="File is not a valid PDF (failed magic-byte validation).",
+        )
+
+    # Credit check
     if settings.require_auth:
         new_balance = db.decrement_credits(user["id"], 1)
         if new_balance < 0:
@@ -115,11 +135,12 @@ async def upload_plan(
     # Create DB row
     job_id = db.create_job(
         user_id=user["id"],
-        filename=file.filename,
-        file_size=file_size,
+        filename=body.filename,
+        file_size=body.file_size,
+        storage_path=body.storage_path,
     )
 
-    # Save file to local disk (TODO: move to Supabase Storage)
+    # Stage the file to local disk for the agent pipeline (PDF processor reads from path)
     file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
@@ -133,19 +154,18 @@ async def upload_plan(
     except Exception as e:
         logger.warning(f"Job {job_id}: compression skipped ({e})")
 
-    logger.info(f"Job {job_id} created for user {user['id']}: {file.filename} ({file_size} bytes)")
-
-    background_tasks.add_task(_process_job, job_id, file_path)
+    logger.info(f"Job {job_id} created for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
+    background_tasks.add_task(_process_job, job_id, file_path, body.storage_path)
 
     return UploadResponse(
         job_id=job_id,
-        message="File uploaded. Processing started.",
-        filename=file.filename,
-        file_size=file_size,
+        message="Review started.",
+        filename=body.filename,
+        file_size=body.file_size,
     )
 
 
-async def _process_job(job_id: str, file_path: str):
+async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] = None):
     """Background task: run the workflow and persist results to DB."""
     db.update_job(job_id, {"status": "processing", "progress": 0})
 
@@ -258,6 +278,9 @@ async def _process_job(job_id: str, file_path: str):
                 os.remove(file_path)
         except Exception:
             pass
+        # Delete the original from Supabase Storage too — we've already processed it.
+        if storage_path:
+            db.delete_plan(storage_path)
 
 
 # ============================================================

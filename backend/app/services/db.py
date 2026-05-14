@@ -21,6 +21,21 @@ def admin() -> Client:
     return _service_client()
 
 
+# ---------- Storage ----------
+
+def download_plan(storage_path: str) -> bytes:
+    """Download a PDF from the plan-uploads bucket. Service role bypasses RLS."""
+    return admin().storage.from_("plan-uploads").download(storage_path)
+
+
+def delete_plan(storage_path: str) -> None:
+    """Best-effort delete of a stored plan after processing completes."""
+    try:
+        admin().storage.from_("plan-uploads").remove([storage_path])
+    except Exception:
+        pass
+
+
 # ---------- Jobs ----------
 
 def create_job(

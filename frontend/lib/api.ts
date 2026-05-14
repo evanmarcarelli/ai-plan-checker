@@ -189,14 +189,47 @@ export interface JobStatus {
 // API functions
 // ─────────────────────────────────────────────────────────
 
-export async function uploadPlan(file: File): Promise<UploadResponse> {
-  const form = new FormData();
-  form.append("file", file);
-  const headers = await authHeaders();
-  const res = await fetch(`${API_URL}/upload`, { method: "POST", body: form, headers });
+export async function uploadPlan(
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<UploadResponse> {
+  // Step 1: upload directly to Supabase Storage (bypass our backend's size limit).
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+
+  // Use a UUID-like name to avoid collisions / weird chars.
+  const ext = file.name.toLowerCase().endsWith(".pdf") ? ".pdf" : ".pdf";
+  const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const storagePath = `${user.id}/${uniq}${ext}`;
+
+  // supabase-js upload doesn't expose progress; emit synthetic 50% halfway then 100% on success.
+  onProgress?.(10);
+  const { error: upErr } = await supabase
+    .storage
+    .from("plan-uploads")
+    .upload(storagePath, file, { contentType: "application/pdf", upsert: false });
+  if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
+  onProgress?.(90);
+
+  // Step 2: tell the backend the file is ready.
+  const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
+  const res = await fetch(`${API_URL}/upload`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      storage_path: storagePath,
+      filename: file.name,
+      file_size: file.size,
+    }),
+  });
+  onProgress?.(100);
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Upload failed: ${res.status}`);
+    // Clean up the orphan upload so the user can retry without duplicates.
+    await supabase.storage.from("plan-uploads").remove([storagePath]).catch(() => {});
+    throw new Error(err.detail || `Start review failed: ${res.status}`);
   }
   return res.json();
 }

@@ -197,14 +197,10 @@ export default function Dashboard() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress((p) => Math.min(p + 15, 85));
-    }, 150);
+    setUploadProgress(0);
 
     try {
-      const result = await uploadPlan(file);
-      clearInterval(progressInterval);
+      const result = await uploadPlan(file, (pct) => setUploadProgress(pct));
       setUploadProgress(100);
 
       setJobId(result.job_id);
@@ -219,7 +215,6 @@ export default function Dashboard() {
       startPolling(result.job_id);
 
     } catch (err) {
-      clearInterval(progressInterval);
       alert(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsUploading(false);
