@@ -46,6 +46,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
+    # Allow every Vercel deployment of this project: production canonical
+    # + every preview/branch/PR URL Vercel auto-generates.
+    allow_origin_regex=r"https://ai-plan-checker(-[a-z0-9-]+)?\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

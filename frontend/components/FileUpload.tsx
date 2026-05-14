@@ -15,6 +15,9 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Storage tier caps every file at ~50 MB. Compress before uploading anything bigger.
+  const MAX_BYTES = 49 * 1024 * 1024;
+
   const onDrop = useCallback(
     (accepted: File[], rejected: FileRejection[]) => {
       setError(null);
@@ -22,11 +25,21 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
         setError(rejected[0]?.errors[0]?.message || "Invalid file");
         return;
       }
-      if (accepted[0]) {
-        setSelectedFile(accepted[0]);
+      const file = accepted[0];
+      if (!file) return;
+
+      if (file.size > MAX_BYTES) {
+        const mb = (file.size / 1024 / 1024).toFixed(1);
+        setError(
+          `This PDF is ${mb} MB — we currently support up to 49 MB per file. ` +
+            `Compress it first (Adobe Acrobat → File → Reduce File Size, or smallpdf.com/compress-pdf), ` +
+            `then try again.`
+        );
+        return;
       }
+      setSelectedFile(file);
     },
-    []
+    [MAX_BYTES]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -105,7 +118,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
                 {isDragActive ? "Drop your PDF here" : "Drag & drop your plan set"}
               </p>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                or click to browse · PDF only · Max 100MB · Auto-compressed if needed
+                or click to browse · PDF only · Max 49 MB
               </p>
             </div>
           )}
