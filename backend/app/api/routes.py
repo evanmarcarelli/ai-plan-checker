@@ -98,11 +98,15 @@ async def start_review(
 
     Rate limited to 10 uploads/min per user.
     """
+    # Fast-path validations only — return to the browser in <1 second.
+    # All heavy work (storage download, PDF magic-byte check, compression,
+    # 12-agent pipeline) happens in the background task below.
+
     if not body.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
-    # Storage path must be under this user's folder (RLS enforces this on upload,
-    # but defense-in-depth here too).
+    # Defense-in-depth: storage path must be under this user's folder.
+    # (Storage RLS already enforces this on upload, but we re-check here.)
     if not body.storage_path.startswith(f"{user['id']}/"):
         raise HTTPException(status_code=403, detail="Storage path does not belong to this user")
 
@@ -110,20 +114,7 @@ async def start_review(
     if body.file_size > max_size:
         raise HTTPException(status_code=413, detail=f"File exceeds {settings.max_upload_size_mb}MB limit")
 
-    # Download the file once now to validate it's a real PDF.
-    try:
-        content = db.download_plan(body.storage_path)
-    except Exception as e:
-        logger.error(f"Storage download failed for {body.storage_path}: {e}")
-        raise HTTPException(status_code=404, detail="Uploaded file not found in storage. Please re-upload.")
-
-    if len(content) < 5 or content[:4] != b"%PDF":
-        raise HTTPException(
-            status_code=400,
-            detail="File is not a valid PDF (failed magic-byte validation).",
-        )
-
-    # Credit check
+    # Credit check (instant DB call)
     if settings.require_auth:
         new_balance = db.decrement_credits(user["id"], 1)
         if new_balance < 0:
@@ -132,7 +123,7 @@ async def start_review(
                 detail="No review credits remaining. Please purchase additional credits to continue.",
             )
 
-    # Create DB row
+    # Create DB row (instant)
     job_id = db.create_job(
         user_id=user["id"],
         filename=body.filename,
@@ -140,22 +131,8 @@ async def start_review(
         storage_path=body.storage_path,
     )
 
-    # Stage the file to local disk for the agent pipeline (PDF processor reads from path)
-    file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(content)
-
-    # Auto-compress (lossless). Free win for the user's wait time and our Anthropic bill.
-    try:
-        _, before_b, after_b = compress_pdf(file_path)
-        if after_b < before_b:
-            saved_pct = (1 - after_b / before_b) * 100
-            logger.info(f"Job {job_id}: compressed {before_b:,} -> {after_b:,} bytes (-{saved_pct:.1f}%)")
-    except Exception as e:
-        logger.warning(f"Job {job_id}: compression skipped ({e})")
-
-    logger.info(f"Job {job_id} created for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
-    background_tasks.add_task(_process_job, job_id, file_path, body.storage_path)
+    logger.info(f"Job {job_id} queued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
+    background_tasks.add_task(_fetch_and_process, job_id, body.storage_path, user["id"])
 
     return UploadResponse(
         job_id=job_id,
@@ -163,6 +140,43 @@ async def start_review(
         filename=body.filename,
         file_size=body.file_size,
     )
+
+
+async def _fetch_and_process(job_id: str, storage_path: str, user_id: str):
+    """Background: download from Storage, validate, compress, then run pipeline."""
+    file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
+
+    # 1. Download from Supabase Storage
+    try:
+        content = db.download_plan(storage_path)
+    except Exception as e:
+        logger.error(f"Job {job_id}: storage download failed: {e}")
+        db.update_job(job_id, {"status": "failed", "error": "Uploaded file not found in storage."})
+        db.add_credits(user_id, 1)  # refund
+        return
+
+    # 2. Validate magic bytes
+    if len(content) < 5 or content[:4] != b"%PDF":
+        logger.error(f"Job {job_id}: not a valid PDF")
+        db.update_job(job_id, {"status": "failed", "error": "File is not a valid PDF."})
+        db.add_credits(user_id, 1)  # refund
+        return
+
+    # 3. Write to local disk
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(content)
+
+    # 4. Lossless compression (best-effort)
+    try:
+        _, before_b, after_b = compress_pdf(file_path)
+        if after_b < before_b:
+            saved = (1 - after_b / before_b) * 100
+            logger.info(f"Job {job_id}: compressed {before_b:,} -> {after_b:,} bytes (-{saved:.1f}%)")
+    except Exception as e:
+        logger.warning(f"Job {job_id}: compression skipped ({e})")
+
+    # 5. Run the 12-agent pipeline (and final cleanup) in the existing handler
+    await _process_job(job_id, file_path, storage_path)
 
 
 async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] = None):
