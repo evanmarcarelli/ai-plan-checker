@@ -195,6 +195,28 @@ class PDFProcessor:
         match = re.search(pattern, text, re.IGNORECASE)
         return match.group(1).strip() if match else None
 
+    @staticmethod
+    def _safe_float(v: str) -> Optional[float]:
+        """Parse a regex-captured value to float. Returns None if junk (e.g. '.' or '')."""
+        if not v:
+            return None
+        s = v.strip().rstrip(".").lstrip(".")
+        if not s or not any(c.isdigit() for c in s):
+            return None
+        try:
+            return float(v.replace(",", ""))
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def _safe_int(v: str) -> Optional[int]:
+        if not v:
+            return None
+        try:
+            return int(v.replace(",", ""))
+        except (ValueError, TypeError):
+            return None
+
     def _extract_dimensions(self, text: str) -> Dict[str, Any]:
         dims = {}
 
@@ -204,7 +226,9 @@ class PDFProcessor:
             text, re.IGNORECASE
         )
         if height_match:
-            dims["building_height"] = float(height_match.group(1))
+            v = self._safe_float(height_match.group(1))
+            if v is not None:
+                dims["building_height"] = v
 
         # Building area / square footage
         area_match = re.search(
@@ -212,23 +236,27 @@ class PDFProcessor:
             text, re.IGNORECASE
         )
         if area_match:
-            dims["building_area"] = float(area_match.group(1).replace(",", ""))
+            v = self._safe_float(area_match.group(1))
+            if v is not None:
+                dims["building_area"] = v
 
         # Corridor / hallway widths
         corridor_matches = re.findall(
             r'(?:CORRIDOR|HALLWAY|HALL|PASSAGE)\s*(?:WIDTH)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
             text, re.IGNORECASE
         )
-        if corridor_matches:
-            dims["corridor_widths"] = [float(v) for v in corridor_matches]
+        widths = [v for v in (self._safe_float(m) for m in corridor_matches) if v is not None]
+        if widths:
+            dims["corridor_widths"] = widths
 
         # Door widths
         door_matches = re.findall(
             r'(?:DOOR|DOORWAY)\s*(?:WIDTH|W\.?)[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
             text, re.IGNORECASE
         )
-        if door_matches:
-            dims["door_widths"] = [float(v) for v in door_matches]
+        widths = [v for v in (self._safe_float(m) for m in door_matches) if v is not None]
+        if widths:
+            dims["door_widths"] = widths
 
         # Stair dimensions
         stair_width = re.search(
@@ -236,7 +264,9 @@ class PDFProcessor:
             text, re.IGNORECASE
         )
         if stair_width:
-            dims["stair_width"] = float(stair_width.group(1))
+            v = self._safe_float(stair_width.group(1))
+            if v is not None:
+                dims["stair_width"] = v
 
         # Ceiling height
         ceiling_match = re.search(
@@ -244,7 +274,9 @@ class PDFProcessor:
             text, re.IGNORECASE
         )
         if ceiling_match:
-            dims["ceiling_height"] = float(ceiling_match.group(1))
+            v = self._safe_float(ceiling_match.group(1))
+            if v is not None:
+                dims["ceiling_height"] = v
 
         # Occupant load
         occupant_match = re.search(
@@ -252,7 +284,9 @@ class PDFProcessor:
             text, re.IGNORECASE
         )
         if occupant_match:
-            dims["occupant_load"] = int(occupant_match.group(1).replace(",", ""))
+            v = self._safe_int(occupant_match.group(1))
+            if v is not None:
+                dims["occupant_load"] = v
 
         return dims
 
