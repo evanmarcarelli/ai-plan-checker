@@ -23,7 +23,8 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-7"
+    anthropic_model: str = "claude-opus-4-7"           # premium model — used by Surveyor
+    anthropic_model_cheap: str = "claude-sonnet-4-7"   # ~5x cheaper — used by Librarian + 10 department reviewers
     anthropic_max_tokens: int = 4096
 
     # Supabase

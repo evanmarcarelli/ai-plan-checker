@@ -13,7 +13,13 @@ class LibrarianAgent(BaseAgent):
     Agent 2: The Librarian
     Retrieves relevant building codes for the identified jurisdiction.
     Uses mock database as primary, with LLM refinement.
+    Runs on Sonnet (cheap) — structured filtering, doesn't need Opus.
     """
+
+    @property
+    def model_override(self):  # type: ignore[override]
+        from app.config import settings as _s
+        return _s.anthropic_model_cheap
 
     def __init__(self):
         super().__init__(name="Librarian")

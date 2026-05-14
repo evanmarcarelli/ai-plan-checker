@@ -10,7 +10,16 @@ logger = get_logger(__name__)
 
 
 class BaseAgent(ABC):
-    """Base class for all plan checker agents."""
+    """Base class for all plan checker agents.
+
+    Per-agent model selection: subclasses override `model_override` to swap
+    to a cheaper or specialized model. Surveyor stays on the premium model
+    (jurisdiction parsing is the hardest task); department reviewers and
+    Librarian use Sonnet for ~5x cost savings on the same workload.
+    """
+
+    # When None, falls back to settings.anthropic_model (default = Opus).
+    model_override: Optional[str] = None
 
     def __init__(self, name: str):
         self.name = name
@@ -37,15 +46,16 @@ class BaseAgent(ABC):
 
         try:
             client = self._get_client()
+            model = self.model_override or settings.anthropic_model
             response = await client.messages.create(
-                model=settings.anthropic_model,
+                model=model,
                 system=self._get_system_prompt(),
                 messages=[{"role": "user", "content": user_content}],
                 max_tokens=max_tokens or settings.anthropic_max_tokens,
             )
             return response.content[0].text if response.content else ""
         except Exception as e:
-            logger.error(f"[{self.name}] LLM call failed: {e}")
+            logger.error(f"[{self.name}] LLM call failed ({type(e).__name__}: {e})")
             return self._mock_response(user_content)
 
     def _mock_response(self, content: str) -> str:

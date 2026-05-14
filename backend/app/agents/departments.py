@@ -20,7 +20,17 @@ logger = get_logger(__name__)
 
 
 class DepartmentReviewer(BaseAgent):
-    """Base class for all department-level plan reviewers."""
+    """Base class for all department-level plan reviewers.
+
+    Runs on Sonnet (cheap model) for ~5x cost savings over Opus. The 10
+    department reviewers are the volume driver of LLM cost — Surveyor and
+    Anthropic Sonnet handles structured cross-referencing very well.
+    """
+
+    @property
+    def model_override(self):  # type: ignore[override]
+        from app.config import settings as _s
+        return _s.anthropic_model_cheap
 
     # Subclasses override these
     department_name: str = "Department"
