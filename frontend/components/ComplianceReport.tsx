@@ -103,9 +103,9 @@ function FindingCard({ finding }: { finding: ComplianceFinding }) {
             <span
               className="text-xs font-mono px-1.5 py-0.5 rounded"
               style={{
-                background: "rgba(79, 126, 255, 0.08)",
+                background: "rgba(212, 175, 55, 0.08)",
                 color: "var(--accent-bright)",
-                border: "1px solid rgba(79,126,255,0.15)"
+                border: "1px solid rgba(212, 175, 55, 0.20)"
               }}
             >
               {req.section || req.code_id}
@@ -329,7 +329,7 @@ export default function ComplianceReport({
               className="text-sm font-semibold mb-3 flex items-center gap-2"
               style={{ color: "var(--text-primary)" }}
             >
-              <MapPin className="w-4 h-4 text-blue-400" />
+              <MapPin className="w-4 h-4 text-amber-300" />
               Jurisdiction
             </h3>
             {j ? (
@@ -390,7 +390,7 @@ export default function ComplianceReport({
                 className="text-sm font-semibold mb-3 flex items-center gap-2"
                 style={{ color: "var(--text-primary)" }}
               >
-                <Building2 className="w-4 h-4 text-blue-400" />
+                <Building2 className="w-4 h-4 text-amber-300" />
                 Project Data
               </h3>
               <div className="space-y-2 text-sm">

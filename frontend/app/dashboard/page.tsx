@@ -74,7 +74,7 @@ function AgentPipeline({
             <div
               className={`relative flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-300
                 ${isDone ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : ""}
-                ${isActive ? "bg-blue-500/10 border-blue-500/40 text-blue-300 agent-active" : ""}
+                ${isActive ? "bg-amber-500/10 border-amber-500/40 text-amber-200 agent-active" : ""}
                 ${isPending ? "bg-surface-800/50 border-white/5 text-[var(--text-muted)]" : ""}
               `}
             >
@@ -89,7 +89,7 @@ function AgentPipeline({
               </span>
               {isDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
               {isActive && (
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-300 border-t-transparent animate-spin" />
               )}
             </div>
             {i < AGENTS.length - 1 && (
@@ -249,7 +249,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #4f7eff, #818cf8)" }}
+              style={{ background: "linear-gradient(135deg, #D4AF37, #C5A880)" }}
             >
               <Building2 className="w-4.5 h-4.5 text-white" />
             </div>
@@ -322,7 +322,7 @@ export default function Dashboard() {
                     onClick={() => router.push("/billing")}
                     className="px-3 py-1 rounded-md font-medium transition-all"
                     style={{
-                      background: "linear-gradient(135deg, #4f7eff, #6b96ff)",
+                      background: "linear-gradient(135deg, #D4AF37, #E5C158)",
                       color: "#fff",
                     }}
                   >
@@ -384,7 +384,7 @@ export default function Dashboard() {
                 onClick={() => !tab.disabled && setActiveTab(tab.id as "upload" | "processing" | "report")}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
                   ${activeTab === tab.id
-                    ? "border-blue-500 text-blue-300"
+                    ? "border-amber-500 text-amber-200"
                     : tab.disabled
                       ? "border-transparent text-[var(--text-muted)] cursor-not-allowed"
                       : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -393,7 +393,7 @@ export default function Dashboard() {
                 {tab.icon}
                 {tab.label}
                 {tab.badge && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-500/30">
                     {tab.badge}
                   </span>
                 )}
@@ -421,7 +421,7 @@ export default function Dashboard() {
                   color: "var(--accent-bright)"
                 }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
                 12-Agent AI Workflow · IBC · NFPA · NEC · IPC · IMC · ADA · CALGreen · Title 24
               </div>
               <h1
@@ -526,7 +526,7 @@ export default function Dashboard() {
                     Processing Progress
                   </h3>
                   {isProcessing && (
-                    <span className="flex items-center gap-1.5 text-xs text-blue-400">
+                    <span className="flex items-center gap-1.5 text-xs text-amber-300">
                       <Clock className="w-3 h-3" />
                       Running
                     </span>
@@ -567,7 +567,7 @@ export default function Dashboard() {
                 <div className="flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
                   <span>{jobStatus?.progress || 0}% complete</span>
                   {jobStatus?.current_agent && (
-                    <span className="text-blue-400">{jobStatus.current_agent} working…</span>
+                    <span className="text-amber-300">{jobStatus.current_agent} working…</span>
                   )}
                 </div>
               </div>
@@ -612,7 +612,7 @@ export default function Dashboard() {
                         </div>
                         {isDone && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
                         {isActive && (
-                          <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin flex-shrink-0" />
+                          <div className="w-4 h-4 rounded-full border-2 border-amber-300 border-t-transparent animate-spin flex-shrink-0" />
                         )}
                       </div>
                     );
@@ -645,7 +645,7 @@ export default function Dashboard() {
                   onClick={() => setActiveTab("report")}
                   className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all glow-blue"
                   style={{
-                    background: "linear-gradient(135deg, var(--accent), #818cf8)",
+                    background: "linear-gradient(135deg, var(--accent-soft), var(--accent))",
                     color: "white",
                   }}
                 >

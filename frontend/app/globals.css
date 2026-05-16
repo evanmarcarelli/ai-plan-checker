@@ -1,34 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Syne', system-ui, sans-serif;
 
-  --bg: #0a0f1e;
-  --bg-card: #0f1628;
-  --bg-elevated: #141d35;
-  --border: rgba(99, 130, 255, 0.12);
-  --border-bright: rgba(99, 130, 255, 0.25);
-  --text-primary: #e8edf8;
-  --text-secondary: #8896b3;
-  --text-muted: #4a5568;
-  --accent: #4f7eff;
-  --accent-bright: #6b96ff;
-  --accent-glow: rgba(79, 126, 255, 0.15);
+  /* Surfaces — matte charcoal/slate, no blue cast */
+  --bg: #0E1218;
+  --bg-card: #1A2333;
+  --bg-elevated: #232C40;
 
-  --compliant: #10b981;
-  --compliant-bg: rgba(16, 185, 129, 0.08);
-  --non-compliant: #ef4444;
-  --non-compliant-bg: rgba(239, 68, 68, 0.08);
-  --needs-review: #f59e0b;
-  --needs-review-bg: rgba(245, 158, 11, 0.08);
-  --na: #64748b;
-  --na-bg: rgba(100, 116, 139, 0.08);
+  /* Borders — muted slate, no purple */
+  --border: #253147;
+  --border-bright: #2E3748;
+
+  /* Typography */
+  --text-primary: #F4F6F9;
+  --text-secondary: #A0AEC0;
+  --text-muted: #5A6478;
+
+  /* Accent — warm gold (executive / premium) */
+  --accent: #D4AF37;
+  --accent-bright: #E5C158;
+  --accent-soft: #C5A880;
+  --accent-glow: rgba(212, 175, 55, 0.10);
+
+  /* Status colors — kept but slightly desaturated */
+  --compliant: #4E8752;
+  --compliant-bg: rgba(78, 135, 82, 0.08);
+  --non-compliant: #C0392B;
+  --non-compliant-bg: rgba(192, 57, 43, 0.08);
+  --needs-review: #C5A880;
+  --needs-review-bg: rgba(197, 168, 128, 0.08);
+  --na: #5A6478;
+  --na-bg: rgba(90, 100, 120, 0.06);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,47 +53,41 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
+/* Scrollbar — minimal, slate */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* Grid background */
+/* No grid pattern — flat premium surface */
 .bg-grid {
-  background-image:
-    linear-gradient(rgba(79, 126, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 126, 255, 0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background: var(--bg);
 }
 
-/* Glow effects */
+/* No glows — flat with subtle shadow if needed */
 .glow-blue {
-  box-shadow: 0 0 30px rgba(79, 126, 255, 0.15), 0 0 60px rgba(79, 126, 255, 0.05);
+  box-shadow: none;
 }
 
+/* Hero title — solid platinum, no animation */
 .text-gradient {
-  background: linear-gradient(135deg, #6b96ff 0%, #a78bfa 50%, #6b96ff 100%);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, #FFFFFF 0%, #D4AF37 50%, #FFFFFF 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradient-shift 4s ease infinite;
+  letter-spacing: -0.02em;
 }
 
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-}
-
-/* Agent badge pulse */
-@keyframes agent-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(79, 126, 255, 0.4); }
-  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(79, 126, 255, 0); }
+/* Active agent indicator — quiet outline, no pulse glow */
+@keyframes agent-pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
 }
 
 .agent-active {
-  animation: agent-pulse 1.5s ease-in-out infinite;
+  animation: agent-pulse-subtle 1.8s ease-in-out infinite;
 }
 
 /* Score ring animation */
@@ -107,41 +110,38 @@ body {
   animation: log-appear 0.2s ease-out forwards;
 }
 
-/* Card hover */
+/* Cards — flat with subtle shadow, no hover glow */
 .finding-card {
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 .finding-card:hover {
   transform: translateY(-1px);
   border-color: var(--border-bright);
 }
 
-/* Upload zone */
+/* Upload zone — clean dashed silver border, flat darker fill */
 .upload-zone {
-  background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
-  border: 2px dashed var(--border);
-  transition: all 0.25s ease;
+  background: #171E2E;
+  border: 1.5px dashed var(--border-bright);
+  border-radius: 12px;
+  transition: border-color 0.25s ease, background 0.25s ease;
 }
 .upload-zone:hover, .upload-zone.drag-over {
-  border-color: var(--accent);
-  background: linear-gradient(135deg, var(--bg-elevated), rgba(79, 126, 255, 0.05));
-  box-shadow: inset 0 0 40px rgba(79, 126, 255, 0.05);
+  border-color: var(--accent-soft);
+  background: #1B2336;
 }
 
-/* Progress bar shimmer */
-@keyframes progress-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
+/* Progress bar — gold, no shimmer */
 .progress-bar-active {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    #818cf8 30%,
-    var(--accent-bright) 60%,
-    var(--accent) 100%
-  );
-  background-size: 200% 100%;
-  animation: progress-shimmer 2s linear infinite;
+  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent) 50%, var(--accent-soft) 100%);
+}
+
+/* Tighter, more executive button feel */
+button, [role="button"] {
+  letter-spacing: 0.01em;
+}
+
+/* Subtle shadow utility (replaces glow) */
+.shadow-premium {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
 }

@@ -32,7 +32,7 @@ export default function Nav() {
             <span className="text-slate-500">
               {profile.firm_name || profile.email}
             </span>
-            <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded font-medium">
+            <span className="bg-amber-50/10 text-amber-300 border border-amber-300/30 px-2 py-1 rounded font-medium">
               {profile.credits_remaining} {profile.credits_remaining === 1 ? "credit" : "credits"}
             </span>
             <button

@@ -12,15 +12,15 @@ interface Props {
 }
 
 const AGENT_COLORS: Record<string, { dot: string; label: string; bg: string }> = {
-  Surveyor: { dot: "#60a5fa", label: "text-blue-400", bg: "rgba(96,165,250,0.08)" },
-  Librarian: { dot: "#a78bfa", label: "text-violet-400", bg: "rgba(167,139,250,0.08)" },
+  Surveyor: { dot: "#60a5fa", label: "text-amber-300", bg: "rgba(96,165,250,0.08)" },
+  Librarian: { dot: "#C5A880", label: "text-amber-200", bg: "rgba(197,168,128,0.08)" },
   Coordinator: { dot: "#94a3b8", label: "text-slate-400", bg: "rgba(148,163,184,0.06)" },
   "Building & Safety": { dot: "#f59e0b", label: "text-amber-400", bg: "rgba(245,158,11,0.08)" },
   "Fire Department": { dot: "#ef4444", label: "text-red-400", bg: "rgba(239,68,68,0.08)" },
   "Electrical Inspector": { dot: "#facc15", label: "text-yellow-400", bg: "rgba(250,204,21,0.08)" },
   "Plumbing Inspector": { dot: "#22d3ee", label: "text-cyan-400", bg: "rgba(34,211,238,0.08)" },
   "Mechanical Inspector": { dot: "#94a3b8", label: "text-slate-400", bg: "rgba(148,163,184,0.06)" },
-  "Accessibility (ADA / CBC 11B)": { dot: "#3b82f6", label: "text-blue-500", bg: "rgba(59,130,246,0.08)" },
+  "Accessibility (ADA / CBC 11B)": { dot: "#3b82f6", label: "text-amber-400", bg: "rgba(59,130,246,0.08)" },
   "Energy & Green Building": { dot: "#10b981", label: "text-emerald-500", bg: "rgba(16,185,129,0.08)" },
   "Planning & Zoning": { dot: "#a855f7", label: "text-purple-400", bg: "rgba(168,85,247,0.08)" },
   "Public Works": { dot: "#64748b", label: "text-slate-500", bg: "rgba(100,116,139,0.08)" },
@@ -137,8 +137,8 @@ export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
           <div className="flex gap-3 px-2 py-1.5">
             <span className="w-20" />
             <span className="w-20" />
-            <span className="text-blue-400">
-              <span className="inline-block w-2 h-3.5 bg-blue-400 animate-pulse ml-1" />
+            <span className="text-amber-300">
+              <span className="inline-block w-2 h-3.5 bg-amber-300 animate-pulse ml-1" />
             </span>
           </div>
         )}

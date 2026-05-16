@@ -87,7 +87,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
             }}
           >
             <Upload
-              className={`w-7 h-7 transition-colors ${isDragActive ? "text-blue-400" : ""}`}
+              className={`w-7 h-7 transition-colors ${isDragActive ? "text-amber-300" : ""}`}
               style={{ color: isDragActive ? undefined : "var(--text-muted)" }}
             />
           </div>
@@ -95,7 +95,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
           {selectedFile ? (
             <div className="space-y-1">
               <div className="flex items-center gap-2 justify-center">
-                <FileText className="w-4 h-4 text-blue-400" />
+                <FileText className="w-4 h-4 text-amber-300" />
                 <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                   {selectedFile.name}
                 </span>
@@ -165,7 +165,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
           onClick={handleSubmit}
           className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all glow-blue"
           style={{
-            background: "linear-gradient(135deg, var(--accent) 0%, #818cf8 100%)",
+            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent) 50%, var(--accent-soft) 100%)",
             color: "white",
             fontFamily: "var(--font-display)",
           }}

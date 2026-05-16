@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-               style={{ background: "linear-gradient(135deg, #4f7eff, #818cf8)" }}>
+               style={{ background: "linear-gradient(135deg, #D4AF37, #C5A880)" }}>
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
             type="submit"
             disabled={loading}
             className="w-full font-medium py-2.5 rounded-lg transition-all disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #4f7eff, #6b96ff)", color: "#fff" }}
+            style={{ background: "linear-gradient(135deg, #D4AF37, #E5C158)", color: "#fff" }}
           >
             {loading ? "Saving…" : "Save password"}
           </button>
