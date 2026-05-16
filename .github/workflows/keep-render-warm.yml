@@ -1,0 +1,37 @@
+name: Keep Render backend warm
+
+# Render Free spins down web services after 15 min of inactivity.
+# A cold dyno takes 30–60 s to wake up — long enough for browser uploads
+# to time out with "Failed to fetch". This workflow pings /health every
+# 10 min so the dyno stays warm.
+#
+# Cost: zero (each run is a single curl, under 1 second).
+# Caveat: GitHub Actions cron isn't guaranteed exactly on time — it may
+# slip by a few minutes under peak load — but it's reliable enough to
+# keep a Render dyno awake.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes
+  workflow_dispatch:          # also allow manual trigger from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          set -e
+          for i in 1 2 3; do
+            if curl -fsS --max-time 90 https://ai-plan-checker.onrender.com/health; then
+              echo "Ping OK on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed; retrying in 15s..."
+            sleep 15
+          done
+          echo "Backend unreachable after 3 attempts"
+          exit 1
