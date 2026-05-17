@@ -9,9 +9,10 @@ interface Props {
   onUpload: (file: File) => void;
   isUploading: boolean;
   uploadProgress: number;
+  uploadStatus?: string;
 }
 
-export default function FileUpload({ onUpload, isUploading, uploadProgress }: Props) {
+export default function FileUpload({ onUpload, isUploading, uploadProgress, uploadStatus }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,7 +145,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
       {isUploading && (
         <div className="space-y-2">
           <div className="flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
-            <span>Uploading…</span>
+            <span>{uploadStatus || "Uploading…"}</span>
             <span>{uploadProgress}%</span>
           </div>
           <div
@@ -163,10 +164,8 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress }: Pr
       {selectedFile && !isUploading && (
         <button
           onClick={handleSubmit}
-          className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all glow-blue"
+          className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 btn-primary"
           style={{
-            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent) 50%, var(--accent-soft) 100%)",
-            color: "white",
             fontFamily: "var(--font-display)",
           }}
         >

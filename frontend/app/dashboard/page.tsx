@@ -118,6 +118,7 @@ export default function Dashboard() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const router = useRouter();
 
   // Load profile once
@@ -196,12 +197,16 @@ export default function Dashboard() {
     setUploadedFile(file);
     setIsUploading(true);
     setUploadProgress(0);
-
-    setUploadProgress(0);
+    setUploadStatus("");
 
     try {
-      const result = await uploadPlan(file, (pct) => setUploadProgress(pct));
+      const result = await uploadPlan(
+        file,
+        (pct) => setUploadProgress(pct),
+        (msg) => setUploadStatus(msg || "")
+      );
       setUploadProgress(100);
+      setUploadStatus("");
 
       setJobId(result.job_id);
       setActiveTab("processing");
@@ -249,7 +254,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #D4AF37, #C5A880)" }}
+              style={{ background: "#0B0E14" }}
             >
               <Building2 className="w-4.5 h-4.5 text-white" />
             </div>
@@ -322,7 +327,7 @@ export default function Dashboard() {
                     onClick={() => router.push("/billing")}
                     className="px-3 py-1 rounded-md font-medium transition-all"
                     style={{
-                      background: "linear-gradient(135deg, #D4AF37, #E5C158)",
+                      background: "#0B0E14",
                       color: "#fff",
                     }}
                   >
@@ -439,7 +444,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <FileUpload onUpload={handleUpload} isUploading={isUploading} uploadProgress={uploadProgress} />
+            <FileUpload onUpload={handleUpload} isUploading={isUploading} uploadProgress={uploadProgress} uploadStatus={uploadStatus} />
 
             {/* Pipeline overview */}
             <div className="grid grid-cols-2 gap-3 mt-8">

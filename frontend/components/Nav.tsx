@@ -29,15 +29,23 @@ export default function Nav() {
       <div className="flex items-center gap-4 text-sm">
         {profile && (
           <>
-            <span className="text-slate-500">
+            <span style={{ color: "var(--text-secondary)" }}>
               {profile.firm_name || profile.email}
             </span>
-            <span className="bg-amber-50/10 text-amber-300 border border-amber-300/30 px-2 py-1 rounded font-medium">
+            <span
+              className="px-2 py-1 rounded font-medium"
+              style={{
+                background: "var(--accent-glow)",
+                color: "var(--accent)",
+                border: "1px solid rgba(184, 148, 31, 0.25)",
+              }}
+            >
               {profile.credits_remaining} {profile.credits_remaining === 1 ? "credit" : "credits"}
             </span>
             <button
               onClick={signOut}
-              className="text-slate-500 hover:text-slate-700 font-medium"
+              className="font-medium"
+              style={{ color: "var(--text-secondary)" }}
             >
               Sign out
             </button>

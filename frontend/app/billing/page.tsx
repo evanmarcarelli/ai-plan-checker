@@ -160,7 +160,7 @@ export default function BillingPage() {
                 {plan.recommended && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1 rounded-full font-medium"
                        style={{
-                         background: "linear-gradient(135deg, #D4AF37, #E5C158)",
+                         background: "#0B0E14",
                          color: "#fff",
                        }}>
                     Most popular
@@ -205,7 +205,7 @@ export default function BillingPage() {
                         }
                       : plan.recommended
                       ? {
-                          background: "linear-gradient(135deg, #D4AF37, #E5C158)",
+                          background: "#0B0E14",
                           color: "#fff",
                         }
                       : {

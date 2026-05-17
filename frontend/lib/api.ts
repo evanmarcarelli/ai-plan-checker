@@ -191,19 +191,18 @@ export interface JobStatus {
 
 export async function uploadPlan(
   file: File,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  onStatus?: (msg: string) => void
 ): Promise<UploadResponse> {
   // Step 1: upload directly to Supabase Storage (bypass our backend's size limit).
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
 
-  // Use a UUID-like name to avoid collisions / weird chars.
-  const ext = file.name.toLowerCase().endsWith(".pdf") ? ".pdf" : ".pdf";
   const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const storagePath = `${user.id}/${uniq}${ext}`;
+  const storagePath = `${user.id}/${uniq}.pdf`;
 
-  // supabase-js upload doesn't expose progress; emit synthetic 50% halfway then 100% on success.
+  onStatus?.("Uploading PDF…");
   onProgress?.(10);
   const { error: upErr } = await supabase
     .storage
@@ -213,25 +212,70 @@ export async function uploadPlan(
   onProgress?.(90);
 
   // Step 2: tell the backend the file is ready.
+  // Retry on transient network errors (Render Free cold-start takes ~30-60s
+  // to wake the dyno; the first POST after idle can fail before wake-up).
   const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
-  const res = await fetch(`${API_URL}/upload`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      storage_path: storagePath,
-      filename: file.name,
-      file_size: file.size,
-    }),
+  const body = JSON.stringify({
+    storage_path: storagePath,
+    filename: file.name,
+    file_size: file.size,
   });
-  onProgress?.(100);
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    // Clean up the orphan upload so the user can retry without duplicates.
-    await supabase.storage.from("plan-uploads").remove([storagePath]).catch(() => {});
-    throw new Error(err.detail || `Start review failed: ${res.status}`);
+  const MAX_ATTEMPTS = 3;
+  const TIMEOUT_MS = 75_000;       // long enough for a cold start
+  const BACKOFF = [0, 8_000, 20_000];
+
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (BACKOFF[attempt - 1]) await new Promise((r) => setTimeout(r, BACKOFF[attempt - 1]));
+    if (attempt > 1) onStatus?.(`Server is waking up (attempt ${attempt}/${MAX_ATTEMPTS})…`);
+    else onStatus?.("Starting review…");
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers,
+        body,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      // 5xx + 429: worth retrying. Other 4xx: surface error to user.
+      if (res.status >= 500 || res.status === 429) {
+        lastErr = new Error(`server responded ${res.status}`);
+        if (attempt < MAX_ATTEMPTS) continue;
+      }
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        await supabase.storage.from("plan-uploads").remove([storagePath]).catch(() => {});
+        throw new Error(errBody.detail || `Review start failed: ${res.status}`);
+      }
+
+      onProgress?.(100);
+      onStatus?.(undefined as unknown as string);
+      return res.json();
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      // Network/abort errors are retried. Anything else we re-throw.
+      const msg = e instanceof Error ? e.message.toLowerCase() : String(e);
+      const isNetwork = msg.includes("fetch") || msg.includes("abort") || msg.includes("network");
+      if (!isNetwork || attempt === MAX_ATTEMPTS) {
+        await supabase.storage.from("plan-uploads").remove([storagePath]).catch(() => {});
+        throw new Error(
+          isNetwork
+            ? "Couldn't reach the server after several tries. It may be temporarily down — please try again in a minute."
+            : (lastErr instanceof Error ? lastErr.message : "Upload failed")
+        );
+      }
+    }
   }
-  return res.json();
+
+  // Unreachable, but TypeScript wants a return
+  throw new Error("Upload failed");
 }
 
 export async function getJobStatus(jobId: string): Promise<JobStatus> {

@@ -9,35 +9,44 @@
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Syne', system-ui, sans-serif;
 
-  /* Surfaces — matte charcoal/slate, no blue cast */
-  --bg: #0E1218;
-  --bg-card: #1A2333;
-  --bg-elevated: #232C40;
+  /* Surfaces — soft white, slightly off so cards have separation */
+  --bg: #FAFBFC;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #F2F4F7;
 
-  /* Borders — muted slate, no purple */
-  --border: #253147;
-  --border-bright: #2E3748;
+  /* Borders — thin neutral greys */
+  --border: #E5E7EB;
+  --border-bright: #CBD2DA;
 
   /* Typography */
-  --text-primary: #F4F6F9;
-  --text-secondary: #A0AEC0;
-  --text-muted: #5A6478;
+  --text-primary: #0B0E14;          /* near-black */
+  --text-secondary: #4A5260;        /* slate grey body text */
+  --text-muted: #8A93A6;             /* fine print / captions */
 
-  /* Accent — warm gold (executive / premium) */
-  --accent: #D4AF37;
-  --accent-bright: #E5C158;
-  --accent-soft: #C5A880;
-  --accent-glow: rgba(212, 175, 55, 0.10);
+  /* Accent — gold, used sparingly (links, badges, icon strokes, focus rings) */
+  --accent: #B8941F;                 /* readable on white */
+  --accent-bright: #D4AF37;          /* classic gold for highlights */
+  --accent-soft: #E5C158;            /* light gold for shimmer / badges */
+  --accent-glow: rgba(184, 148, 31, 0.10);
 
-  /* Status colors — kept but slightly desaturated */
-  --compliant: #4E8752;
-  --compliant-bg: rgba(78, 135, 82, 0.08);
-  --non-compliant: #C0392B;
-  --non-compliant-bg: rgba(192, 57, 43, 0.08);
-  --needs-review: #C5A880;
-  --needs-review-bg: rgba(197, 168, 128, 0.08);
-  --na: #5A6478;
-  --na-bg: rgba(90, 100, 120, 0.06);
+  /* Buttons — black primary, neutral secondary */
+  --btn-primary-bg: #0B0E14;
+  --btn-primary-bg-hover: #1A1F2A;
+  --btn-primary-text: #FFFFFF;
+
+  --btn-secondary-bg: #F2F4F7;
+  --btn-secondary-bg-hover: #E5E7EB;
+  --btn-secondary-text: #0B0E14;
+
+  /* Status colors — saturated enough to read on white */
+  --compliant: #15803D;
+  --compliant-bg: rgba(21, 128, 61, 0.08);
+  --non-compliant: #B91C1C;
+  --non-compliant-bg: rgba(185, 28, 28, 0.08);
+  --needs-review: #B8941F;
+  --needs-review-bg: rgba(184, 148, 31, 0.10);
+  --na: #6B7280;
+  --na-bg: rgba(107, 114, 128, 0.08);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -53,26 +62,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar — minimal, slate */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* No grid pattern — flat premium surface */
-.bg-grid {
-  background: var(--bg);
-}
+/* No grid — flat white */
+.bg-grid { background: var(--bg); }
 
-/* No glows — flat with subtle shadow if needed */
-.glow-blue {
-  box-shadow: none;
-}
+/* No glows */
+.glow-blue { box-shadow: none; }
 
-/* Hero title — solid platinum, no animation */
+/* Hero title — solid near-black with optional gold shimmer */
 .text-gradient {
-  color: var(--text-primary);
-  background: linear-gradient(135deg, #FFFFFF 0%, #D4AF37 50%, #FFFFFF 100%);
+  background: linear-gradient(135deg, #0B0E14 0%, #B8941F 55%, #0B0E14 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -80,15 +84,13 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Active agent indicator — quiet outline, no pulse glow */
+/* Active agent indicator — quiet opacity blink, no glow halo */
 @keyframes agent-pulse-subtle {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+  50% { opacity: 0.55; }
 }
 
-.agent-active {
-  animation: agent-pulse-subtle 1.8s ease-in-out infinite;
-}
+.agent-active { animation: agent-pulse-subtle 1.8s ease-in-out infinite; }
 
 /* Score ring animation */
 @keyframes score-fill {
@@ -96,52 +98,65 @@ body {
   to { stroke-dashoffset: var(--target-offset); }
 }
 
-.score-ring {
-  animation: score-fill 1.5s ease-out forwards;
-}
+.score-ring { animation: score-fill 1.5s ease-out forwards; }
 
-/* Log entry animation */
+/* Log entry */
 @keyframes log-appear {
   from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
-.log-entry {
-  animation: log-appear 0.2s ease-out forwards;
-}
+.log-entry { animation: log-appear 0.2s ease-out forwards; }
 
-/* Cards — flat with subtle shadow, no hover glow */
+/* Finding card */
 .finding-card {
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .finding-card:hover {
   transform: translateY(-1px);
   border-color: var(--border-bright);
+  box-shadow: 0 1px 2px rgba(11, 14, 20, 0.04), 0 4px 12px rgba(11, 14, 20, 0.04);
 }
 
-/* Upload zone — clean dashed silver border, flat darker fill */
+/* Upload zone — soft cream fill, light dashed border */
 .upload-zone {
-  background: #171E2E;
+  background: #F7F8FA;
   border: 1.5px dashed var(--border-bright);
   border-radius: 12px;
   transition: border-color 0.25s ease, background 0.25s ease;
 }
 .upload-zone:hover, .upload-zone.drag-over {
-  border-color: var(--accent-soft);
-  background: #1B2336;
+  border-color: var(--accent);
+  background: #FFFBEB;
 }
 
-/* Progress bar — gold, no shimmer */
+/* Progress bar — gold */
 .progress-bar-active {
-  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent) 50%, var(--accent-soft) 100%);
+  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent-bright) 50%, var(--accent-soft) 100%);
 }
 
-/* Tighter, more executive button feel */
-button, [role="button"] {
-  letter-spacing: 0.01em;
+/* Buttons */
+button, [role="button"] { letter-spacing: 0.01em; }
+
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  transition: background 0.18s ease;
+}
+.btn-primary:hover { background: var(--btn-primary-bg-hover); }
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--border);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.btn-secondary:hover {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--border-bright);
 }
 
-/* Subtle shadow utility (replaces glow) */
+/* Subtle elevation shadow */
 .shadow-premium {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(11, 14, 20, 0.04), 0 8px 24px rgba(11, 14, 20, 0.06);
 }

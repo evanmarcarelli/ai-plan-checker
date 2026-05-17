@@ -62,7 +62,7 @@ export default function CookieBanner() {
             <button
               onClick={() => setConsent("accepted")}
               className="px-3 py-1.5 rounded-lg text-xs font-medium"
-              style={{ background: "linear-gradient(135deg, #D4AF37, #E5C158)", color: "#fff" }}
+              style={{ background: "#0B0E14", color: "#fff" }}
             >
               Accept all
             </button>
