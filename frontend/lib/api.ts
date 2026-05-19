@@ -221,9 +221,13 @@ export async function uploadPlan(
     file_size: file.size,
   });
 
-  const MAX_ATTEMPTS = 3;
-  const TIMEOUT_MS = 75_000;       // long enough for a cold start
-  const BACKOFF = [0, 8_000, 20_000];
+  // Render Free dynos can take a full 90 seconds to wake up from sleep.
+  // We give each attempt 2 minutes, and try up to 4 times with growing
+  // backoff. Worst case the user waits ~3 minutes on a fully cold start,
+  // but they see "Server is waking up…" the whole time rather than a fail.
+  const MAX_ATTEMPTS = 4;
+  const TIMEOUT_MS = 120_000;
+  const BACKOFF = [0, 15_000, 30_000, 30_000];
 
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

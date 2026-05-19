@@ -24,7 +24,7 @@ export default function Nav() {
   return (
     <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
       <Link href="/dashboard" className="font-bold text-slate-900">
-        AI Plan Checker
+        Up2Code AI
       </Link>
       <div className="flex items-center gap-4 text-sm">
         {profile && (

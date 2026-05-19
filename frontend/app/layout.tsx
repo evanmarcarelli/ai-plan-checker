@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
-  title: "AI Plan Checker — Building Code Compliance",
+  title: "Up2Code AI — Building Code Compliance",
   description: "Multi-agent AI system for automated building code compliance verification",
 };
 

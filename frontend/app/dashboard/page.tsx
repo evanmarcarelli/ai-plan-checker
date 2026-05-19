@@ -263,7 +263,7 @@ export default function Dashboard() {
                 className="font-bold text-sm tracking-wide"
                 style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
               >
-                AI Plan Checker
+                Up2Code AI
               </span>
               <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                 v2.0 — Multi-Agent Compliance
@@ -438,9 +438,8 @@ export default function Dashboard() {
                 <span style={{ color: "var(--text-primary)" }}>Plan Compliance</span>
               </h1>
               <p className="text-base" style={{ color: "var(--text-secondary)" }}>
-                Upload your PDF plan set. <strong style={{ color: "var(--text-primary)" }}>12 specialist AI agents</strong> —
-                Surveyor, Librarian, and 10 department reviewers — will identify your jurisdiction
-                and audit your plans against every code chapter a real city plan check would run.
+                Upload a PDF plan set. <strong style={{ color: "var(--text-primary)" }}>12 specialist AI agents</strong> identify
+                your jurisdiction and audit it against every code chapter a real city plan check runs.
               </p>
             </div>
 
@@ -508,6 +507,9 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Demo: what a finished review looks like */}
+            <ExampleReview />
           </div>
         )}
 
@@ -671,6 +673,164 @@ export default function Dashboard() {
           />
         )}
       </main>
+    </div>
+  );
+}
+
+// ─── Example Review (demo block on upload tab) ───────────────────────
+function ExampleReview() {
+  const EXAMPLES: Array<{
+    department: string;
+    Icon: React.ElementType;
+    severity: "critical" | "high" | "medium";
+    section: string;
+    text: string;
+  }> = [
+    {
+      department: "Fire",
+      Icon: Flame,
+      severity: "critical",
+      section: "IFC 903.2",
+      text: "New SFD rebuild requires NFPA 13D sprinklers per CRC R313.2. Title sheet does not call out sprinkler standard.",
+    },
+    {
+      department: "Building & Safety",
+      Icon: Building2,
+      severity: "high",
+      section: "IBC 503",
+      text: "Construction type and height/area not documented. Allowable height/area cannot be verified.",
+    },
+    {
+      department: "Environmental",
+      Icon: Trees,
+      severity: "critical",
+      section: "CBC 7A",
+      text: "Project is in a Very High Fire Hazard Severity Zone — ignition-resistant construction is required.",
+    },
+    {
+      department: "Energy & Green",
+      Icon: Leaf,
+      severity: "high",
+      section: "Title 24",
+      text: "CA Climate Zone 9 — envelope U-values and PV solar requirement not addressed in submitted plans.",
+    },
+  ];
+  const SEV_COLORS: Record<string, string> = {
+    critical: "var(--non-compliant)",
+    high: "#B45309",
+    medium: "var(--accent)",
+  };
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2
+          className="text-sm font-semibold uppercase tracking-wider"
+          style={{ color: "var(--text-muted)", fontFamily: "var(--font-display)" }}
+        >
+          See an example review
+        </h2>
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+          Real output, redacted address
+        </span>
+      </div>
+
+      <div
+        className="rounded-2xl p-6"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+      >
+        {/* Project header */}
+        <div className="flex items-start justify-between flex-wrap gap-3 mb-5 pb-5"
+             style={{ borderBottom: "1px solid var(--border)" }}>
+          <div>
+            <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
+              Example project
+            </div>
+            <div className="text-lg font-semibold"
+                 style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+              Single-family rebuild · Altadena, CA
+            </div>
+            <div className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
+              R-3 occupancy · 37 pages · Code: 2022 California Building Code
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold" style={{ color: "var(--non-compliant)" }}>
+              4%
+            </div>
+            <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+              compliance score
+            </div>
+          </div>
+        </div>
+
+        {/* Tally */}
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          {[
+            { label: "compliant", value: 2, color: "var(--compliant)" },
+            { label: "needs review", value: 51, color: "var(--needs-review)" },
+            { label: "critical", value: 5, color: "var(--non-compliant)" },
+            { label: "high", value: 19, color: "#B45309" },
+          ].map((t) => (
+            <div key={t.label}
+                 className="rounded-lg p-3 text-center"
+                 style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+              <div className="text-xl font-bold" style={{ color: t.color, fontFamily: "var(--font-display)" }}>
+                {t.value}
+              </div>
+              <div className="text-[10px] uppercase tracking-wider mt-0.5"
+                   style={{ color: "var(--text-muted)" }}>
+                {t.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Top findings */}
+        <div className="space-y-2">
+          {EXAMPLES.map((f, i) => (
+            <div key={i}
+                 className="flex items-start gap-3 p-3 rounded-lg"
+                 style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+              <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                   style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <f.Icon className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="text-xs font-semibold"
+                        style={{ color: "var(--text-primary)" }}>
+                    {f.department}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                        style={{
+                          background: "rgba(184, 148, 31, 0.10)",
+                          color: "var(--accent)",
+                          border: "1px solid rgba(184, 148, 31, 0.20)",
+                        }}>
+                    {f.section}
+                  </span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        style={{
+                          color: SEV_COLORS[f.severity],
+                          background: `${SEV_COLORS[f.severity]}15`,
+                          border: `1px solid ${SEV_COLORS[f.severity]}30`,
+                        }}>
+                    {f.severity}
+                  </span>
+                </div>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{f.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs mt-5 text-center"
+           style={{ color: "var(--text-muted)" }}>
+          Every real review checks ~68 code requirements across all 12 agents and returns full
+          recommendations on each finding.
+        </p>
+      </div>
     </div>
   );
 }
