@@ -38,8 +38,21 @@ class BaseAgent(ABC):
     async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         pass
 
-    async def _call_llm(self, user_content: str, max_tokens: int = None) -> str:
-        """Call Claude and return the response text."""
+    async def _call_llm(
+        self,
+        user_content: str,
+        max_tokens: int = None,
+        cache_prefix: str = None,
+    ) -> str:
+        """Call Claude and return the response text.
+
+        cache_prefix: optional STABLE text (e.g. verbatim code requirements that
+        don't change between runs). When provided it is sent as a separate
+        content block marked `cache_control: ephemeral`, so Anthropic prompt
+        caching bills it at ~10% of the input rate on any repeat within the
+        5-minute cache window. Caching is output-neutral — the model's response
+        is byte-identical whether or not the prefix was cached.
+        """
         if not settings.anthropic_api_key:
             logger.warning(f"[{self.name}] No Anthropic API key - returning mock response")
             return self._mock_response(user_content)
@@ -47,10 +60,23 @@ class BaseAgent(ABC):
         try:
             client = self._get_client()
             model = self.model_override or settings.anthropic_model
+
+            if cache_prefix:
+                # Cached prefix first, fresh content second. The cache_control
+                # breakpoint caches everything up to and including this block
+                # (system prompt + prefix).
+                content = [
+                    {"type": "text", "text": cache_prefix,
+                     "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": user_content},
+                ]
+            else:
+                content = user_content
+
             response = await client.messages.create(
                 model=model,
                 system=self._get_system_prompt(),
-                messages=[{"role": "user", "content": user_content}],
+                messages=[{"role": "user", "content": content}],
                 max_tokens=max_tokens or settings.anthropic_max_tokens,
             )
             return response.content[0].text if response.content else ""

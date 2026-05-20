@@ -161,7 +161,19 @@ OUTPUT — return ONLY a JSON array, no prose:
         if len(req_block) > 12000:
             req_block = req_block[:12000] + "\n... (truncated)"
 
-        context = f"""EXTRACTED PLAN DATA:
+        # ---- STABLE prefix (cached) ----
+        # The verbatim code requirements for this department + jurisdiction do
+        # not change between runs. We send them as `cache_prefix` so Anthropic
+        # prompt caching bills them at ~10% of the input rate on warm runs.
+        # This is the bulk of the input tokens, so it is the bulk of the saving.
+        code_block = (
+            f"CODE REQUIREMENTS TO REVIEW ({len(requirements)} items) — each shown "
+            f"with its CITATION and verbatim code text:\n\n{req_block}"
+        )
+
+        # ---- FRESH content (not cached) ----
+        # The actual plan under review changes every run, so it stays uncached.
+        fresh = f"""EXTRACTED PLAN DATA:
 {plan_summary}
 
 PLAN TEXT SAMPLE (first page, may contain title block, notes, schedules):
@@ -170,16 +182,13 @@ PLAN TEXT SAMPLE (first page, may contain title block, notes, schedules):
 LOCAL JURISDICTION AMENDMENTS:
 {chr(10).join(f'- {a}' for a in jurisdiction_amendments) if jurisdiction_amendments else 'None'}
 
-CODE REQUIREMENTS TO REVIEW ({len(requirements)} items) — each shown with its CITATION and verbatim code text:
-
-{req_block}
-
-CRITICAL: For each requirement above, return a finding whose code_id is EXACTLY
-the bracketed citation (e.g. "IBC 1011.5.2"). Do NOT invent new section numbers.
-If a code is not applicable to this plan, use status="not_applicable". Return JSON findings array."""
+Using the CODE REQUIREMENTS shown above, review every requirement against this
+plan. For each, return a finding whose code_id is EXACTLY the bracketed citation
+(e.g. "IBC 1011.5.2"). Do NOT invent new section numbers. If a code is not
+applicable to this plan, use status="not_applicable". Return JSON findings array."""
 
         try:
-            response = await self._call_llm(context, max_tokens=4000)
+            response = await self._call_llm(fresh, max_tokens=4000, cache_prefix=code_block)
             parsed = self._parse_json_response(response)
         except Exception as e:
             logger.error(f"[{self.department_name}] LLM call failed: {e}")
