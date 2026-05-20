@@ -12,9 +12,12 @@ Auth model:
 
 All writes go through the backend service role so RLS doesn't need
 guest-aware policies — the token check IS the policy.
-"""
-from __future__ import annotations
 
+NOTE: deliberately NO `from __future__ import annotations` here. With it,
+FastAPI 0.109 + Pydantic 2.5.x cannot resolve request-body models
+(CreateShareBody etc.) — they become lazy forward-refs and route
+registration raises PydanticUndefinedAnnotation, crashing the app on boot.
+"""
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional

@@ -14,9 +14,11 @@ Key properties:
 - Cited chunks are returned as `citations` so the UI can show them.
 - Persisted in chat_messages so any collaborator can scroll the history.
 - Rate limited aggressively per actor.
-"""
-from __future__ import annotations
 
+NOTE: deliberately NO `from __future__ import annotations` here — see the
+matching note in collab_routes.py. It breaks request-body model resolution
+on the pinned FastAPI 0.109 + Pydantic 2.5.x.
+"""
 from typing import Any, Dict, List, Optional
 
 import anthropic
