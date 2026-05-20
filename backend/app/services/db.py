@@ -225,8 +225,8 @@ def revoke_share(share_id: str) -> None:
 
 def add_finding_comment(
     *,
-    finding_id: str,
     job_id: str,
+    finding_ref: str,
     author_display: str,
     body: str,
     author_user_id: Optional[str] = None,
@@ -234,8 +234,8 @@ def add_finding_comment(
     author_email: Optional[str] = None,
 ) -> Dict[str, Any]:
     res = admin().table("finding_comments").insert({
-        "finding_id": finding_id,
         "job_id": job_id,
+        "finding_ref": finding_ref,
         "author_user_id": author_user_id,
         "author_share_id": author_share_id,
         "author_display": author_display,
@@ -245,10 +245,11 @@ def add_finding_comment(
     return res.data[0]
 
 
-def list_comments_for_finding(finding_id: str) -> List[Dict[str, Any]]:
+def list_comments_for_finding(job_id: str, finding_ref: str) -> List[Dict[str, Any]]:
     res = (admin().table("finding_comments")
-           .select("id, author_display, body, created_at, author_user_id, author_share_id")
-           .eq("finding_id", finding_id)
+           .select("id, finding_ref, author_display, body, created_at, author_user_id, author_share_id")
+           .eq("job_id", job_id)
+           .eq("finding_ref", finding_ref)
            .order("created_at")
            .execute())
     return res.data or []
@@ -256,7 +257,7 @@ def list_comments_for_finding(finding_id: str) -> List[Dict[str, Any]]:
 
 def list_comments_for_job(job_id: str) -> List[Dict[str, Any]]:
     res = (admin().table("finding_comments")
-           .select("id, finding_id, author_display, body, created_at")
+           .select("id, finding_ref, author_display, body, created_at")
            .eq("job_id", job_id)
            .order("created_at")
            .execute())

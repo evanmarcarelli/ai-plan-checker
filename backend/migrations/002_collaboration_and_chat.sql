@@ -34,12 +34,18 @@ create index if not exists report_shares_token_idx  on public.report_shares(toke
 create index if not exists report_shares_created_by_idx on public.report_shares(created_by);
 
 -- ---------- finding_comments ----------
--- author_user_id is set when the commenter is logged in.
+-- A finding is identified by (job_id, finding_ref) where finding_ref is the
+-- code citation, e.g. "ADA 404.2.3". We deliberately do NOT FK to the
+-- findings table: the report's per-run finding_id is regenerated on every
+-- analysis, whereas the code citation is stable. This lets the SAME comment
+-- thread show up in the owner's live in-memory report AND in a guest's
+-- DB-backed shared view.
+-- author_user_id is set when the commenter is logged in;
 -- otherwise author_share_id + author_display points to the guest's share row.
 create table if not exists public.finding_comments (
   id uuid primary key default gen_random_uuid(),
-  finding_id uuid not null references public.findings(id) on delete cascade,
   job_id uuid not null references public.jobs(id) on delete cascade,
+  finding_ref text not null,                      -- code citation e.g. "IBC 1011.5.2"
   author_user_id  uuid references auth.users(id) on delete set null,
   author_share_id uuid references public.report_shares(id) on delete set null,
   author_display  text not null,                 -- always populated for rendering
@@ -48,7 +54,7 @@ create table if not exists public.finding_comments (
   created_at timestamptz default now()
 );
 
-create index if not exists finding_comments_finding_id_idx on public.finding_comments(finding_id);
+create index if not exists finding_comments_job_ref_idx on public.finding_comments(job_id, finding_ref);
 create index if not exists finding_comments_job_id_created_idx on public.finding_comments(job_id, created_at);
 
 -- ---------- chat_messages ----------

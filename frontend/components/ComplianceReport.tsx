@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ComplianceReport as Report, ComplianceFinding } from "@/lib/api";
-import { getExportUrl } from "@/lib/api";
+import { getExportUrl, listReportComments } from "@/lib/api";
 import {
   getStatusColor, getStatusLabel, getSeverityColor,
   getCategoryIcon, getCategoryLabel, cn
@@ -11,8 +11,12 @@ import {
   Download, Search, Filter, MapPin, Building2,
   AlertTriangle, CheckCircle2, Clock, MinusCircle,
   FileText, FileSpreadsheet, ChevronDown, ChevronUp,
-  Zap, Shield, Wrench, Wifi, Accessibility, BatteryMedium
+  Zap, Shield, Wrench, Wifi, Accessibility, BatteryMedium,
+  Share2,
 } from "lucide-react";
+import { ShareDialog } from "@/components/ShareDialog";
+import { ChatWidget } from "@/components/ChatWidget";
+import { FindingComments } from "@/components/FindingComments";
 
 // ─── Score Ring ──────────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
@@ -80,9 +84,19 @@ function SummaryCard({ label, value, icon: Icon, color }: {
 }
 
 // ─── Finding Card ─────────────────────────────────────────────────────
-function FindingCard({ finding }: { finding: ComplianceFinding }) {
+function FindingCard({
+  finding,
+  jobId,
+  commentCount,
+}: {
+  finding: ComplianceFinding;
+  jobId: string;
+  commentCount: number;
+}) {
   const [expanded, setExpanded] = useState(false);
   const req = finding.code_requirement;
+  // Stable comment key = the code citation, not the per-run finding_id.
+  const findingRef = req.code_id || req.section;
 
   return (
     <div
@@ -190,6 +204,15 @@ function FindingCard({ finding }: { finding: ComplianceFinding }) {
               <span>{finding.recommendation}</span>
             </div>
           )}
+
+          {/* Team discussion — owners can comment; threads are shared with
+              any contractor/inspector invited to the report. */}
+          <FindingComments
+            jobId={jobId}
+            findingRef={findingRef}
+            canComment
+            initialCount={commentCount}
+          />
         </div>
       )}
     </div>
@@ -210,10 +233,26 @@ export default function ComplianceReport({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [shareOpen, setShareOpen] = useState(false);
+  // commentCounts: code_id → number of comments, fetched once so each
+  // FindingCard can show its count without N separate requests.
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const s = report.summary;
   const j = report.jurisdiction;
   const pd = report.plan_data;
+
+  useEffect(() => {
+    listReportComments(jobId)
+      .then(({ comments }) => {
+        const counts: Record<string, number> = {};
+        for (const c of comments) {
+          counts[c.finding_ref] = (counts[c.finding_ref] || 0) + 1;
+        }
+        setCommentCounts(counts);
+      })
+      .catch(() => {/* comments are best-effort; ignore */});
+  }, [jobId]);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -422,6 +461,27 @@ export default function ComplianceReport({
             </div>
           )}
 
+          {/* Collaborate */}
+          <div
+            className="p-4 rounded-2xl"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+          >
+            <h3 className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
+              COLLABORATE
+            </h3>
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-medium"
+              style={{ background: "#0B0E14", color: "#fff" }}
+            >
+              <Share2 className="w-4 h-4" />
+              Share with contractor / inspector
+            </button>
+            <p className="text-[11px] mt-2 leading-snug" style={{ color: "var(--text-muted)" }}>
+              Invite collaborators to view and discuss findings. They don&apos;t need a Up2Code account — it&apos;s free for them.
+            </p>
+          </div>
+
           {/* Export buttons */}
           <div
             className="p-4 rounded-2xl space-y-2"
@@ -609,7 +669,16 @@ export default function ComplianceReport({
             </div>
           ) : (
             filtered.map((finding) => (
-              <FindingCard key={finding.finding_id} finding={finding} />
+              <FindingCard
+                key={finding.finding_id}
+                finding={finding}
+                jobId={jobId}
+                commentCount={
+                  commentCounts[finding.code_requirement.code_id] ??
+                  commentCounts[finding.code_requirement.section] ??
+                  0
+                }
+              />
             ))
           )}
         </div>
@@ -634,6 +703,12 @@ export default function ComplianceReport({
           </span>
         </div>
       )}
+
+      {/* Share dialog */}
+      {shareOpen && <ShareDialog jobId={jobId} onClose={() => setShareOpen(false)} />}
+
+      {/* Floating AI assistant — clarifying questions grounded in the code corpus */}
+      <ChatWidget jobId={jobId} />
     </div>
   );
 }
