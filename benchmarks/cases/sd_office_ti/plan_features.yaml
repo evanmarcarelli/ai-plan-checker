@@ -1,0 +1,26 @@
+project_name: "Acme Software — Office TI"
+project_address: "555 B Street, Suite 800, San Diego, CA 92101"
+plan_type: commercial
+occupancy_type: B
+construction_type: II-B
+building_height: 12.0
+building_area: 4500.0
+stories: 1
+materials:
+  - gypsum board
+  - carpet tile
+  - acoustic ceiling tile
+raw_text_by_page:
+  1: |
+    SHEET A-0  COVER  | TENANT IMPROVEMENT — ACME SOFTWARE OFFICE
+    LOCATION: 555 B STREET, 8TH FLOOR, SAN DIEGO CA
+    OCCUPANCY: B (BUSINESS)   CONSTRUCTION: II-B (EXISTING)
+    APPLICABLE: 2022 CBC, T24, ADA / CBC 11B
+    AREA: 4,500 SF
+  2: |
+    SHEET A-2  FLOOR PLAN
+    NEW UNISEX RESTROOM: 5'-0" x 5'-0" w/ WC + LAV
+    DOORS: D-01 36", D-02 30" (CONFERENCE), D-03 36"
+    EGRESS CORRIDOR LABELED 36" WIDE
+    NEW BREAK ROOM SINK; NO FIRE-EXTINGUISHER SYMBOLS PLOTTED
+    OCCUPANT LOAD: NOT ANNOTATED

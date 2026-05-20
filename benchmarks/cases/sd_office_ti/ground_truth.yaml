@@ -1,0 +1,78 @@
+description: >
+  Small office tenant improvement (~4,500 sf, B occupancy) in a mid-rise existing
+  building in San Diego, CA. Reconfigured open office, added small conference
+  room, new break room with sink, and one accessible restroom.
+
+jurisdiction:
+  state: CA
+  city: San Diego
+
+plan_type: commercial
+
+expected_findings:
+  # ---- Accessibility ----
+  - section: "ADA 404.2.3"
+    severity: high
+    status: needs_review
+    notes: |
+      Plans show one new interior door at 30" — ADA requires 32" minimum clear
+      width on the accessible route.
+
+  - section: "ADA 603.2.1"
+    severity: high
+    status: non_compliant
+    notes: |
+      New unisex toilet room is 5'-0" x 5'-0" — does not provide 60" turning circle
+      required by ADA 603.2.1.
+
+  - section: "ADA 604.3"
+    severity: critical
+    status: non_compliant
+    notes: |
+      New WC has only 48" clear at the side — ADA 604.3 requires 60" min from
+      adjacent wall, 56" from rear wall.
+
+  # ---- Egress ----
+  - section: "IBC 1004.5"
+    severity: medium
+    status: needs_review
+    notes: |
+      Occupant load not shown on plan; at 150 sf/occupant for B = 30 occupants,
+      single exit OK, but the load needs to be documented per 1004.5.
+
+  - section: "IBC 1020.2"
+    severity: medium
+    status: needs_review
+    notes: |
+      Egress corridor labeled 36" — for occupant load over 50, IBC 1020.2
+      requires 44". Verify occupant load before reducing.
+
+  # ---- Energy (Title 24) ----
+  - section: "T24 140.6"
+    severity: medium
+    status: needs_review
+    notes: |
+      No lighting power calculation included. Title 24 Section 140.6 requires
+      compliance with Area Category or Tailored Method LPDs.
+
+  # ---- Plumbing fixture count ----
+  - section: "IPC 403.1"
+    severity: low
+    status: needs_review
+    notes: |
+      Fixture count for ~30 occupants needs to be shown to verify IPC 403.1
+      minimums (1 WC per 25 male + 1 WC per 25 female for first 50 in B).
+
+  # ---- Fire ----
+  - section: "IFC 906.1"
+    severity: medium
+    status: needs_review
+    notes: |
+      No fire-extinguisher locations shown on floor plan. IFC 906.1 requires
+      Class A units within 75 ft travel.
+
+must_not_flag:
+  - "T24 150.1(c)14"  # PV requirement is residential-only
+  - "CALGREEN 4.106.4"  # residential EV
+  - "CBC-7A 704A.1"   # WUI doesn't apply to a downtown SD TI
+  - "PRC 4291"        # defensible space — not applicable

@@ -1,0 +1,99 @@
+description: >
+  Single-family residential rebuild in Altadena, CA (LA County, post-Eaton Fire WUI
+  rebuild zone). Two-story wood-frame ~2400 sf on a hillside lot. Architect's
+  preliminary plan set submitted for pre-submittal review.
+
+jurisdiction:
+  state: CA
+  city: Altadena
+  county: Los Angeles
+
+plan_type: residential
+
+# The architect-provided set has these characteristic issues that a real LA
+# County plan check would catch. Each is keyed by the section number of the
+# code being violated/triggered.
+expected_findings:
+  # ---- WUI / fire ----
+  - section: "CBC-7A 704A.1"
+    severity: critical
+    status: non_compliant
+    notes: |
+      Plan shows wood siding within 5 ft of grade and standard (non-ember-resistant)
+      attic vents. Altadena is in a Very High Fire Hazard Severity Zone — CBC Ch. 7A
+      requires noncombustible siding in the first 5 ft and ember-resistant vents.
+
+  - section: "PRC 4291"
+    severity: high
+    status: needs_review
+    notes: |
+      No defensible-space landscape plan included. PRC 4291 requires 100 ft of
+      managed defensible space (Zones 0/1/2) — the submittal must demonstrate it.
+
+  - section: "IFC 503.1.1"
+    severity: high
+    status: needs_review
+    notes: |
+      Site plan does not call out fire apparatus access. On hillside SFRs the
+      150 ft access requirement is frequently triggered by long driveways.
+
+  # ---- Title 24 / Energy ----
+  - section: "T24 150.1(c)14"
+    severity: high
+    status: needs_review
+    notes: |
+      New SFD in CA requires a sized PV system per Title 24 Section 150.1(c)14.
+      Plan set does not include PV size, location, or interconnection details.
+
+  - section: "CALGREEN 4.106.4"
+    severity: medium
+    status: needs_review
+    notes: |
+      CALGreen 4.106.4 requires at least one Level-2 EV-ready raceway + reserved
+      40A panel capacity in attached garages. Plan does not show the dedicated
+      circuit or reserved breaker.
+
+  - section: "CALGREEN 4.303.1"
+    severity: medium
+    status: needs_review
+    notes: |
+      Plumbing schedule does not call out low-flow flow rates. CALGreen 4.303.1
+      sets WC 1.28 gpf, lavs 1.2 gpm, showerheads 1.8 gpm.
+
+  # ---- Egress / EERO ----
+  - section: "IFC 1030.2"
+    severity: critical
+    status: non_compliant
+    notes: |
+      Upstairs bedroom 3 shows a 16x36 sliding window with sill at 48" AFF —
+      doesn't meet 5.7 sf net clear opening, 20" min width, sill ≤ 44".
+
+  # ---- Structural / seismic ----
+  - section: "IBC 1613.1"
+    severity: high
+    status: needs_review
+    notes: |
+      Hillside site in Seismic Design Category D — full lateral analysis must
+      reference ASCE 7. Plans only show prescriptive shearwalls.
+
+  # ---- Electrical ----
+  - section: "NEC 210.8(A)"
+    severity: medium
+    status: needs_review
+    notes: |
+      Kitchen plan shows two countertop receptacles but no GFCI symbol; receptacles
+      within 6 ft of sinks must be GFCI per NEC 210.8(A).
+
+  - section: "NEC 210.12"
+    severity: medium
+    status: needs_review
+    notes: |
+      Bedroom branch circuits are not annotated as AFCI; NEC 210.12 requires
+      AFCI protection on all bedroom circuits in dwelling units.
+
+# Sections we explicitly should NOT flag for this case. Use these to catch
+# false-positive regressions (e.g. flagging IBC commercial occupant load on a SFR).
+must_not_flag:
+  - "IBC 302.1"
+  - "IBC 1006.3.1"
+  - "ADA 208.2"      # ADA accessible parking does not apply to SFR

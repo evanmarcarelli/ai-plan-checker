@@ -140,6 +140,12 @@ class ComplianceFinding(BaseModel):
     severity: str = "medium"  # low, medium, high, critical
     page_references: List[int] = []
     category: str = "general"
+    # ---- RAG provenance (new) ----
+    # verified=True means the cited section was retrieved from the real code corpus,
+    # not invented by the LLM. source_text is the verbatim code language.
+    verified: bool = False
+    source_text: Optional[str] = None
+    source_citation: Optional[str] = None  # canonical e.g. "ADA 404.2.3"
 
 
 # ==================== Compliance Report ====================

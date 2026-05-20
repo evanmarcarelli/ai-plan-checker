@@ -83,7 +83,14 @@ class StartReviewBody(_BM):
 
 
 @router.post("/upload", response_model=UploadResponse)
-@limiter.limit("10/minute")
+# Three layers of throttling on the most expensive endpoint:
+#  - per-minute  : guards against burst abuse from a stolen token
+#  - per-hour    : protects Anthropic budget if a user's script goes rogue
+#  - per-day     : hard ceiling regardless of subscription (revisit when paid
+#                  tiers are live; until then this caps free-tier blast radius)
+# The credit-check below still enforces the subscription-level entitlement;
+# this rate limit is the safety net BEFORE we touch the DB.
+@limiter.limit("3/minute;15/hour;50/day")
 async def start_review(
     request: Request,
     body: StartReviewBody,

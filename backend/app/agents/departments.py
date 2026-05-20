@@ -10,6 +10,7 @@ import json
 import uuid
 from typing import Dict, Any, List, Optional
 from app.agents.base import BaseAgent
+from app.code_library.corpus_loader import get_corpus
 from app.models.schemas import (
     CodeRequirement, ComplianceFinding, ComplianceStatus, ComplianceSummary,
     DepartmentReview, ExtractedPlanData,
@@ -145,6 +146,21 @@ OUTPUT — return ONLY a JSON array, no prose:
             if plan_data.raw_text_by_page:
                 first_page_text = list(plan_data.raw_text_by_page.values())[0][:2500]
 
+        # Build a code-requirements block that puts the VERBATIM code text
+        # front and centre so the model is forced to ground in it rather than
+        # invent values. Each requirement is presented as:
+        #   [CITATION] Title
+        #   <verbatim code text>
+        req_block_parts = []
+        for r in requirements:
+            req_block_parts.append(
+                f"[{r.code_id}] {r.description}\n{r.full_text or '(no text available)'}"
+            )
+        req_block = "\n\n".join(req_block_parts)
+        # Cap context (Sonnet handles big inputs fine but we still want to be lean)
+        if len(req_block) > 12000:
+            req_block = req_block[:12000] + "\n... (truncated)"
+
         context = f"""EXTRACTED PLAN DATA:
 {plan_summary}
 
@@ -154,10 +170,13 @@ PLAN TEXT SAMPLE (first page, may contain title block, notes, schedules):
 LOCAL JURISDICTION AMENDMENTS:
 {chr(10).join(f'- {a}' for a in jurisdiction_amendments) if jurisdiction_amendments else 'None'}
 
-CODE REQUIREMENTS TO REVIEW ({len(requirements)} items):
-{json.dumps([r.model_dump() for r in requirements], indent=2)[:7000]}
+CODE REQUIREMENTS TO REVIEW ({len(requirements)} items) — each shown with its CITATION and verbatim code text:
 
-Review every requirement above against the plan data. Return JSON findings array."""
+{req_block}
+
+CRITICAL: For each requirement above, return a finding whose code_id is EXACTLY
+the bracketed citation (e.g. "IBC 1011.5.2"). Do NOT invent new section numbers.
+If a code is not applicable to this plan, use status="not_applicable". Return JSON findings array."""
 
         try:
             response = await self._call_llm(context, max_tokens=4000)
@@ -169,6 +188,7 @@ Review every requirement above against the plan data. Return JSON findings array
         findings: List[ComplianceFinding] = []
         req_map = {r.code_id: r for r in requirements}
 
+        corpus = get_corpus()
         if parsed and isinstance(parsed, list):
             for item in parsed:
                 code_id = item.get("code_id", "")
@@ -180,12 +200,32 @@ Review every requirement above against the plan data. Return JSON findings array
                             req = r
                             break
                 if not req:
-                    continue
+                    # The LLM cited a section we never gave it. Two possibilities:
+                    # (a) the section exists in the corpus and the model is right
+                    #     to surface it -> verify and accept with the corpus's
+                    #     authoritative text;
+                    # (b) it's a hallucinated section -> drop the finding silently.
+                    chunk = corpus.get(code_id) if code_id else None
+                    if not chunk:
+                        logger.warning(
+                            f"[{self.department_name}] dropped finding citing unverified section {code_id!r}"
+                        )
+                        continue
+                    from app.code_library.adapter import chunk_to_requirement
+                    req = chunk_to_requirement(chunk)
 
                 try:
                     status = ComplianceStatus(item.get("status", "needs_review"))
                 except Exception:
                     status = ComplianceStatus.NEEDS_REVIEW
+
+                # Verify against corpus: if code_id is a real chunk, use its
+                # verbatim text as the source quote. Findings without a real
+                # corpus hit are marked verified=False so the UI can flag them.
+                source_chunk = corpus.get(req.code_id)
+                verified = source_chunk is not None
+                source_text = source_chunk.text if source_chunk else req.full_text
+                source_citation = source_chunk.citation if source_chunk else req.code_id
 
                 findings.append(ComplianceFinding(
                     finding_id=str(uuid.uuid4())[:8],
@@ -198,6 +238,9 @@ Review every requirement above against the plan data. Return JSON findings array
                     severity=item.get("severity", "medium"),
                     category=req.category,
                     page_references=item.get("page_references") or [],
+                    verified=verified,
+                    source_text=source_text,
+                    source_citation=source_citation,
                 ))
 
         # Fill in any requirement the LLM skipped with a needs_review finding

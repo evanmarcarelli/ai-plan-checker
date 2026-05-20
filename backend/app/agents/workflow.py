@@ -9,7 +9,7 @@ from app.models.schemas import (
     ProcessingJob, AgentLog, ComplianceReport, ComplianceFinding,
     ComplianceSummary, ComplianceStatus, DepartmentReview,
 )
-from app.services.code_database import CodeDatabase
+from app.code_library.adapter import CorpusCodeSource
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +22,11 @@ class PlanCheckerWorkflow:
         self.surveyor = SurveyorAgent()
         self.librarian = LibrarianAgent()
         self.departments: List[DepartmentReviewer] = [cls() for cls in ALL_DEPARTMENTS]
-        self.code_db = CodeDatabase()
+        # Real BM25 retrieval over the JSONL corpus — replaces the hardcoded
+        # BUILDING_CODES_DB. Findings emitted by the agents are now grounded
+        # in verbatim code text and the cited section numbers are verified
+        # against this corpus before being returned to the user.
+        self.code_db = CorpusCodeSource()
 
     async def run(
         self,
@@ -184,7 +188,7 @@ class PlanCheckerWorkflow:
             summary=overall_summary,
             recommendations=recommendations,
             code_versions={"primary": code_version},
-            sources_used=["mock_database"],
+            sources_used=["code_library/bm25"],
             auditor_notes=self._overall_notes(reviews, overall_summary),
         )
 

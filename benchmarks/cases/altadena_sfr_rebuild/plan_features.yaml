@@ -1,0 +1,29 @@
+# Synthetic plan features used by `python -m benchmarks --live`.
+# These stand in for what the Surveyor agent would extract from a real PDF.
+project_name: "Altadena SFR Rebuild — 1234 Skyline Dr"
+project_address: "1234 Skyline Drive, Altadena, CA 91001"
+plan_type: residential
+occupancy_type: R-3
+construction_type: V-B
+building_height: 26.0     # ft
+building_area: 2400.0     # sf
+stories: 2
+dimensions:
+  driveway_length_ft: 180   # long hillside driveway → fire-access trigger
+materials:
+  - wood siding
+  - asphalt shingle roof
+  - standard attic vents
+raw_text_by_page:
+  1: |
+    SHEET A-0.0  TITLE SHEET   |   PROJECT: ALTADENA SFR REBUILD
+    OWNER: SMITH  |  ARCHITECT: ACME ARCH  |  DATE: 2026-04-15
+    OCCUPANCY: R-3   CONSTRUCTION: V-B   STORIES: 2
+    APPLICABLE CODES: 2022 CBC, 2022 CRC, 2022 CMC, 2022 CPC, 2022 CEC, 2022 T24, CALGREEN 2022.
+    NOTE: SITE IS IN VERY HIGH FIRE HAZARD SEVERITY ZONE (CAL FIRE FHSZ).
+  2: |
+    SHEET A-2.1 SECOND FLOOR PLAN
+    BEDROOM 3:  WINDOW W-08 (SLIDER) 16" H x 36" W, SILL 48" AFF
+    KITCHEN: 2x COUNTERTOP RECEPTACLES, STANDARD
+    PANEL SCHEDULE: 200A MAIN, NO EV CIRCUIT RESERVED
+    NO PV SYSTEM SHOWN ON ROOF PLAN
