@@ -156,3 +156,142 @@ def add_credits(user_id: str, amount: int) -> int:
     new_balance = (profile.get("credits_remaining", 0) or 0) + amount
     admin().table("profiles").update({"credits_remaining": new_balance}).eq("id", user_id).execute()
     return new_balance
+
+
+# ============================================================
+# Collaboration: report_shares, finding_comments, chat_messages
+# ============================================================
+
+def create_share(
+    *,
+    job_id: str,
+    created_by: str,
+    token: str,
+    role: str = "commenter",
+    invited_email: Optional[str] = None,
+    invited_name: Optional[str] = None,
+    expires_at: Optional[str] = None,
+) -> Dict[str, Any]:
+    res = admin().table("report_shares").insert({
+        "job_id": job_id,
+        "created_by": created_by,
+        "token": token,
+        "role": role,
+        "invited_email": invited_email,
+        "invited_name": invited_name,
+        "expires_at": expires_at,
+    }).execute()
+    return res.data[0]
+
+
+def list_shares_for_job(job_id: str) -> List[Dict[str, Any]]:
+    res = (admin().table("report_shares")
+           .select("id, invited_email, invited_name, role, token, expires_at, revoked_at, last_used_at, created_at")
+           .eq("job_id", job_id)
+           .order("created_at", desc=True)
+           .execute())
+    return res.data or []
+
+
+def get_share_by_token(token: str) -> Optional[Dict[str, Any]]:
+    res = admin().table("report_shares").select("*").eq("token", token).limit(1).execute()
+    if not res.data:
+        return None
+    share = res.data[0]
+    if share.get("revoked_at"):
+        return None
+    if share.get("expires_at"):
+        try:
+            exp = datetime.fromisoformat(share["expires_at"].replace("Z", "+00:00"))
+            if exp < datetime.utcnow().replace(tzinfo=exp.tzinfo):
+                return None
+        except Exception:
+            pass
+    return share
+
+
+def touch_share(share_id: str) -> None:
+    try:
+        admin().table("report_shares").update({"last_used_at": datetime.utcnow().isoformat()}).eq("id", share_id).execute()
+    except Exception:
+        pass
+
+
+def revoke_share(share_id: str) -> None:
+    admin().table("report_shares").update({"revoked_at": datetime.utcnow().isoformat()}).eq("id", share_id).execute()
+
+
+# ----- comments -----
+
+def add_finding_comment(
+    *,
+    finding_id: str,
+    job_id: str,
+    author_display: str,
+    body: str,
+    author_user_id: Optional[str] = None,
+    author_share_id: Optional[str] = None,
+    author_email: Optional[str] = None,
+) -> Dict[str, Any]:
+    res = admin().table("finding_comments").insert({
+        "finding_id": finding_id,
+        "job_id": job_id,
+        "author_user_id": author_user_id,
+        "author_share_id": author_share_id,
+        "author_display": author_display,
+        "author_email": author_email,
+        "body": body,
+    }).execute()
+    return res.data[0]
+
+
+def list_comments_for_finding(finding_id: str) -> List[Dict[str, Any]]:
+    res = (admin().table("finding_comments")
+           .select("id, author_display, body, created_at, author_user_id, author_share_id")
+           .eq("finding_id", finding_id)
+           .order("created_at")
+           .execute())
+    return res.data or []
+
+
+def list_comments_for_job(job_id: str) -> List[Dict[str, Any]]:
+    res = (admin().table("finding_comments")
+           .select("id, finding_id, author_display, body, created_at")
+           .eq("job_id", job_id)
+           .order("created_at")
+           .execute())
+    return res.data or []
+
+
+# ----- chat -----
+
+def add_chat_message(
+    *,
+    job_id: str,
+    role: str,
+    content: str,
+    citations: Optional[List[Dict[str, Any]]] = None,
+    author_user_id: Optional[str] = None,
+    author_share_id: Optional[str] = None,
+    author_display: Optional[str] = None,
+) -> Dict[str, Any]:
+    res = admin().table("chat_messages").insert({
+        "job_id": job_id,
+        "role": role,
+        "content": content,
+        "citations": citations or [],
+        "author_user_id": author_user_id,
+        "author_share_id": author_share_id,
+        "author_display": author_display,
+    }).execute()
+    return res.data[0]
+
+
+def list_chat_messages(job_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    res = (admin().table("chat_messages")
+           .select("id, role, content, citations, author_display, created_at")
+           .eq("job_id", job_id)
+           .order("created_at")
+           .limit(limit)
+           .execute())
+    return res.data or []

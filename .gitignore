@@ -8,6 +8,10 @@
 *credentials*.txt
 *credentials*.txt.bak
 *credentials*.json
+# Sentry source-map upload token (set on Vercel; .env.* glob above already
+# covers it, but call it out explicitly so future maintainers know)
+.env.sentry-build-plugin
+.sentryclirc
 
 # Python
 __pycache__/
