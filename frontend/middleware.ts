@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Pages anyone can hit without a session. The dashboard is intentionally
+// public: it IS the landing page. Architects can browse it, see the demo,
+// and only get prompted to sign in when they actually try to upload a plan.
+// /shared/<token> is public by design — that's the whole point of the
+// share links (contractors / inspectors don't have accounts).
 const PUBLIC_PATHS = [
   "/login",
   "/signup",
@@ -10,6 +15,8 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
   "/refund",
+  "/dashboard",
+  "/shared",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -39,7 +46,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+  // "/" is the root landing — handled with exact match so we don't accidentally
+  // make EVERY path public via a startsWith("/") prefix match.
+  const isPublic =
+    path === "/" ||
+    PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

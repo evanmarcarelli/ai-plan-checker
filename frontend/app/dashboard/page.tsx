@@ -120,11 +120,27 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>("");
   const router = useRouter();
+  // null = checking, true/false = known. Lets us distinguish "loading" from
+  // "definitely not signed in" so the header doesn't flash the wrong state.
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
-  // Load profile once
+  // On mount: figure out whether the visitor is signed in. Dashboard is the
+  // PUBLIC landing page — unauth visitors get the same UI, just prompted to
+  // sign in when they try to upload.
   useEffect(() => {
-    getMe().then(setProfile).catch(() => setProfile(null));
-  }, [jobStatus]); // refresh credits after a job
+    const sb = createClient();
+    sb.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthed(!!session);
+    }).catch(() => setIsAuthed(false));
+  }, []);
+
+  // Load profile only when we know the user is signed in. Skip the wasted
+  // 401 round-trip for anonymous landing-page visitors.
+  useEffect(() => {
+    if (isAuthed) {
+      getMe().then(setProfile).catch(() => setProfile(null));
+    }
+  }, [jobStatus, isAuthed]); // refresh credits after a job
 
   const handleSignOut = async () => {
     const sb = createClient();
@@ -194,6 +210,12 @@ export default function Dashboard() {
   };
 
   const handleUpload = async (file: File) => {
+    // Only ACTION that requires an account: actually running a review.
+    // Browsing the dashboard, viewing the demo, and reading docs are all free.
+    if (isAuthed === false) {
+      router.push("/login?redirect=/dashboard");
+      return;
+    }
     setUploadedFile(file);
     setIsUploading(true);
     setUploadProgress(0);
@@ -290,13 +312,36 @@ export default function Dashboard() {
             >
               Pricing
             </button>
-            <button
-              onClick={() => router.push("/account")}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:underline"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Account
-            </button>
+            {/* Logged-in visitors see Account. Anonymous landing-page visitors
+                see Sign in + Get started instead — converting the dashboard
+                from a gated app into the marketing surface. */}
+            {isAuthed === true && (
+              <button
+                onClick={() => router.push("/account")}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:underline"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Account
+              </button>
+            )}
+            {isAuthed === false && (
+              <>
+                <button
+                  onClick={() => router.push("/login?redirect=/dashboard")}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:underline"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => router.push("/signup?redirect=/dashboard")}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg"
+                  style={{ background: "#0B0E14", color: "#fff" }}
+                >
+                  Get started — free
+                </button>
+              </>
+            )}
             {wsConnected && (
               <div className="flex items-center gap-1.5 text-xs text-emerald-400">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
