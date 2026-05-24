@@ -55,6 +55,19 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     support_email: str = "esmith.marc@gmail.com"
 
+    # Admin allowlist. Comma-separated emails. Members are exempt from:
+    #   - credit decrement on /upload (so accuracy testing isn't gated by balance)
+    #   - the per-user rate limit (so a sweep of 100 plans works in a day)
+    # Granting / revoking admin is an env-var change — no DB migration.
+    admin_emails: str = ""
+
+    @property
+    def admin_email_set(self) -> set:
+        """Normalized lowercase set of admin emails for O(1) lookup."""
+        if not self.admin_emails:
+            return set()
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
+
     # File Storage
     max_upload_size_mb: int = 100
     upload_folder: str = "./uploads"

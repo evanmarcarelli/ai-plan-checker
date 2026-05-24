@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import aiofiles
+import jwt as _jwt
 
 from app.config import settings
 from app.models.schemas import (
@@ -23,12 +24,55 @@ from app.services.pdf_compressor import compress as compress_pdf
 from app.services.auth import get_current_user
 from app.utils.logger import get_logger
 
+# ─────────────────────────────────────────────────────────────────────
+# Admin bypass: emails in settings.admin_emails are exempt from both
+# credit decrement on /upload AND the rate limit. Allowlist is env-driven
+# so granting/revoking is a config change with no DB migration.
+# ─────────────────────────────────────────────────────────────────────
+
+def _is_admin_user(user: Dict[str, Any]) -> bool:
+    """True if the resolved user's email is in the admin allowlist."""
+    email = (user.get("email") or "").lower()
+    return bool(email) and email in settings.admin_email_set
+
+
+def _maybe_decrement_credits(user: Dict[str, Any]) -> int:
+    """Decrement one credit for a normal user; bypass for admins.
+
+    Returns the new credit balance (or a sentinel ≥ the limit for admins).
+    Raises HTTPException 402 if a non-admin user is out of credits.
+    """
+    if not settings.require_auth:
+        return 99_999
+    if _is_admin_user(user):
+        return 99_999
+    new_balance = db.decrement_credits(user["id"], 1)
+    if new_balance < 0:
+        raise HTTPException(
+            status_code=402,
+            detail="No review credits remaining. Please purchase additional credits to continue.",
+        )
+    return new_balance
+
+
 # Rate limiter — keyed by user id when available, falls back to IP.
+# Admin emails get a unique key per request → never hit the per-user
+# bucket → effectively unlimited.
 def _rate_key(request: Request) -> str:
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
-        # Use last 24 chars of token as a stable per-user key
-        return f"u:{auth.split(' ',1)[1].strip()[-24:]}"
+        token = auth.split(" ", 1)[1].strip()
+        # Decode the JWT WITHOUT verification (we just want the email claim
+        # to check the allowlist — real signature verification happens later
+        # in get_current_user when the route actually runs).
+        try:
+            claims = _jwt.decode(token, options={"verify_signature": False})
+            email = (claims.get("email") or "").lower()
+            if email and email in settings.admin_email_set:
+                return f"admin:{uuid.uuid4()}"
+        except Exception:
+            pass
+        return f"u:{token[-24:]}"
     return get_remote_address(request)
 
 limiter = Limiter(key_func=_rate_key)
@@ -121,14 +165,8 @@ async def start_review(
     if body.file_size > max_size:
         raise HTTPException(status_code=413, detail=f"File exceeds {settings.max_upload_size_mb}MB limit")
 
-    # Credit check (instant DB call)
-    if settings.require_auth:
-        new_balance = db.decrement_credits(user["id"], 1)
-        if new_balance < 0:
-            raise HTTPException(
-                status_code=402,
-                detail="No review credits remaining. Please purchase additional credits to continue.",
-            )
+    # Credit check (admin allowlist bypasses; see _maybe_decrement_credits above).
+    _maybe_decrement_credits(user)
 
     # Create DB row (instant)
     job_id = db.create_job(
