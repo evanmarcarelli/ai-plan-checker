@@ -36,7 +36,6 @@ const PRICING = [
 ];
 
 export default function MarketingHome() {
-  const router = useRouter();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -46,11 +45,10 @@ export default function MarketingHome() {
     }).catch(() => setIsAuthed(false));
   }, []);
 
-  // Authed users get sent straight to the product; the marketing page is for
-  // anonymous visitors.
-  useEffect(() => {
-    if (isAuthed === true) router.replace("/dashboard");
-  }, [isAuthed, router]);
+  // No auto-redirect: the home page is the home page for authed AND unauth
+  // users. The nav exposes an explicit "Dashboard" link so authed visitors
+  // can hop to the product when they want to — but they're not yanked off
+  // the home page on every visit.
 
   return (
     <div style={{ background: "var(--bg)" }}>
@@ -91,7 +89,17 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
           </span>
         </Link>
 
+        {/* Persistent top-level nav: Home (this page) and Dashboard (the
+            product). Section anchors come after so they don't compete for
+            attention. Visible on sm+ — mobile collapses to the CTA only. */}
         <nav className="hidden sm:flex items-center gap-6 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <Link href="/" className="font-medium" style={{ color: "var(--text-primary)" }}>
+            Home
+          </Link>
+          <Link href="/dashboard" className="font-medium hover:underline">
+            Dashboard
+          </Link>
+          <span className="opacity-40">·</span>
           <a href="#how" className="hover:underline">How it works</a>
           <a href="#demo" className="hover:underline">Demo</a>
           <a href="#pricing" className="hover:underline">Pricing</a>
@@ -122,7 +130,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
               className="text-sm font-medium px-3 py-1.5 rounded-lg"
               style={{ background: "#0B0E14", color: "#fff" }}
             >
-              Open dashboard
+              Run a check →
             </Link>
           )}
         </div>
