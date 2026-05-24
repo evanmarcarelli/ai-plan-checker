@@ -39,6 +39,23 @@ export async function createCheckoutSession(plan: "starter" | "professional" | "
   return res.json();
 }
 
+/** Start a one-time Stripe Checkout for a pay-per-use credit pack.
+ *  pack must be one of 1 | 5 | 25 | 100 (matches the marketing page). */
+export type PackSize = 1 | 5 | 25 | 100;
+export async function createPackCheckoutSession(pack: PackSize): Promise<{ url: string; pack: PackSize }> {
+  const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
+  const res = await fetch(`${API_URL}/billing/checkout-pack`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ pack }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Pack checkout failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function createPortalSession(): Promise<{ url: string }> {
   const headers = await authHeaders();
   const res = await fetch(`${API_URL}/billing/portal`, { method: "POST", headers });

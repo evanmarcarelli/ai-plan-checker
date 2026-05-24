@@ -30,6 +30,59 @@ def get_or_create_customer(user_id: str, email: Optional[str]) -> str:
     return customer.id
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Pay-per-use credit packs (active pricing model)
+#
+# Pack size → (Stripe price-ID accessor, label). The accessor is a lambda
+# so it reads `settings` lazily — the env var may be empty at module
+# import time and filled in at deploy time.
+# ─────────────────────────────────────────────────────────────────────
+PACKS: Dict[int, Tuple] = {
+    1:   (lambda: settings.stripe_price_pack_1,   "1 check"),
+    5:   (lambda: settings.stripe_price_pack_5,   "5 checks"),
+    25:  (lambda: settings.stripe_price_pack_25,  "25 checks"),
+    100: (lambda: settings.stripe_price_pack_100, "100 checks"),
+}
+
+
+def create_pack_checkout(user_id: str, email: Optional[str], pack_size: int) -> str:
+    """Create a one-time-payment Stripe Checkout Session for a credit pack.
+
+    Returns the Checkout URL. Credits are granted by the webhook on
+    `checkout.session.completed`, keyed off `metadata.credits` so the
+    grant logic is independent of which price the user clicked through.
+    """
+    if pack_size not in PACKS:
+        raise ValueError(f"Unknown pack size: {pack_size}")
+    price_id = PACKS[pack_size][0]()
+    if not price_id:
+        raise ValueError(f"STRIPE_PRICE_PACK_{pack_size} is not configured")
+
+    customer_id = get_or_create_customer(user_id, email)
+    session = stripe.checkout.Session.create(
+        mode="payment",                          # one-time, NOT subscription
+        customer=customer_id,
+        line_items=[{"price": price_id, "quantity": 1}],
+        success_url=f"{settings.frontend_url}/dashboard?purchase=success",
+        cancel_url=f"{settings.frontend_url}/billing?purchase=canceled",
+        client_reference_id=user_id,
+        # Metadata is the source of truth for crediting — the webhook reads
+        # `credits` here rather than reverse-mapping the price ID.
+        payment_intent_data={"metadata": {
+            "supabase_user_id": user_id,
+            "credits": str(pack_size),
+            "pack_size": str(pack_size),
+        }},
+        metadata={
+            "supabase_user_id": user_id,
+            "credits": str(pack_size),
+            "pack_size": str(pack_size),
+        },
+        allow_promotion_codes=True,
+    )
+    return session.url
+
+
 def create_checkout_session(user_id: str, email: Optional[str], price_id: str) -> str:
     """Create a Stripe Checkout Session and return its URL."""
     if price_id not in PRICE_TO_PLAN:
@@ -75,11 +128,18 @@ def handle_event(event: stripe.Event) -> None:
     logger.info(f"Stripe event: {etype}")
 
     if etype == "checkout.session.completed":
+        # Two distinct flows share this event:
+        #   mode == "payment"      → one-time credit pack (NEW pricing model)
+        #   mode == "subscription" → legacy monthly tier (still supported)
+        mode = obj.get("mode")
         user_id = obj.get("client_reference_id")
-        subscription_id = obj.get("subscription")
-        if user_id and subscription_id:
-            sub = stripe.Subscription.retrieve(subscription_id)
-            _apply_subscription(user_id, sub)
+        if mode == "payment":
+            _apply_pack_payment(user_id, obj)
+        else:
+            subscription_id = obj.get("subscription")
+            if user_id and subscription_id:
+                sub = stripe.Subscription.retrieve(subscription_id)
+                _apply_subscription(user_id, sub)
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
         user_id = (obj.get("metadata") or {}).get("supabase_user_id")
@@ -106,6 +166,62 @@ def handle_event(event: stripe.Event) -> None:
             user_id = (sub.get("metadata") or {}).get("supabase_user_id") or _find_user_by_customer(sub.get("customer"))
             if user_id:
                 _grant_monthly_credits(user_id, sub)
+
+
+def _apply_pack_payment(user_id: Optional[str], session: Dict) -> None:
+    """Grant credits on a one-time pack payment. Idempotent: writes a
+    `credit_purchases` row keyed on Stripe session_id, so a re-fired
+    webhook (Stripe retries on transient failures) is a no-op."""
+    session_id = session.get("id")
+    if not session_id:
+        logger.warning("[pack] no session id on event; skipping")
+        return
+
+    meta = session.get("metadata") or {}
+    if not user_id:
+        user_id = meta.get("supabase_user_id")
+    if not user_id:
+        logger.warning(f"[pack] no user_id on session {session_id}; skipping")
+        return
+
+    try:
+        credits = int(meta.get("credits", "0"))
+    except (TypeError, ValueError):
+        credits = 0
+    if credits <= 0:
+        logger.warning(f"[pack] session {session_id} has no credits metadata; skipping")
+        return
+
+    # Idempotency: skip if we've already processed this session.
+    existing = (
+        db.admin().table("credit_purchases")
+        .select("id")
+        .eq("stripe_session_id", session_id)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        logger.info(f"[pack] session {session_id} already credited; skipping")
+        return
+
+    # Log the purchase FIRST (the idempotency marker), then grant credits.
+    # If the table insert fails the credits don't get granted — better than
+    # the inverse (credits granted, no record).
+    try:
+        db.admin().table("credit_purchases").insert({
+            "user_id": user_id,
+            "stripe_session_id": session_id,
+            "pack_size": credits,
+            "credits_added": credits,
+            "amount_cents": session.get("amount_total") or 0,
+            "currency": (session.get("currency") or "usd").lower(),
+        }).execute()
+    except Exception as e:
+        logger.error(f"[pack] failed to log purchase {session_id}: {e}")
+        return
+
+    new_balance = db.add_credits(user_id, credits)
+    logger.info(f"[pack] granted {credits} credits to {user_id} (session {session_id}); new balance={new_balance}")
 
 
 def _find_user_by_customer(customer_id: Optional[str]) -> Optional[str]:

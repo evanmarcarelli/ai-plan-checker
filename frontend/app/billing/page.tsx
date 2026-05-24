@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
-import { getMe, createCheckoutSession, createPortalSession, type UserProfile } from "@/lib/api";
+import {
+  getMe, createCheckoutSession, createPortalSession,
+  createPackCheckoutSession, type UserProfile, type PackSize,
+} from "@/lib/api";
 
 interface Plan {
   id: "starter" | "professional" | "unlimited";
@@ -62,6 +65,7 @@ const PLANS: Plan[] = [
 
 export default function BillingPage() {
   const router = useRouter();
+  const search = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +73,27 @@ export default function BillingPage() {
   useEffect(() => {
     getMe().then(setProfile).catch(() => setProfile(null));
   }, []);
+
+  // If the visitor arrived via /signup?redirect=/billing?pack=N (the marketing
+  // page → signup → here flow), immediately resume checkout for that pack.
+  useEffect(() => {
+    const raw = search.get("pack");
+    if (!raw) return;
+    const n = Number(raw);
+    const VALID: PackSize[] = [1, 5, 25, 100];
+    if (!VALID.includes(n as PackSize)) return;
+    (async () => {
+      setLoading(`pack-${n}`);
+      setError(null);
+      try {
+        const { url } = await createPackCheckoutSession(n as PackSize);
+        window.location.href = url;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Checkout failed");
+        setLoading(null);
+      }
+    })();
+  }, [search]);
 
   const currentTier = profile?.plan_tier || "free";
 

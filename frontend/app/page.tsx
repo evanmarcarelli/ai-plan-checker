@@ -16,6 +16,7 @@ import {
   AlertTriangle, ArrowRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { createPackCheckoutSession, type PackSize } from "@/lib/api";
 
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
@@ -504,6 +505,30 @@ function AgentGrid() {
 // ─────────────────────── Pricing ───────────────────────
 
 function Pricing() {
+  const router = useRouter();
+  const [busyPack, setBusyPack] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function startCheckout(pack: PackSize) {
+    setError(null);
+    // Authed users go straight to Stripe; everyone else signs up first and
+    // lands at /billing?pack=N to resume the same checkout.
+    const sb = createClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      router.push(`/signup?redirect=/billing?pack=${pack}`);
+      return;
+    }
+    try {
+      setBusyPack(pack);
+      const { url } = await createPackCheckoutSession(pack);
+      window.location.href = url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Checkout failed");
+      setBusyPack(null);
+    }
+  }
+
   return (
     <section id="pricing" className="px-6 py-20" style={{ background: "var(--bg-elevated)" }}>
       <div className="max-w-5xl mx-auto">
@@ -552,20 +577,27 @@ function Pricing() {
                   ? "1 check"
                   : `${p.credits} checks · $${p.per.toFixed(2)} each`}
               </div>
-              <Link
-                href="/signup?redirect=/dashboard"
-                className="mt-auto text-center text-sm font-medium py-2 rounded-lg"
+              <button
+                onClick={() => void startCheckout(p.credits as PackSize)}
+                disabled={busyPack !== null}
+                className="mt-auto text-center text-sm font-medium py-2 rounded-lg disabled:opacity-60"
                 style={{
                   background: p.highlight ? "#0B0E14" : "var(--bg-elevated)",
                   color: p.highlight ? "#fff" : "var(--text-primary)",
                   border: p.highlight ? "none" : "1px solid var(--border)",
                 }}
               >
-                Get started
-              </Link>
+                {busyPack === p.credits ? "Redirecting…" : "Get started"}
+              </button>
             </div>
           ))}
         </div>
+
+        {error && (
+          <p className="text-center text-xs mt-3" style={{ color: "var(--non-compliant)" }}>
+            {error}
+          </p>
+        )}
 
         <div className="text-center mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
           Inviting contractors and inspectors to view a report is free — they don&apos;t need a Up2Code account.

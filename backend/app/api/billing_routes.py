@@ -12,7 +12,21 @@ router = APIRouter()
 
 
 class CheckoutRequest(BaseModel):
-    plan: str  # "starter" | "professional" | "unlimited"
+    plan: str  # "starter" | "professional" | "unlimited" (legacy subscription)
+
+
+# Pay-per-use credit pack request. Only the four published pack sizes are valid.
+VALID_PACKS = {1, 5, 25, 100}
+
+
+class PackCheckoutRequest(BaseModel):
+    pack: int
+
+    @classmethod
+    def validate_pack(cls, v: int) -> int:
+        if v not in VALID_PACKS:
+            raise ValueError(f"pack must be one of {sorted(VALID_PACKS)}")
+        return v
 
 
 PLAN_TO_PRICE = {
@@ -38,6 +52,33 @@ async def create_checkout(
     except Exception as e:
         logger.error(f"Checkout creation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/billing/checkout-pack")
+async def create_pack_checkout(
+    body: PackCheckoutRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Start a one-time-payment Stripe Checkout for a credit pack.
+
+    The marketing landing page advertises 4 packs (1 / 5 / 25 / 100); this
+    endpoint validates the request, asks Stripe for a Checkout URL, and
+    hands it back so the frontend can redirect. Credits are granted by
+    the webhook on payment success — not here.
+    """
+    if body.pack not in VALID_PACKS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"pack must be one of {sorted(VALID_PACKS)}; got {body.pack}",
+        )
+    try:
+        url = billing.create_pack_checkout(user["id"], user.get("email"), body.pack)
+        return {"url": url, "pack": body.pack}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Pack checkout creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Checkout creation failed")
 
 
 @router.post("/billing/portal")

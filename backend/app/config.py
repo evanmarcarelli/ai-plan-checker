@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     stripe_price_starter: str = ""
     stripe_price_professional: str = ""
     stripe_price_unlimited: str = ""
+    # Pay-per-use credit packs (the active pricing model — replaces tiers).
+    # Set each to the Stripe Price ID once the products are created in the
+    # Stripe Dashboard. Pack size = number of plan reviews granted on payment.
+    stripe_price_pack_1:   str = ""
+    stripe_price_pack_5:   str = ""
+    stripe_price_pack_25:  str = ""
+    stripe_price_pack_100: str = ""
     frontend_url: str = "http://localhost:3001"
 
     # Observability + transactional email — fill in when accounts are created
