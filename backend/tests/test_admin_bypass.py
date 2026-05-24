@@ -23,15 +23,29 @@ from app.config import settings
 
 def test_admin_email_set_parses_comma_separated_case_insensitive():
     """admin_email_set must normalize whitespace and case so 'Boss@FIRM.com'
-    matches 'boss@firm.com' in the allowlist."""
+    matches 'boss@firm.com' in the allowlist. (Founder fallback is unioned
+    in separately, so we just check that the parsed entries are present.)"""
     with patch.object(settings, "admin_emails", "Boss@FIRM.com, dev@x.com,  "):
         result = settings.admin_email_set
-    assert result == {"boss@firm.com", "dev@x.com"}
+    assert "boss@firm.com" in result
+    assert "dev@x.com" in result
 
 
-def test_admin_email_set_empty_when_unset():
+def test_admin_email_set_includes_founder_fallback_when_env_unset():
+    """Even when ADMIN_EMAILS env var is empty, the founder email is always
+    an admin. This keeps the founder unblocked without depending on an env var
+    being set correctly on Render."""
     with patch.object(settings, "admin_emails", ""):
-        assert settings.admin_email_set == set()
+        result = settings.admin_email_set
+    assert "esmith.marc@gmail.com" in result
+
+
+def test_admin_email_set_merges_env_with_founder_fallback():
+    """ADMIN_EMAILS env additions are unioned with the founder fallback, so
+    granting admin to a teammate doesn't accidentally revoke the founder."""
+    with patch.object(settings, "admin_emails", "teammate@firm.com"):
+        result = settings.admin_email_set
+    assert result == {"esmith.marc@gmail.com", "teammate@firm.com"}
 
 
 # ─────────────────────────────────────────────────────────────

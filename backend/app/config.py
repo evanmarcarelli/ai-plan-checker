@@ -61,12 +61,20 @@ class Settings(BaseSettings):
     # Granting / revoking admin is an env-var change — no DB migration.
     admin_emails: str = ""
 
+    # Founder email is always an admin regardless of ADMIN_EMAILS env var.
+    # This guarantees the founder is never accidentally locked out of their
+    # own app by a missing or misspelled env var. To add additional admins,
+    # set ADMIN_EMAILS to a comma-separated list on Render.
+    _FOUNDER_FALLBACK: str = "esmith.marc@gmail.com"
+
     @property
     def admin_email_set(self) -> set:
-        """Normalized lowercase set of admin emails for O(1) lookup."""
+        """Normalized lowercase set of admin emails for O(1) lookup.
+        Always includes the founder fallback unioned with the env-var list."""
+        base = {self._FOUNDER_FALLBACK.lower()}
         if not self.admin_emails:
-            return set()
-        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
+            return base
+        return base | {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     # File Storage
     max_upload_size_mb: int = 100
