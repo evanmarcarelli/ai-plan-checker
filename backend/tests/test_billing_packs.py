@@ -123,6 +123,34 @@ def test_webhook_pack_payment_credits_user_regression():
 # 4. Webhook is idempotent — duplicate events do NOT double-grant
 # ─────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────
+# 5. Defensive: strip whitespace from env-sourced price IDs
+# ─────────────────────────────────────────────────────────────
+
+def test_pack_checkout_strips_price_id_whitespace_regression():
+    """Render env-var paste often leaves a trailing newline. Stripe then
+    rejects with 'No such price: price_xxx\\n'. The service must strip the
+    raw value before sending it to Stripe."""
+    from app.services import billing
+    from app.config import settings
+
+    captured = {}
+
+    def fake_create(**kw):
+        captured.update(kw)
+        return MagicMock(url="https://stripe.test/cs_test")
+
+    # Simulate a dirty env var: trailing newline + trailing space
+    with patch.object(settings, "stripe_price_pack_25", "price_clean_id\n  "), \
+         patch("app.services.billing.stripe.checkout.Session.create", side_effect=fake_create), \
+         patch("app.services.billing.get_or_create_customer", return_value="cus_1"):
+        billing.create_pack_checkout("u1", "x@y.com", 25)
+
+    sent = captured["line_items"][0]["price"]
+    assert sent == "price_clean_id", \
+        f"price_id must be stripped before Stripe; got {sent!r}"
+
+
 def test_webhook_pack_payment_is_idempotent_regression():
     """Stripe retries webhooks. The same session_id firing twice must
     grant credits exactly once."""

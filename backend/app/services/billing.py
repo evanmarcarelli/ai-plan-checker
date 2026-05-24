@@ -7,7 +7,9 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-stripe.api_key = settings.stripe_secret_key
+# Strip the API key defensively. Render's env-var paste often appends a
+# trailing newline that makes Stripe reject auth with a misleading error.
+stripe.api_key = (settings.stripe_secret_key or "").strip()
 
 # Map Stripe price ID -> (plan_tier, credits_per_month). -1 = unlimited.
 PRICE_TO_PLAN: Dict[str, Tuple[str, int]] = {
@@ -54,7 +56,10 @@ def create_pack_checkout(user_id: str, email: Optional[str], pack_size: int) -> 
     """
     if pack_size not in PACKS:
         raise ValueError(f"Unknown pack size: {pack_size}")
-    price_id = PACKS[pack_size][0]()
+    # Strip whitespace/newlines — common Render env-var paste mistake. Without
+    # this, Stripe returns "No such price: 'price_xxx\n'" which looks like a
+    # missing-price error but is really a config-hygiene one.
+    price_id = (PACKS[pack_size][0]() or "").strip()
     if not price_id:
         raise ValueError(f"STRIPE_PRICE_PACK_{pack_size} is not configured")
 
