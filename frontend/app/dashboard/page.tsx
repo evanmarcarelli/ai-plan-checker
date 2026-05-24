@@ -264,11 +264,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-grid" style={{ background: "var(--bg)" }}>
       {/* ── Header ── */}
       <header
-        className="sticky top-0 z-50 border-b"
+        className="sticky top-0 z-50 border-b backdrop-blur"
         style={{
-          background: "rgba(10, 15, 30, 0.85)",
+          background: "rgba(255,255,255,0.85)",
           borderColor: "var(--border)",
-          backdropFilter: "blur(12px)",
         }}
       >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">

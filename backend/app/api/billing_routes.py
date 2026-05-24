@@ -75,10 +75,17 @@ async def create_pack_checkout(
         url = billing.create_pack_checkout(user["id"], user.get("email"), body.pack)
         return {"url": url, "pack": body.pack}
     except ValueError as e:
+        # Config errors (missing STRIPE_PRICE_PACK_N, etc.) — surface verbatim.
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Pack checkout creation failed: {e}")
-        raise HTTPException(status_code=500, detail="Checkout creation failed")
+        # Surface the underlying Stripe error so the user can diagnose
+        # (test vs live key mismatch, missing webhook, bad price id, etc.).
+        # Endpoint is auth-required, so no risk of leaking to anonymous users.
+        logger.error(f"Pack checkout creation failed: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Checkout creation failed ({type(e).__name__}): {e}",
+        )
 
 
 @router.post("/billing/portal")

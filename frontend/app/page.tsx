@@ -89,17 +89,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
           </span>
         </Link>
 
-        {/* Persistent top-level nav: Home (this page) and Dashboard (the
-            product). Section anchors come after so they don't compete for
-            attention. Visible on sm+ — mobile collapses to the CTA only. */}
         <nav className="hidden sm:flex items-center gap-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-          <Link href="/" className="font-medium" style={{ color: "var(--text-primary)" }}>
-            Home
-          </Link>
-          <Link href="/dashboard" className="font-medium hover:underline">
-            Dashboard
-          </Link>
-          <span className="opacity-40">·</span>
           <a href="#how" className="hover:underline">How it works</a>
           <a href="#demo" className="hover:underline">Demo</a>
           <a href="#pricing" className="hover:underline">Pricing</a>
@@ -120,7 +110,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
                 className="text-sm font-medium px-3 py-1.5 rounded-lg"
                 style={{ background: "#0B0E14", color: "#fff" }}
               >
-                Get started — free
+                Get started for free
               </Link>
             </>
           )}
@@ -130,7 +120,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
               className="text-sm font-medium px-3 py-1.5 rounded-lg"
               style={{ background: "#0B0E14", color: "#fff" }}
             >
-              Run a check →
+              Open dashboard
             </Link>
           )}
         </div>
@@ -166,7 +156,7 @@ function Hero() {
           style={{ color: "var(--text-secondary)" }}
         >
           Upload a PDF plan set. <strong style={{ color: "var(--text-primary)" }}>12 specialist AI agents</strong> identify
-          your jurisdiction and audit it against every code chapter a real city plan check runs — in 90 seconds.
+          your jurisdiction and audit it against every code chapter a real city plan check runs. All in 90 seconds.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -175,7 +165,7 @@ function Hero() {
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold"
             style={{ background: "#0B0E14", color: "#fff" }}
           >
-            Run your first check — free
+            Run your first check, free
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a
@@ -200,13 +190,12 @@ function Hero() {
 function CredibilityBar() {
   const stats = [
     { value: "12",  label: "specialist AI agents" },
-    { value: "86",  label: "verified code sections" },
     { value: "90s", label: "average review time" },
     { value: "100%",label: "citation-verified" },
   ];
   return (
     <section className="px-6 py-8 border-y" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
-      <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div className="max-w-5xl mx-auto grid grid-cols-3 gap-6 text-center">
         {stats.map((s) => (
           <div key={s.label}>
             <div
@@ -277,7 +266,7 @@ function DashboardMockup() {
         <span className="w-3 h-3 rounded-full" style={{ background: "#FEBC2E" }} />
         <span className="w-3 h-3 rounded-full" style={{ background: "#28C840" }} />
         <span className="text-xs ml-4" style={{ color: "var(--text-muted)" }}>
-          up2code.ai/dashboard — Altadena SFR Rebuild
+          up2code.ai/dashboard · Altadena SFR Rebuild
         </span>
       </div>
 
@@ -316,7 +305,7 @@ function DashboardMockup() {
           <KV k="County"    v="Los Angeles" />
           <KV k="State"     v="California" />
           <KV k="Seismic"   v="Zone D" />
-          <KV k="Fire zone" v="VHFHSZ — WUI" warn />
+          <KV k="Fire zone" v="VHFHSZ (WUI)" warn />
         </div>
 
         {/* Findings list */}
@@ -330,7 +319,7 @@ function DashboardMockup() {
             <FakeFinding
               icon={Flame} dept="Fire" severity="critical"
               section="CBC-7A 704A.1"
-              text="Plan shows wood siding within 5 ft of grade; Altadena is in a Very High Fire Hazard Severity Zone — CBC Ch. 7A requires noncombustible siding in the first 5 ft."
+              text="Plan shows wood siding within 5 ft of grade. Altadena is in a Very High Fire Hazard Severity Zone, and CBC Ch. 7A requires noncombustible siding in the first 5 ft."
             />
             <FakeFinding
               icon={ShieldCheck} dept="Building & Safety" severity="critical"
@@ -429,11 +418,11 @@ function FakeFinding({
 function HowItWorks() {
   const steps = [
     { n: 1, title: "Upload your plan set",
-      body: "Drag in a PDF — anything from a 5-sheet ADU set to a full commercial submittal." },
+      body: "Drag in a PDF. Anything from a 5-sheet ADU set to a full commercial submittal." },
     { n: 2, title: "12 agents review in parallel",
       body: "Surveyor identifies jurisdiction. 10 department reviewers run in parallel, each grounded in verbatim code text. ~90 seconds." },
     { n: 3, title: "Get a structured report",
-      body: "Compliant / Non-compliant / Needs review per finding. Cited section. Concrete recommendation. Sharable with your team or inspector — free for them." },
+      body: "Compliant, Non-compliant, or Needs review for every finding. Cited section. Concrete recommendation. Sharable with your team or inspector, free for them." },
   ];
   return (
     <section id="how" className="px-6 py-20" style={{ background: "var(--bg-elevated)" }}>
@@ -608,7 +597,7 @@ function Pricing() {
         )}
 
         <div className="text-center mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
-          Inviting contractors and inspectors to view a report is free — they don&apos;t need a Up2Code account.
+          Inviting contractors and inspectors to view a report is free. They don&apos;t need a Up2Code account.
         </div>
       </div>
     </section>
@@ -635,7 +624,7 @@ function FinalCta() {
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base"
           style={{ background: "#0B0E14", color: "#fff" }}
         >
-          Run your first check — free
+          Run your first check, free
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
