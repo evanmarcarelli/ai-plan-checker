@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import {
@@ -32,7 +32,18 @@ const PACKS: Pack[] = [
 ];
 
 
+// Suspense wrapper required because BillingInner uses useSearchParams(),
+// which forces dynamic rendering. Without the boundary Next.js 14 fails
+// to prerender the page at build time. Pattern mirrors app/login/page.tsx.
 export default function BillingPage() {
+  return (
+    <Suspense fallback={null}>
+      <BillingInner />
+    </Suspense>
+  );
+}
+
+function BillingInner() {
   const router = useRouter();
   const search = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
