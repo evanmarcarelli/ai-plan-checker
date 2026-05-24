@@ -20,19 +20,18 @@ import { createClient } from "@/lib/supabase/client";
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
 //
-// Endpoints set by the founder: 1 check = $25, 100 checks = $2,999. The
+// Endpoints set by the founder: 1 check = $60, 100 checks = $2,999. The
 // in-between tiers are linearly interpolated by quantity:
-//     price(qty) = $25 + (qty − 1) × (2999 − 25)/99
-// rounded to clean numbers. Per-check rate rises slightly with bigger
-// packs ($25 → $29.99) — there is no volume discount by design; the
-// $25 single-credit price exists as a low-friction trial entry, and the
-// $2,999 hundred-pack is the firm/enterprise commitment.
+//     price(qty) = $60 + (qty − 1) × ($2,999 − $60) / 99
+// rounded to whole dollars. The per-check rate now drops from $60 down
+// to $29.99 across the ladder — a real volume discount that pushes
+// buyers up to the bigger packs.
 // ────────────────────────────────────────────────────────────────────
 const PRICING = [
-  { credits: 1,   price:    25, per: 25.00, label: "Try one"             },
-  { credits: 5,   price:   149, per: 29.80, label: "Single project"      },
-  { credits: 25,  price:   749, per: 29.96, label: "Firm pack", highlight: true },
-  { credits: 100, price: 2999,  per: 29.99, label: "Annual / enterprise" },
+  { credits: 1,   price:   60, per: 60.00, label: "Try one"             },
+  { credits: 5,   price:  179, per: 35.80, label: "Single project"      },
+  { credits: 25,  price:  772, per: 30.88, label: "Firm pack", highlight: true },
+  { credits: 100, price: 2999, per: 29.99, label: "Annual / enterprise" },
 ];
 
 export default function MarketingHome() {
