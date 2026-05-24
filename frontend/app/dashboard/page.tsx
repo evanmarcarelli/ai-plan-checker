@@ -287,9 +287,7 @@ export default function Dashboard() {
               >
                 Up2Code AI
               </span>
-              <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                v2.0 — Multi-Agent Compliance
-              </div>
+              {/* Version subtitle intentionally removed for cleaner brand */}
             </div>
           </div>
 

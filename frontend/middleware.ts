@@ -1,11 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Pages anyone can hit without a session. The dashboard is intentionally
-// public: it IS the landing page. Architects can browse it, see the demo,
-// and only get prompted to sign in when they actually try to upload a plan.
-// /shared/<token> is public by design — that's the whole point of the
-// share links (contractors / inspectors don't have accounts).
+// Pages anyone can hit without a session. The root "/" is the public
+// marketing page (handled with an exact match below). The dashboard is
+// auth-required again — you have to sign up to actually run a review.
+// /shared/<token> stays public by design — share links exist exactly so
+// contractors and inspectors without accounts can read a report.
 const PUBLIC_PATHS = [
   "/login",
   "/signup",
@@ -15,7 +15,6 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
   "/refund",
-  "/dashboard",
   "/shared",
 ];
 
