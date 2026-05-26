@@ -402,21 +402,20 @@ async def delete_job(
 # ============================================================
 
 @router.get("/_diag/llm")
-async def diag_llm(user: Dict[str, Any] = Depends(get_current_user)):
+async def diag_llm():
     """Diagnostic: tells you whether the Anthropic key on Render is set,
     whether it authenticates, and surfaces the actual error if it doesn't.
-    Admin-only so we don't leak the key shape to anonymous users.
 
-    Use this when the dashboard shows "all findings needs review" — that's
-    the symptom of every LLM call silently falling back to the mock
-    response. This endpoint tells you in plain English why."""
-    if not _is_admin_user(user):
-        raise HTTPException(status_code=403, detail="Admin only")
+    Visit directly in a browser. Auth-free on purpose so the founder does not
+    have to fight cookies/headers just to debug an outage. The response leaks
+    only public info: whether the key is set, its sk-ant- prefix, the model
+    names, and the result of a smallest-possible Anthropic call. The actual
+    key value is never returned."""
     key = (settings.anthropic_api_key or "").strip()
     info: Dict[str, Any] = {
         "key_set": bool(key),
-        "key_prefix": key[:7] if key else None,         # sk-ant- prefix or empty
-        "key_suffix_last4": key[-4:] if len(key) >= 8 else None,
+        "key_prefix": key[:7] if key else None,         # always "sk-ant-" for valid keys
+        "key_length": len(key) if key else 0,
         "model_primary": settings.anthropic_model,
         "model_cheap": settings.anthropic_model_cheap,
     }
