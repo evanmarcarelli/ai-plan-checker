@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from abc import ABC, abstractmethod
@@ -7,6 +8,18 @@ from app.config import settings
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+# Errors worth retrying. These are transient: a brief connection drop, a rate
+# limit, a server-side overload, a timeout. Everything else (auth, not_found,
+# bad_request) means the config is wrong and retrying just wastes budget.
+_RETRIABLE_LLM_ERRORS = (
+    anthropic.APIConnectionError,
+    anthropic.APITimeoutError,
+    anthropic.RateLimitError,
+    anthropic.InternalServerError,
+    asyncio.TimeoutError,
+)
 
 
 class BaseAgent(ABC):
@@ -64,33 +77,67 @@ class BaseAgent(ABC):
             logger.warning(f"[{self.name}] {self.last_llm_error} - returning mock response")
             return self._mock_response(user_content)
 
-        try:
-            client = self._get_client()
-            model = self.model_override or settings.anthropic_model
+        client = self._get_client()
+        model = self.model_override or settings.anthropic_model
 
-            if cache_prefix:
-                # Cached prefix first, fresh content second. The cache_control
-                # breakpoint caches everything up to and including this block
-                # (system prompt + prefix).
-                content = [
-                    {"type": "text", "text": cache_prefix,
-                     "cache_control": {"type": "ephemeral"}},
-                    {"type": "text", "text": user_content},
-                ]
-            else:
-                content = user_content
+        if cache_prefix:
+            # Cached prefix first, fresh content second. The cache_control
+            # breakpoint caches everything up to and including this block
+            # (system prompt + prefix).
+            content = [
+                {"type": "text", "text": cache_prefix,
+                 "cache_control": {"type": "ephemeral"}},
+                {"type": "text", "text": user_content},
+            ]
+        else:
+            content = user_content
 
-            response = await client.messages.create(
-                model=model,
-                system=self._get_system_prompt(),
-                messages=[{"role": "user", "content": content}],
-                max_tokens=max_tokens or settings.anthropic_max_tokens,
-            )
-            return response.content[0].text if response.content else ""
-        except Exception as e:
-            self.last_llm_error = f"{type(e).__name__}: {e}"
-            logger.error(f"[{self.name}] LLM call failed ({self.last_llm_error})")
-            return self._mock_response(user_content)
+        # Retry loop for transient errors only. Each attempt has its own
+        # explicit timeout (the Anthropic SDK's default is 10 min, far too
+        # generous for Render-Free-induced hangs).
+        MAX_ATTEMPTS = 3
+        PER_CALL_TIMEOUT = 120  # seconds
+        BACKOFF = [0, 2, 5]     # seconds before each attempt
+
+        last_error: Optional[Exception] = None
+        for attempt in range(MAX_ATTEMPTS):
+            if BACKOFF[attempt]:
+                await asyncio.sleep(BACKOFF[attempt])
+            try:
+                response = await asyncio.wait_for(
+                    client.messages.create(
+                        model=model,
+                        system=self._get_system_prompt(),
+                        messages=[{"role": "user", "content": content}],
+                        max_tokens=max_tokens or settings.anthropic_max_tokens,
+                    ),
+                    timeout=PER_CALL_TIMEOUT,
+                )
+                # Success — clear any stale error state from a previous retry.
+                self.last_llm_error = None
+                return response.content[0].text if response.content else ""
+            except _RETRIABLE_LLM_ERRORS as e:
+                last_error = e
+                logger.warning(
+                    f"[{self.name}] transient LLM error on attempt "
+                    f"{attempt + 1}/{MAX_ATTEMPTS}: {type(e).__name__}: {e}"
+                )
+                continue
+            except Exception as e:
+                # Non-retriable: auth, not_found, bad_request. Fail fast so
+                # config bugs surface in the agent log instead of silently
+                # burning the retry budget.
+                self.last_llm_error = f"{type(e).__name__}: {e}"
+                logger.error(f"[{self.name}] LLM call failed ({self.last_llm_error})")
+                return self._mock_response(user_content)
+
+        # Exhausted retries on transient errors. Record and fall back.
+        self.last_llm_error = (
+            f"{type(last_error).__name__}: {last_error} "
+            f"(after {MAX_ATTEMPTS} attempts)"
+        )
+        logger.error(f"[{self.name}] LLM call gave up: {self.last_llm_error}")
+        return self._mock_response(user_content)
 
     def _mock_response(self, content: str) -> str:
         return f"[MOCK RESPONSE - No API Key] Agent {self.name} processed the input."

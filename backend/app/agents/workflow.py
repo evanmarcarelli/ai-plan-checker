@@ -15,6 +15,15 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+# Cap how many department reviewers run concurrently. The full set is 10.
+# Letting all 10 fire at once works on a beefy box but Render Free chokes on
+# 10 simultaneous outbound HTTPS calls to Anthropic and some get killed by
+# resource limits, which the workflow then catches as transient errors and
+# eventually gives up on. 3 in flight is the sweet spot: still parallel enough
+# to feel fast, low enough that Render Free doesn't fall over.
+DEPARTMENT_CONCURRENCY = 3
+
+
 class PlanCheckerWorkflow:
     """Orchestrates Surveyor → Librarian → parallel Department reviewers → Synthesis."""
 
@@ -121,9 +130,17 @@ class PlanCheckerWorkflow:
         for c in full_codes:
             codes_by_category.setdefault(c.category, []).append(c)
 
+        # Bounded concurrency: limit the parallel reviewers so Render Free
+        # is not asked to juggle 10 simultaneous outbound HTTPS calls.
+        sem = asyncio.Semaphore(DEPARTMENT_CONCURRENCY)
+
         async def run_one(dept: DepartmentReviewer) -> DepartmentReview:
             dept_codes = codes_by_category.get(dept.category, [])
             await emit(dept.department_name, f"Starting review ({len(dept_codes)} codes)...")
+            async with sem:
+                return await _do_review(dept, dept_codes)
+
+        async def _do_review(dept: DepartmentReviewer, dept_codes: list) -> DepartmentReview:
             try:
                 review = await dept.review(pd, dept_codes, amendments, code_version)
                 s = review.summary
