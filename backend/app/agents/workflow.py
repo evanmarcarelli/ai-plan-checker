@@ -113,6 +113,10 @@ class PlanCheckerWorkflow:
             raise
 
         # ----- PARALLEL DEPARTMENT REVIEWS -----
+        # Reset current_agent so the UI doesn't keep saying "Librarian
+        # working..." for the full parallel phase. The 10 reviewers fire
+        # together; there is no single current agent.
+        job.current_agent = None
         await emit(
             "Coordinator",
             f"Dispatching to {len(self.departments)} department reviewers in parallel...",
@@ -156,6 +160,16 @@ class PlanCheckerWorkflow:
                         level="error",
                         data={"llm_error": dept.last_llm_error},
                     )
+                # Mark this department as done IN REAL TIME and bump progress.
+                # Without this the UI stays at 25% / "Librarian working..." for
+                # the entire 1–2 minute parallel phase and looks frozen.
+                # 10 departments cover the 25→95 range (7 percentage points
+                # each); the final 5 is reserved for synthesis after gather.
+                job.agents_completed.append(dept.department_name)
+                done_count = sum(
+                    1 for d in self.departments if d.department_name in job.agents_completed
+                )
+                job.progress = 25 + int(done_count / len(self.departments) * 70)
                 await emit(
                     dept.department_name,
                     f"Review complete. status: {review.review_status.upper()} | "
@@ -167,10 +181,19 @@ class PlanCheckerWorkflow:
                         "non_compliant": s.non_compliant,
                         "needs_review": s.needs_review,
                         "critical": s.critical_issues,
+                        "progress": job.progress,
                     },
                 )
                 return review
             except Exception as e:
+                # Even on failure, mark the dept done so progress moves and the
+                # pipeline doesn't hang waiting for one dept to "finish".
+                if dept.department_name not in job.agents_completed:
+                    job.agents_completed.append(dept.department_name)
+                done_count = sum(
+                    1 for d in self.departments if d.department_name in job.agents_completed
+                )
+                job.progress = 25 + int(done_count / len(self.departments) * 70)
                 await emit(dept.department_name, f"Review failed: {e}", level="error")
                 return DepartmentReview(
                     department=dept.department_name,
@@ -232,8 +255,8 @@ class PlanCheckerWorkflow:
                   "score": overall_summary.compliance_score},
         )
 
-        for r in reviews:
-            job.agents_completed.append(r.department)
+        # Department names were appended in real time by _do_review, so we
+        # only need to finalize progress and clear current_agent here.
         job.progress = 100
         job.current_agent = None
         return report
