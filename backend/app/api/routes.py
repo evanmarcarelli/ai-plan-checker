@@ -86,6 +86,37 @@ def _job_row_to_response(row: Dict[str, Any]) -> Dict[str, Any]:
     """Shape a DB row into the JobStatusResponse contract."""
     report = None
     if row.get("summary") or row.get("department_reviews"):
+        # Fetch the per-job findings from the findings table and translate them
+        # back into the ComplianceFinding shape the dashboard expects. The
+        # findings ARE persisted (db.insert_findings runs at workflow end), but
+        # this function used to hardcode []; that's why the dashboard's findings
+        # table showed "0/0" even on completed jobs.
+        finding_rows = db.list_findings_for_job(row["id"])
+        findings = [
+            {
+                "finding_id": fr.get("id", "")[:8] if fr.get("id") else "",
+                "code_requirement": {
+                    "code_id":  fr.get("code_id") or "",
+                    "code_name": fr.get("code_name") or "",
+                    "section":  fr.get("code_section") or "",
+                    "description": fr.get("description") or "",
+                    "category": fr.get("category") or "general",
+                    "requirement_type": "general",
+                    "jurisdiction_specific": False,
+                    "full_text": None,
+                },
+                "status": fr.get("status") or "needs_review",
+                "plan_value": fr.get("plan_value"),
+                "required_value": fr.get("required_value"),
+                "description": fr.get("description") or "",
+                "recommendation": fr.get("recommendation"),
+                "severity": fr.get("severity") or "medium",
+                "page_references": fr.get("page_references") or [],
+                "category": fr.get("category") or "general",
+            }
+            for fr in finding_rows
+        ]
+
         report = {
             "report_id": row.get("id"),
             "job_id": row.get("id"),
@@ -98,7 +129,7 @@ def _job_row_to_response(row: Dict[str, Any]) -> Dict[str, Any]:
             "code_versions": row.get("code_versions") or {},
             "sources_used": row.get("sources_used") or [],
             "auditor_notes": row.get("notes"),
-            "findings": [],  # findings table is fetched separately if needed
+            "findings": findings,
         }
     return {
         "job_id": row["id"],
@@ -257,12 +288,17 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
     try:
         report = await workflow.run(job_shell, file_path, log_callback=on_log)
 
-        # Persist final report fields
+        # Persist final report fields. agents_completed is included so the
+        # "10 Departments" group in the AgentPipeline turns green — the
+        # workflow appends the per-department names only AFTER the last
+        # in-flight emit, so the on_log callback never gets a chance to
+        # persist them on its own.
         db.update_job(job_id, {
             "status": "completed",
             "progress": 100,
             "current_agent": None,
             "completed_at": datetime.utcnow().isoformat(),
+            "agents_completed": job_shell.agents_completed,
             "jurisdiction": (report.jurisdiction.model_dump() if report.jurisdiction else None),
             "plan_data": (report.plan_data.model_dump() if report.plan_data else None),
             "summary": report.summary.model_dump() if report.summary else None,

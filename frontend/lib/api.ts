@@ -369,6 +369,28 @@ export function getExportUrl(jobId: string, format: "pdf" | "csv"): string {
   return `${API_URL}/jobs/${jobId}/export/${format}`;
 }
 
+/** Download a completed job's report. Done via authenticated fetch + blob
+ *  trigger because the export endpoint is auth-required, and a plain
+ *  `<a href>` link does not send the Authorization header — that's why
+ *  the previous "Download PDF" link failed silently. */
+export async function downloadReport(jobId: string, format: "pdf" | "csv"): Promise<void> {
+  const headers = await authHeaders();
+  const res = await fetch(getExportUrl(jobId, format), { headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Download failed: ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `compliance-report-${jobId.slice(0, 8)}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function createWebSocket(jobId: string): WebSocket {
   return new WebSocket(`${WS_URL}/ws/${jobId}`);
 }

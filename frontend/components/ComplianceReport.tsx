@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { ComplianceReport as Report, ComplianceFinding } from "@/lib/api";
-import { getExportUrl, listReportComments } from "@/lib/api";
+import { getExportUrl, listReportComments, downloadReport } from "@/lib/api";
 import {
   getStatusColor, getStatusLabel, getSeverityColor,
   getCategoryIcon, getCategoryLabel, cn
@@ -490,10 +490,8 @@ export default function ComplianceReport({
             <h3 className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
               EXPORT REPORT
             </h3>
-            <a
-              href={getExportUrl(jobId, "pdf")}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => downloadReport(jobId, "pdf").catch((e) => alert(e instanceof Error ? e.message : "Download failed"))}
               className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: "linear-gradient(135deg, #1e40af20, #3b82f620)",
@@ -504,11 +502,9 @@ export default function ComplianceReport({
               <FileText className="w-4 h-4" />
               Download PDF Report
               <Download className="w-3.5 h-3.5 ml-auto" />
-            </a>
-            <a
-              href={getExportUrl(jobId, "csv")}
-              target="_blank"
-              rel="noopener noreferrer"
+            </button>
+            <button
+              onClick={() => downloadReport(jobId, "csv").catch((e) => alert(e instanceof Error ? e.message : "Download failed"))}
               className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: "linear-gradient(135deg, #14532d20, #22c55e20)",
@@ -519,7 +515,7 @@ export default function ComplianceReport({
               <FileSpreadsheet className="w-4 h-4" />
               Download CSV Data
               <Download className="w-3.5 h-3.5 ml-auto" />
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -537,8 +533,11 @@ export default function ComplianceReport({
             <AlertTriangle className="w-4 h-4" />
             Action Items ({report.recommendations.length})
           </h3>
-          <div className="space-y-2">
-            {report.recommendations.slice(0, 10).map((rec, i) => (
+          {/* Scrollable list shows all recommendations rather than cutting at
+              the first 10. Capped at ~28rem so it doesn't push the rest of
+              the report off the page. */}
+          <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-2">
+            {report.recommendations.map((rec, i) => (
               <div key={i} className="flex gap-3 text-sm">
                 <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}
