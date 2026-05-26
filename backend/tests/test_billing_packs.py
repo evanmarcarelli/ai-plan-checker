@@ -151,6 +151,39 @@ def test_pack_checkout_strips_price_id_whitespace_regression():
         f"price_id must be stripped before Stripe; got {sent!r}"
 
 
+# ─────────────────────────────────────────────────────────────
+# 6. Self-heal when saved stripe_customer_id is from the wrong mode
+# ─────────────────────────────────────────────────────────────
+
+def test_get_or_create_customer_recovers_from_stale_id_regression():
+    """If profiles.stripe_customer_id points at a Stripe customer that does
+    not exist in the current mode (the classic test→live key migration), the
+    helper must catch the InvalidRequestError, clear the stale id from the
+    profile, and create a fresh customer in the current mode. Without this,
+    every subsequent checkout attempt would 500 with 'No such customer'."""
+    from app.services import billing
+    import stripe as stripe_lib
+
+    def fake_retrieve(cid):
+        raise stripe_lib.error.InvalidRequestError(
+            "No such customer: 'cus_stale_from_test'", "customer",
+        )
+
+    fresh_customer = MagicMock(id="cus_fresh_in_live_mode")
+
+    with patch("app.services.db.get_profile",
+               return_value={"stripe_customer_id": "cus_stale_from_test"}), \
+         patch("app.services.billing.stripe.Customer.retrieve",
+               side_effect=fake_retrieve), \
+         patch("app.services.billing.stripe.Customer.create",
+               return_value=fresh_customer), \
+         patch("app.services.db.admin"):
+        result = billing.get_or_create_customer("user_xyz", "x@y.com")
+
+    assert result == "cus_fresh_in_live_mode", \
+        f"expected fresh customer id, got {result!r}"
+
+
 def test_webhook_pack_payment_is_idempotent_regression():
     """Stripe retries webhooks. The same session_id firing twice must
     grant credits exactly once."""

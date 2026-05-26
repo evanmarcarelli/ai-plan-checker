@@ -20,10 +20,22 @@ PRICE_TO_PLAN: Dict[str, Tuple[str, int]] = {
 
 
 def get_or_create_customer(user_id: str, email: Optional[str]) -> str:
-    """Return the Stripe customer ID for this user, creating one if needed."""
+    """Return the Stripe customer ID for this user, creating one if needed.
+
+    Validates the stored ID against Stripe so a test→live key migration
+    (or manual customer deletion) auto-heals instead of crashing checkout.
+    """
     profile = db.get_profile(user_id) or {}
-    if profile.get("stripe_customer_id"):
-        return profile["stripe_customer_id"]
+    stored_id = (profile.get("stripe_customer_id") or "").strip()
+    if stored_id:
+        try:
+            stripe.Customer.retrieve(stored_id)
+            return stored_id
+        except stripe.error.InvalidRequestError:
+            # Customer not found in current Stripe mode (e.g. test→live migration).
+            # Clear the stale ID and fall through to create a fresh one.
+            logger.warning(f"Stripe customer {stored_id} not found in current mode; recreating for user {user_id}")
+            db.admin().table("profiles").update({"stripe_customer_id": None}).eq("id", user_id).execute()
     customer = stripe.Customer.create(
         email=email,
         metadata={"supabase_user_id": user_id},
