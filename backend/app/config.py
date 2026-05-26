@@ -23,8 +23,12 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-7"           # premium model — used by Surveyor
-    anthropic_model_cheap: str = "claude-sonnet-4-7"   # ~5x cheaper — used by Librarian + 10 department reviewers
+    anthropic_model: str = "claude-opus-4-7"           # premium model, used by Surveyor
+    # Sonnet 4-6 is the current cheap model (companion to Opus 4-7). "claude-sonnet-4-7"
+    # does not exist in Anthropic's catalog and any call referencing it returns 404,
+    # which silently degrades every department reviewer to needs_review. Do not
+    # change to "4-7" without verifying with the Anthropic API first.
+    anthropic_model_cheap: str = "claude-sonnet-4-6"   # ~5x cheaper, used by 10 department reviewers
     anthropic_max_tokens: int = 4096
 
     # Supabase
