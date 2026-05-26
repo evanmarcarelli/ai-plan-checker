@@ -127,9 +127,21 @@ class PlanCheckerWorkflow:
             try:
                 review = await dept.review(pd, dept_codes, amendments, code_version)
                 s = review.summary
+                # If the LLM call failed silently and we fell back to the
+                # mock response, every requirement comes back as needs_review.
+                # Surface the underlying error so the user can see what went
+                # wrong in the Agent Logs tab.
+                if dept.last_llm_error:
+                    await emit(
+                        dept.department_name,
+                        f"LLM call failed; findings fell back to needs_review. "
+                        f"Underlying error: {dept.last_llm_error}",
+                        level="error",
+                        data={"llm_error": dept.last_llm_error},
+                    )
                 await emit(
                     dept.department_name,
-                    f"Review complete — status: {review.review_status.upper()} | "
+                    f"Review complete. status: {review.review_status.upper()} | "
                     f"{s.compliant} compliant / {s.non_compliant} non-compliant / {s.needs_review} needs review "
                     f"| score {s.compliance_score:.0%}",
                     data={

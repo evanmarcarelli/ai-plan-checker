@@ -401,6 +401,52 @@ async def delete_job(
 # Profile
 # ============================================================
 
+@router.get("/_diag/llm")
+async def diag_llm(user: Dict[str, Any] = Depends(get_current_user)):
+    """Diagnostic: tells you whether the Anthropic key on Render is set,
+    whether it authenticates, and surfaces the actual error if it doesn't.
+    Admin-only so we don't leak the key shape to anonymous users.
+
+    Use this when the dashboard shows "all findings needs review" — that's
+    the symptom of every LLM call silently falling back to the mock
+    response. This endpoint tells you in plain English why."""
+    if not _is_admin_user(user):
+        raise HTTPException(status_code=403, detail="Admin only")
+    key = (settings.anthropic_api_key or "").strip()
+    info: Dict[str, Any] = {
+        "key_set": bool(key),
+        "key_prefix": key[:7] if key else None,         # sk-ant- prefix or empty
+        "key_suffix_last4": key[-4:] if len(key) >= 8 else None,
+        "model_primary": settings.anthropic_model,
+        "model_cheap": settings.anthropic_model_cheap,
+    }
+    if not key:
+        info["status"] = "NO_KEY"
+        info["hint"] = "ANTHROPIC_API_KEY env var is empty on Render. Set it and redeploy."
+        return info
+    # Try the smallest possible call. 1 token output, no caching, sync over async wrapper.
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=key)
+        client.messages.create(
+            model=settings.anthropic_model_cheap,
+            max_tokens=1,
+            messages=[{"role": "user", "content": "."}],
+        )
+        info["status"] = "OK"
+        info["hint"] = "Anthropic auth + smallest-call test succeeded. LLM path is healthy."
+    except Exception as e:
+        info["status"] = "ERROR"
+        info["error_type"] = type(e).__name__
+        info["error"] = str(e)[:500]
+        info["hint"] = (
+            "The Anthropic SDK call itself failed. Common causes: invalid key, "
+            "billing/credits exhausted on the Anthropic account, rate limit, or "
+            "outbound network blocked from Render."
+        )
+    return info
+
+
 @router.get("/me")
 async def get_me(user: Dict[str, Any] = Depends(get_current_user)):
     profile = db.get_profile(user["id"]) or {}

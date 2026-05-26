@@ -551,14 +551,30 @@ export async function postChatQuestion(
   message_id: string;
 }> {
   const headers = { ...(await actorHeaders(opts?.shareToken, opts?.guestName)), "Content-Type": "application/json" };
-  const res = await fetch(`${API_URL}/reports/${jobId}/chat`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ question, finding_ref: opts?.findingRef }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Chat failed: ${res.status}`);
+  const body = JSON.stringify({ question, finding_ref: opts?.findingRef });
+
+  // Retry on raw network errors (cold-start Render, blip, etc.). HTTP 4xx/5xx
+  // responses are returned to the caller as Error with the server's detail so
+  // they can show "rate limited" or "config missing" etc. We only retry the
+  // case where fetch itself rejected with no response.
+  const MAX_ATTEMPTS = 3;
+  const BACKOFF_MS = [0, 4000, 10000];
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (BACKOFF_MS[attempt - 1]) await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]));
+    try {
+      const res = await fetch(`${API_URL}/reports/${jobId}/chat`, { method: "POST", headers, body });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Chat failed: ${res.status}`);
+      }
+      return res.json();
+    } catch (e) {
+      lastErr = e;
+      const msg = e instanceof Error ? e.message.toLowerCase() : String(e);
+      const isNetwork = msg.includes("fetch") || msg.includes("network") || msg.includes("abort");
+      if (!isNetwork || attempt === MAX_ATTEMPTS) throw e;
+    }
   }
-  return res.json();
+  throw lastErr instanceof Error ? lastErr : new Error("Chat failed");
 }

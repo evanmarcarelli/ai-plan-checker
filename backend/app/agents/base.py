@@ -38,6 +38,12 @@ class BaseAgent(ABC):
     async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         pass
 
+    # Optional capture of the most recent error string. Useful so the
+    # workflow can surface "LLM call failed: <reason>" in the per-job
+    # agent logs instead of the mock-response silent fallback making every
+    # finding come back as needs_review with no explanation.
+    last_llm_error: Optional[str] = None
+
     async def _call_llm(
         self,
         user_content: str,
@@ -54,7 +60,8 @@ class BaseAgent(ABC):
         is byte-identical whether or not the prefix was cached.
         """
         if not settings.anthropic_api_key:
-            logger.warning(f"[{self.name}] No Anthropic API key - returning mock response")
+            self.last_llm_error = "ANTHROPIC_API_KEY env var is empty on the server"
+            logger.warning(f"[{self.name}] {self.last_llm_error} - returning mock response")
             return self._mock_response(user_content)
 
         try:
@@ -81,7 +88,8 @@ class BaseAgent(ABC):
             )
             return response.content[0].text if response.content else ""
         except Exception as e:
-            logger.error(f"[{self.name}] LLM call failed ({type(e).__name__}: {e})")
+            self.last_llm_error = f"{type(e).__name__}: {e}"
+            logger.error(f"[{self.name}] LLM call failed ({self.last_llm_error})")
             return self._mock_response(user_content)
 
     def _mock_response(self, content: str) -> str:
