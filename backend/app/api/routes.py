@@ -404,10 +404,15 @@ async def delete_job(
 @router.get("/me")
 async def get_me(user: Dict[str, Any] = Depends(get_current_user)):
     profile = db.get_profile(user["id"]) or {}
+    # is_admin is computed from the same allowlist that drives the upload
+    # bypass, so the dashboard can render "Unlimited" instead of confusing
+    # the founder by showing "0 credits" while uploads silently work.
+    is_admin = _is_admin_user(user)
     return {
         "id": user["id"],
         "email": user.get("email"),
         "credits_remaining": profile.get("credits_remaining", 0),
+        "is_admin": is_admin,
         "display_name": profile.get("display_name"),
         "firm_name": profile.get("firm_name"),
         "plan_tier": profile.get("plan_tier", "free"),

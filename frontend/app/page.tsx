@@ -93,6 +93,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
           <a href="#how" className="hover:underline">How it works</a>
           <a href="#demo" className="hover:underline">Demo</a>
           <a href="#pricing" className="hover:underline">Pricing</a>
+          <Link href="/feedback" className="hover:underline">Feedback</Link>
         </nav>
 
         <div className="flex items-center gap-2">

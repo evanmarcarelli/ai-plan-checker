@@ -17,6 +17,7 @@ export interface UserProfile {
   id: string;
   email: string;
   credits_remaining: number;
+  is_admin?: boolean;
   display_name?: string;
   firm_name?: string;
   plan_tier?: "free" | "starter" | "professional" | "unlimited";
@@ -36,6 +37,57 @@ export async function createCheckoutSession(plan: "starter" | "professional" | "
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Checkout failed: ${res.status}`);
   }
+  return res.json();
+}
+
+// ─────────────────────────────────────────────────────────
+// Feedback board
+// ─────────────────────────────────────────────────────────
+
+export interface FeedbackPost {
+  id: string;
+  title: string;
+  body: string;
+  status: "open" | "considering" | "planned" | "shipped" | "wontfix" | string;
+  author_display: string;
+  author_user_id?: string | null;
+  votes: number;
+  user_has_voted: boolean;
+  created_at?: string | null;
+}
+
+export async function listFeedback(): Promise<{ posts: FeedbackPost[] }> {
+  const headers = await authHeaders();
+  const res = await fetch(`${API_URL}/feedback`, { headers });
+  if (!res.ok) throw new Error(`Failed to load feedback: ${res.status}`);
+  return res.json();
+}
+
+export async function createFeedback(body: {
+  title: string;
+  body?: string;
+  author_display?: string;
+}): Promise<{ post: { id: string } }> {
+  const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
+  const res = await fetch(`${API_URL}/feedback`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to post: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function toggleFeedbackVote(postId: string): Promise<{ voted: boolean }> {
+  const headers = await authHeaders();
+  const res = await fetch(`${API_URL}/feedback/${postId}/vote`, {
+    method: "POST",
+    headers,
+  });
+  if (!res.ok) throw new Error(`Vote failed: ${res.status}`);
   return res.json();
 }
 

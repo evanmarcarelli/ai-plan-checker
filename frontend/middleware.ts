@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/terms",
   "/refund",
   "/shared",
+  "/feedback",
 ];
 
 export async function middleware(request: NextRequest) {

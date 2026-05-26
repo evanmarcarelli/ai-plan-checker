@@ -357,14 +357,20 @@ export default function Dashboard() {
                   }}
                   title={`${profile.email} — manage plan`}
                 >
-                  {profile.plan_tier && profile.plan_tier !== "free" ? (
-                    <span style={{ color: "var(--accent-bright)" }}>
-                      {profile.plan_tier.charAt(0).toUpperCase() + profile.plan_tier.slice(1)} ·{" "}
-                    </span>
-                  ) : null}
-                  {profile.credits_remaining} {profile.credits_remaining === 1 ? "credit" : "credits"}
+                  {profile.is_admin ? (
+                    <span style={{ color: "var(--accent-bright)" }}>Admin · Unlimited</span>
+                  ) : (
+                    <>
+                      {profile.plan_tier && profile.plan_tier !== "free" ? (
+                        <span style={{ color: "var(--accent-bright)" }}>
+                          {profile.plan_tier.charAt(0).toUpperCase() + profile.plan_tier.slice(1)} ·{" "}
+                        </span>
+                      ) : null}
+                      {profile.credits_remaining} {profile.credits_remaining === 1 ? "credit" : "credits"}
+                    </>
+                  )}
                 </button>
-                {(!profile.plan_tier || profile.plan_tier === "free") && (
+                {!profile.is_admin && (!profile.plan_tier || profile.plan_tier === "free") && (
                   <button
                     onClick={() => router.push("/billing")}
                     className="px-3 py-1 rounded-md font-medium transition-all"
