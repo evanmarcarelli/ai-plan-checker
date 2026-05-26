@@ -94,10 +94,12 @@ class BaseAgent(ABC):
 
         # Retry loop for transient errors only. Each attempt has its own
         # explicit timeout (the Anthropic SDK's default is 10 min, far too
-        # generous for Render-Free-induced hangs).
-        MAX_ATTEMPTS = 3
-        PER_CALL_TIMEOUT = 120  # seconds
-        BACKOFF = [0, 2, 5]     # seconds before each attempt
+        # generous for Render-Free-induced hangs). Tighter values here mean
+        # we fail fast and move on rather than burning the whole job's
+        # wall-clock budget on one stuck call.
+        MAX_ATTEMPTS = 2
+        PER_CALL_TIMEOUT = 75   # seconds; typical Sonnet call is 10–30s
+        BACKOFF = [0, 3]        # seconds before each attempt
 
         last_error: Optional[Exception] = None
         for attempt in range(MAX_ATTEMPTS):

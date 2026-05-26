@@ -1,4 +1,5 @@
 """API routes — DB-backed job storage with Supabase auth."""
+import asyncio
 import os
 import json
 import uuid
@@ -285,8 +286,18 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
             })
             last_persisted_progress = job_shell.progress
 
+    # Hard ceiling on the whole job. Without this, a Render Free hang can
+    # leave the dashboard stuck at "25% complete · Librarian working..." for
+    # 20+ minutes with no way for the user to know it died. 12 minutes is
+    # well above the typical 90–120s end-to-end runtime, but tight enough
+    # that a hung dyno surfaces fast.
+    JOB_TIMEOUT_SEC = 12 * 60
+
     try:
-        report = await workflow.run(job_shell, file_path, log_callback=on_log)
+        report = await asyncio.wait_for(
+            workflow.run(job_shell, file_path, log_callback=on_log),
+            timeout=JOB_TIMEOUT_SEC,
+        )
 
         # Persist final report fields. agents_completed is included so the
         # "10 Departments" group in the AgentPipeline turns green — the
@@ -358,6 +369,25 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
                 email_service.send_report_ready(user_email, job_id, row2.get("filename", "your plan"))
         except Exception as e:
             logger.warning(f"send_report_ready failed for job {job_id}: {e}")
+
+    except asyncio.TimeoutError:
+        # Hit the global JOB_TIMEOUT_SEC ceiling — workflow ran too long.
+        # Almost always means Render Free's dyno is starving and one or more
+        # department LLM calls hung. Mark the job failed with a useful
+        # message so the dashboard stops claiming "Librarian working...".
+        msg = (
+            f"Plan review exceeded the {JOB_TIMEOUT_SEC // 60}-minute server "
+            f"timeout. This usually means Render Free's resource limits "
+            f"throttled the LLM calls. Please retry, or upgrade to Render "
+            f"Starter for reliable execution."
+        )
+        logger.error(f"Job {job_id} timed out: {msg}")
+        db.update_job(job_id, {"status": "failed", "error": msg})
+        # Refund the credit on timeout
+        try:
+            db.add_credits(row["user_id"], 1)
+        except Exception:
+            pass
 
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}", exc_info=True)

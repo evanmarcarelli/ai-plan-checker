@@ -16,12 +16,12 @@ logger = get_logger(__name__)
 
 
 # Cap how many department reviewers run concurrently. The full set is 10.
-# Letting all 10 fire at once works on a beefy box but Render Free chokes on
-# 10 simultaneous outbound HTTPS calls to Anthropic and some get killed by
-# resource limits, which the workflow then catches as transient errors and
-# eventually gives up on. 3 in flight is the sweet spot: still parallel enough
-# to feel fast, low enough that Render Free doesn't fall over.
-DEPARTMENT_CONCURRENCY = 3
+# Render Free has tight CPU/RAM/network limits that kill background tasks
+# stone-dead when several outbound HTTPS calls overlap. Empirically 3 in
+# flight is still too many on Free — the dyno hangs after a couple
+# completions. 2 is the safe ceiling for Free; bump to 5–10 the moment
+# the founder upgrades to a Starter ($7/mo) or larger dyno.
+DEPARTMENT_CONCURRENCY = 2
 
 
 class PlanCheckerWorkflow:
