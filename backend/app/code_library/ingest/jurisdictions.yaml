@@ -1,0 +1,123 @@
+# Target list for the ingest pipeline.
+#
+# `slug` is the source-specific identifier (e.g. amlegal's `pasadena_ca`).
+# `jurisdictions` is the list of corpus-side scope strings — same values
+# the BM25 retriever filters on. Use "CA" for state-wide, "CA:<city>" for
+# city, "CA:<county>" for county, "*" for federal.
+#
+# Top-15 California targets are organized by source. amlegal first (it's
+# what ingest_amlegal_slug consumes); the others have skeleton entries
+# pending implementation.
+
+amlegal:
+  # Big LA-area jurisdictions (the user's near-term wedge)
+  - source_id: pasadena_ca
+    code_name: "Pasadena Municipal Code"
+    code_short: PASADENA-MC
+    version: "2024"
+    jurisdictions: ["CA:Pasadena"]
+    output_filename: amlegal_pasadena_ca.jsonl
+
+  - source_id: longbeach_ca
+    code_name: "Long Beach Municipal Code"
+    code_short: LONGBEACH-MC
+    version: "2024"
+    jurisdictions: ["CA:Long Beach"]
+    output_filename: amlegal_longbeach_ca.jsonl
+
+  - source_id: glendale_ca
+    code_name: "Glendale Municipal Code"
+    code_short: GLENDALE-MC
+    version: "2024"
+    jurisdictions: ["CA:Glendale"]
+    output_filename: amlegal_glendale_ca.jsonl
+
+  - source_id: burbank_ca
+    code_name: "Burbank Municipal Code"
+    code_short: BURBANK-MC
+    version: "2024"
+    jurisdictions: ["CA:Burbank"]
+    output_filename: amlegal_burbank_ca.jsonl
+
+  - source_id: santamonica_ca
+    code_name: "Santa Monica Municipal Code"
+    code_short: SANTAMONICA-MC
+    version: "2024"
+    jurisdictions: ["CA:Santa Monica"]
+    output_filename: amlegal_santamonica_ca.jsonl
+
+  - source_id: beverlyhills_ca
+    code_name: "Beverly Hills Municipal Code"
+    code_short: BEVERLYHILLS-MC
+    version: "2024"
+    jurisdictions: ["CA:Beverly Hills"]
+    output_filename: amlegal_beverlyhills_ca.jsonl
+
+  # Bay Area
+  - source_id: oakland_ca
+    code_name: "Oakland Municipal Code"
+    code_short: OAKLAND-MC
+    version: "2024"
+    jurisdictions: ["CA:Oakland"]
+    output_filename: amlegal_oakland_ca.jsonl
+
+  - source_id: berkeley_ca
+    code_name: "Berkeley Municipal Code"
+    code_short: BERKELEY-MC
+    version: "2024"
+    jurisdictions: ["CA:Berkeley"]
+    output_filename: amlegal_berkeley_ca.jsonl
+
+  - source_id: sanjose_ca
+    code_name: "San Jose Municipal Code"
+    code_short: SANJOSE-MC
+    version: "2024"
+    jurisdictions: ["CA:San Jose"]
+    output_filename: amlegal_sanjose_ca.jsonl
+
+  # Coastal / North
+  - source_id: santabarbara_ca
+    code_name: "Santa Barbara Municipal Code"
+    code_short: SANTABARBARA-MC
+    version: "2024"
+    jurisdictions: ["CA:Santa Barbara"]
+    output_filename: amlegal_santabarbara_ca.jsonl
+
+  - source_id: ventura_ca
+    code_name: "Ventura Municipal Code"
+    code_short: VENTURA-MC
+    version: "2024"
+    jurisdictions: ["CA:Ventura", "CA:Ventura County"]
+    output_filename: amlegal_ventura_ca.jsonl
+
+  - source_id: sacramento_ca
+    code_name: "Sacramento City Code"
+    code_short: SACRAMENTO-MC
+    version: "2024"
+    jurisdictions: ["CA:Sacramento"]
+    output_filename: amlegal_sacramento_ca.jsonl
+
+# These three are NOT on amlegal but on Municode (different ingester).
+# Listed here so the full target set is in one file. Municode ingester
+# is a stub today; add the implementation when Phase 1 expands.
+municode:
+  - source_id: losangeles_ca
+    code_name: "Los Angeles Municipal Code"
+    code_short: LAMC
+    version: "2024"
+    jurisdictions: ["CA:Los Angeles"]
+    output_filename: municode_losangeles_ca.jsonl
+
+  - source_id: sandiego_ca
+    code_name: "San Diego Municipal Code"
+    code_short: SDMC
+    version: "2024"
+    jurisdictions: ["CA:San Diego"]
+    output_filename: municode_sandiego_ca.jsonl
+
+  - source_id: sanfrancisco_ca
+    code_name: "San Francisco Municipal Code"
+    code_short: SFMC
+    version: "2024"
+    jurisdictions: ["CA:San Francisco"]
+    output_filename: municode_sanfrancisco_ca.jsonl
