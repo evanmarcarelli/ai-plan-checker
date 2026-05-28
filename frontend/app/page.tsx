@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { createPackCheckoutSession, type PackSize } from "@/lib/api";
+import InteractiveDemo from "@/components/demo/InteractiveDemo";
 
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
@@ -223,21 +224,22 @@ function DemoSection() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "var(--accent)" }}>
-            Sample report
+            Live demo
           </p>
           <h2
             className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            What you get back, every time.
+            Watch a triage run live.
           </h2>
           <p className="text-base max-w-2xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            A structured compliance report with findings categorized by department, citations grounded in real
-            code text, and concrete recommendations.
+            Pick a scenario. Up2Code evaluates it against jurisdiction-specific code
+            rules and returns a structured compliance report with findings, completeness
+            score, and verified citations — in seconds.
           </p>
         </div>
 
-        <DashboardMockup />
+        <InteractiveDemo />
 
         <div className="text-center mt-8">
           <Link
@@ -251,166 +253,6 @@ function DemoSection() {
         </div>
       </div>
     </section>
-  );
-}
-
-function DashboardMockup() {
-  return (
-    <div
-      className="rounded-2xl overflow-hidden shadow-xl"
-      style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}
-    >
-      {/* Fake browser chrome */}
-      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b"
-           style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
-        <span className="w-3 h-3 rounded-full" style={{ background: "#FF5F57" }} />
-        <span className="w-3 h-3 rounded-full" style={{ background: "#FEBC2E" }} />
-        <span className="w-3 h-3 rounded-full" style={{ background: "#28C840" }} />
-        <span className="text-xs ml-4" style={{ color: "var(--text-muted)" }}>
-          up2code.ai/dashboard · Altadena SFR Rebuild
-        </span>
-      </div>
-
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Score ring + summary */}
-        <div className="lg:col-span-2 p-5 rounded-xl"
-             style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-          <div className="flex items-center gap-5">
-            <FakeScoreRing score={42} />
-            <div className="flex-1">
-              <div className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                Compliance Report
-              </div>
-              <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-                Altadena, CA · 2-story SFR · 2,400 sf
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                <MiniStat n={2}  label="OK"   color="#10b981" />
-                <MiniStat n={5}  label="Crit" color="#ef4444" />
-                <MiniStat n={19} label="High" color="#f59e0b" />
-                <MiniStat n={51} label="Rev"  color="#64748b" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Jurisdiction card */}
-        <div className="p-5 rounded-xl"
-             style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-          <div className="flex items-center gap-2 mb-3 text-sm font-semibold"
-               style={{ color: "var(--text-primary)" }}>
-            <MapPin className="w-4 h-4" style={{ color: "var(--accent-bright)" }} />
-            Jurisdiction
-          </div>
-          <KV k="City"      v="Altadena" />
-          <KV k="County"    v="Los Angeles" />
-          <KV k="State"     v="California" />
-          <KV k="Seismic"   v="Zone D" />
-          <KV k="Fire zone" v="VHFHSZ (WUI)" warn />
-        </div>
-
-        {/* Findings list */}
-        <div className="lg:col-span-3 rounded-xl"
-             style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-          <div className="px-4 py-3 text-xs uppercase tracking-wide border-b"
-               style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
-            Findings (4 of 78 shown)
-          </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            <FakeFinding
-              icon={Flame} dept="Fire" severity="critical"
-              section="CBC-7A 704A.1"
-              text="Plan shows wood siding within 5 ft of grade. Altadena is in a Very High Fire Hazard Severity Zone, and CBC Ch. 7A requires noncombustible siding in the first 5 ft."
-            />
-            <FakeFinding
-              icon={ShieldCheck} dept="Building & Safety" severity="critical"
-              section="IFC 1030.2"
-              text="Upstairs bedroom 3 window: 16x36 slider w/ 48&quot; sill exceeds 44&quot; max AFF and is under 5.7 sf net clear opening required for emergency escape."
-            />
-            <FakeFinding
-              icon={Leaf} dept="Environmental" severity="high"
-              section="T24 150.1(c)14"
-              text="No PV system shown on roof plan. California Title 24 requires a sized photovoltaic system on all new SFD."
-            />
-            <FakeFinding
-              icon={Bolt} dept="Electrical" severity="medium"
-              section="NEC 210.8(A)"
-              text="Two countertop receptacles within 6 ft of sink not annotated GFCI; required for dwelling unit kitchens."
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FakeScoreRing({ score }: { score: number }) {
-  const color = score >= 80 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
-  const r = 36;
-  const c = 2 * Math.PI * r;
-  const off = c - c * (score / 100);
-  return (
-    <div className="relative w-24 h-24">
-      <svg width="96" height="96" viewBox="0 0 96 96">
-        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="8" />
-        <circle cx="48" cy="48" r={r} fill="none" stroke={color} strokeWidth="8"
-                strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off}
-                transform="rotate(-90 48 48)" />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xl font-bold" style={{ color }}>{score}%</span>
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ n, label, color }: { n: number; label: string; color: string }) {
-  return (
-    <div className="text-center px-2 py-1.5 rounded-md"
-         style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-      <div className="text-base font-bold" style={{ color }}>{n}</div>
-      <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</div>
-    </div>
-  );
-}
-
-function KV({ k, v, warn }: { k: string; v: string; warn?: boolean }) {
-  return (
-    <div className="flex justify-between text-xs py-1">
-      <span style={{ color: "var(--text-muted)" }}>{k}</span>
-      <span style={{ color: warn ? "var(--non-compliant)" : "var(--text-primary)", fontWeight: warn ? 600 : 500 }}>
-        {v}
-      </span>
-    </div>
-  );
-}
-
-function FakeFinding({
-  icon: Icon, dept, severity, section, text,
-}: {
-  icon: React.ElementType;
-  dept: string;
-  severity: "critical" | "high" | "medium" | "low";
-  section: string;
-  text: string;
-}) {
-  const sevColor = severity === "critical" ? "#ef4444" : severity === "high" ? "#f59e0b" : "#64748b";
-  return (
-    <div className="px-4 py-3 flex items-start gap-3">
-      <div className="mt-0.5"><Icon className="w-4 h-4" style={{ color: sevColor }} /></div>
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
-          <span className="text-xs font-mono font-semibold" style={{ color: "var(--accent-bright)" }}>
-            {section}
-          </span>
-          <span className="text-[10px] uppercase tracking-wide font-medium" style={{ color: sevColor }}>
-            {severity}
-          </span>
-          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>· {dept}</span>
-        </div>
-        <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{text}</p>
-      </div>
-    </div>
   );
 }
 

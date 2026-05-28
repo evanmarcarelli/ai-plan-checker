@@ -160,3 +160,10 @@ button, [role="button"] { letter-spacing: 0.01em; }
 .shadow-premium {
   box-shadow: 0 1px 2px rgba(11, 14, 20, 0.04), 0 8px 24px rgba(11, 14, 20, 0.06);
 }
+
+/* Demo: triage report fade-in when scenario completes */
+@keyframes demo-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: demo-fade-in 0.2s ease; }
