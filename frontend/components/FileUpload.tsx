@@ -67,13 +67,18 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
   return (
     <div className="w-full space-y-4">
       {/* Drop zone — subtle hover lift makes the dashboard feel responsive
-          even before the user touches it. The motion.div replaces a plain
-          div for animation only; getRootProps's behavior is unchanged. */}
+          even before the user touches it. We wrap a motion.div AROUND the
+          dropzone (instead of spreading getRootProps onto motion.div) so
+          framer-motion's onDrag prop type doesn't collide with
+          react-dropzone's onDrag (Mouse/Touch/Pointer vs DragEvent) — that
+          collision breaks `next build`. */}
       <motion.div
-        {...getRootProps()}
         whileHover={isUploading ? undefined : { scale: 1.005 }}
         whileTap={isUploading ? undefined : { scale: 0.995 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      >
+      <div
+        {...getRootProps()}
         className={`upload-zone rounded-2xl p-10 cursor-pointer text-center outline-none
           ${isDragActive ? "drag-over" : ""}
           ${isUploading ? "cursor-not-allowed opacity-60" : ""}
@@ -130,6 +135,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
             </div>
           )}
         </div>
+      </div>
       </motion.div>
 
       {/* Error message */}
