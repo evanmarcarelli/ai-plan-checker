@@ -18,6 +18,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { createPackCheckoutSession, type PackSize } from "@/lib/api";
 import InteractiveDemo from "@/components/demo/InteractiveDemo";
+import Reveal from "@/components/Reveal";
 
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
@@ -198,8 +199,8 @@ function CredibilityBar() {
   return (
     <section className="px-6 py-8 border-y" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
       <div className="max-w-5xl mx-auto grid grid-cols-3 gap-6 text-center">
-        {stats.map((s) => (
-          <div key={s.label}>
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 0.06}>
             <div
               className="text-3xl font-bold"
               style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
@@ -209,7 +210,7 @@ function CredibilityBar() {
             <div className="text-xs uppercase tracking-wide mt-1" style={{ color: "var(--text-muted)" }}>
               {s.label}
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>
@@ -282,15 +283,15 @@ function HowItWorks() {
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-5">
-          {steps.map((s) => (
-            <div key={s.n} className="p-6 rounded-xl"
+          {steps.map((s, i) => (
+            <Reveal key={s.n} delay={i * 0.08} className="p-6 rounded-xl"
                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <div className="text-xs font-mono mb-3" style={{ color: "var(--accent)" }}>
                 {String(s.n).padStart(2, "0")}
               </div>
               <h3 className="font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{s.title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{s.body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -328,13 +329,13 @@ function AgentGrid() {
           </h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {agents.map(({ Icon, name }) => (
-            <div key={name}
+          {agents.map(({ Icon, name }, i) => (
+            <Reveal key={name} delay={i * 0.04}
                  className="flex flex-col items-center justify-center text-center p-4 rounded-xl"
                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <Icon className="w-5 h-5 mb-2" style={{ color: "var(--accent-bright)" }} />
               <div className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{name}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -388,9 +389,10 @@ function Pricing() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PRICING.map((p) => (
-            <div
+          {PRICING.map((p, i) => (
+            <Reveal
               key={p.credits}
+              delay={i * 0.07}
               className="p-5 rounded-2xl flex flex-col"
               style={{
                 background: "var(--bg-card)",
@@ -430,7 +432,7 @@ function Pricing() {
               >
                 {busyPack === p.credits ? "Redirecting…" : "Get started"}
               </button>
-            </div>
+            </Reveal>
           ))}
         </div>
 

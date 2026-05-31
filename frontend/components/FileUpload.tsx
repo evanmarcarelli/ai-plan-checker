@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { Upload, FileText, X, AlertCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatFileSize } from "@/lib/utils";
 
 interface Props {
@@ -65,9 +66,14 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
 
   return (
     <div className="w-full space-y-4">
-      {/* Drop zone */}
-      <div
+      {/* Drop zone — subtle hover lift makes the dashboard feel responsive
+          even before the user touches it. The motion.div replaces a plain
+          div for animation only; getRootProps's behavior is unchanged. */}
+      <motion.div
         {...getRootProps()}
+        whileHover={isUploading ? undefined : { scale: 1.005 }}
+        whileTap={isUploading ? undefined : { scale: 0.995 }}
+        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
         className={`upload-zone rounded-2xl p-10 cursor-pointer text-center outline-none
           ${isDragActive ? "drag-over" : ""}
           ${isUploading ? "cursor-not-allowed opacity-60" : ""}
@@ -124,7 +130,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Error message */}
       {error && (
@@ -160,19 +166,28 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
         </div>
       )}
 
-      {/* Submit button */}
-      {selectedFile && !isUploading && (
-        <button
-          onClick={handleSubmit}
-          className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 btn-primary"
-          style={{
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          <Upload className="w-4 h-4" />
-          Analyze Plan Set
-        </button>
-      )}
+      {/* Submit button — slides in from below when a file is selected.
+          AnimatePresence handles the unmount gracefully if the user removes
+          the file before submitting. */}
+      <AnimatePresence>
+        {selectedFile && !isUploading && (
+          <motion.button
+            key="submit"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            onClick={handleSubmit}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 btn-primary"
+            style={{
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            <Upload className="w-4 h-4" />
+            Analyze Plan Set
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Supported codes info */}
       <div

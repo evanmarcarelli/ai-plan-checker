@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
 import AgentLogs from "@/components/AgentLogs";
 import ComplianceReport from "@/components/ComplianceReport";
+import Reveal from "@/components/Reveal";
 import {
   Building2, Cpu, FileCheck, ChevronRight,
   Activity, CheckCircle2, AlertCircle, Clock, RotateCcw,
@@ -494,9 +495,10 @@ export default function Dashboard() {
 
             <FileUpload onUpload={handleUpload} isUploading={isUploading} uploadProgress={uploadProgress} uploadStatus={uploadStatus} />
 
-            {/* Pipeline overview */}
+            {/* Pipeline overview — fade-up reveal with a slight stagger so
+                the cards feel sequenced rather than slamming in together. */}
             <div className="grid grid-cols-2 gap-3 mt-8">
-              <div className="p-4 rounded-xl"
+              <Reveal delay={0.05} className="p-4 rounded-xl"
                    style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <Search className="w-6 h-6 mb-2" style={{ color: "var(--accent-bright)" }} />
                 <div className="text-sm font-semibold mb-1"
@@ -506,8 +508,8 @@ export default function Dashboard() {
                 <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Reads title blocks and identifies AHJ, occupancy, construction type
                 </div>
-              </div>
-              <div className="p-4 rounded-xl"
+              </Reveal>
+              <Reveal delay={0.12} className="p-4 rounded-xl"
                    style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <BookOpen className="w-6 h-6 mb-2" style={{ color: "var(--accent-bright)" }} />
                 <div className="text-sm font-semibold mb-1"
@@ -517,11 +519,14 @@ export default function Dashboard() {
                 <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Pulls IBC, NFPA, NEC, IPC, IMC, ADA and local amendments
                 </div>
-              </div>
+              </Reveal>
             </div>
 
-            {/* Department reviewers */}
-            <div className="mt-3 p-4 rounded-xl"
+            {/* Department reviewers — outer card and inner chips both Reveal
+                so they cascade in. The chip stagger feels appropriate for a
+                10-element grid; ~30ms between each lands the last one ~300ms
+                after the first. */}
+            <Reveal delay={0.2} className="mt-3 p-4 rounded-xl"
                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 text-sm font-semibold"
@@ -546,16 +551,16 @@ export default function Dashboard() {
                   { Icon: Compass, label: "Zoning" },
                   { Icon: Construction, label: "Public Works" },
                   { Icon: Trees, label: "Environmental" },
-                ].map((d) => (
-                  <div key={d.label}
+                ].map((d, i) => (
+                  <Reveal key={d.label} delay={0.25 + i * 0.03} y={6}
                        className="flex items-center gap-2 px-2.5 py-2 rounded-md"
                        style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
                     <d.Icon className="w-3.5 h-3.5" style={{ color: "var(--text-secondary)" }} />
                     <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{d.label}</span>
-                  </div>
+                  </Reveal>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
             {/* Demo: what a finished review looks like */}
             <ExampleReview />
