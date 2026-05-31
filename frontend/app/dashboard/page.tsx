@@ -271,24 +271,25 @@ export default function Dashboard() {
         }}
       >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Logo — clicks back to the marketing home page */}
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-3 flex-shrink-0 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="Go to home page"
+          >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
               style={{ background: "#0B0E14" }}
             >
               <Building2 className="w-4.5 h-4.5 text-white" />
             </div>
-            <div>
-              <span
-                className="font-bold text-sm tracking-wide"
-                style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
-              >
-                Up2Code AI
-              </span>
-              {/* Version subtitle intentionally removed for cleaner brand */}
-            </div>
-          </div>
+            <span
+              className="font-bold text-sm tracking-wide"
+              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
+            >
+              Up2Code AI
+            </span>
+          </button>
 
           {/* Pipeline (center, hidden when not active) */}
           {(isProcessing || isCompleted) && (
@@ -464,7 +465,7 @@ export default function Dashboard() {
 
         {/* ── UPLOAD TAB ── */}
         {(activeTab === "upload" || !jobId) && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-screen-2xl mx-auto">
             {/* Hero */}
             <div className="text-center mb-10 pt-6">
               <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-6"
