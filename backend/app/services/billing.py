@@ -11,12 +11,25 @@ logger = get_logger(__name__)
 # trailing newline that makes Stripe reject auth with a misleading error.
 stripe.api_key = (settings.stripe_secret_key or "").strip()
 
+# Strip env values defensively — Render's paste UI often appends a trailing
+# newline that breaks dict lookups against Stripe's clean price IDs.
+def _strip(s: Optional[str]) -> str:
+    return (s or "").strip()
+
 # Map Stripe price ID -> (plan_tier, credits_per_month). -1 = unlimited.
+# Pack price IDs (Render env STRIPE_PRICE_PACK_*) are recurring subscriptions
+# whose monthly grant equals the pack size. Credits roll over between months.
 PRICE_TO_PLAN: Dict[str, Tuple[str, int]] = {
-    settings.stripe_price_starter:      ("starter",       10),
-    settings.stripe_price_professional: ("professional",  50),
-    settings.stripe_price_unlimited:    ("unlimited",     -1),
+    _strip(settings.stripe_price_starter):      ("starter",         10),
+    _strip(settings.stripe_price_professional): ("professional",    50),
+    _strip(settings.stripe_price_unlimited):    ("unlimited",       -1),
+    _strip(settings.stripe_price_pack_1):       ("try-one",          1),
+    _strip(settings.stripe_price_pack_5):       ("single-project",   5),
+    _strip(settings.stripe_price_pack_25):      ("firm-pack",       25),
+    _strip(settings.stripe_price_pack_100):     ("annual",         100),
 }
+# Drop any "" key from unset env vars so unknown prices don't accidentally match.
+PRICE_TO_PLAN.pop("", None)
 
 
 def get_or_create_customer(user_id: str, email: Optional[str]) -> str:
@@ -60,39 +73,34 @@ PACKS: Dict[int, Tuple] = {
 
 
 def create_pack_checkout(user_id: str, email: Optional[str], pack_size: int) -> str:
-    """Create a one-time-payment Stripe Checkout Session for a credit pack.
+    """Create a recurring-subscription Stripe Checkout Session for a credit pack.
 
-    Returns the Checkout URL. Credits are granted by the webhook on
-    `checkout.session.completed`, keyed off `metadata.credits` so the
-    grant logic is independent of which price the user clicked through.
+    Each pack price in Stripe is a monthly subscription whose allotment
+    equals the pack size. Credits are granted on `invoice.payment_succeeded`
+    (initial + each renewal) and roll over between months.
     """
     if pack_size not in PACKS:
         raise ValueError(f"Unknown pack size: {pack_size}")
-    # Strip whitespace/newlines — common Render env-var paste mistake. Without
-    # this, Stripe returns "No such price: 'price_xxx\n'" which looks like a
-    # missing-price error but is really a config-hygiene one.
-    price_id = (PACKS[pack_size][0]() or "").strip()
+    price_id = _strip(PACKS[pack_size][0]())
     if not price_id:
         raise ValueError(f"STRIPE_PRICE_PACK_{pack_size} is not configured")
 
     customer_id = get_or_create_customer(user_id, email)
     session = stripe.checkout.Session.create(
-        mode="payment",                          # one-time, NOT subscription
+        mode="subscription",
         customer=customer_id,
         line_items=[{"price": price_id, "quantity": 1}],
         success_url=f"{settings.frontend_url}/dashboard?purchase=success",
         cancel_url=f"{settings.frontend_url}/billing?purchase=canceled",
         client_reference_id=user_id,
-        # Metadata is the source of truth for crediting — the webhook reads
-        # `credits` here rather than reverse-mapping the price ID.
-        payment_intent_data={"metadata": {
+        # Subscription-scoped metadata lets the invoice webhook reverse-map
+        # to the user without depending on the customer-id lookup.
+        subscription_data={"metadata": {
             "supabase_user_id": user_id,
-            "credits": str(pack_size),
             "pack_size": str(pack_size),
         }},
         metadata={
             "supabase_user_id": user_id,
-            "credits": str(pack_size),
             "pack_size": str(pack_size),
         },
         allow_promotion_codes=True,
@@ -176,13 +184,17 @@ def handle_event(event: stripe.Event) -> None:
             }).eq("id", user_id).execute()
 
     elif etype == "invoice.payment_succeeded":
-        # Top up credits for the new billing period
+        # Sole credit-grant trigger for subscription packs. Fires on initial
+        # purchase AND each monthly renewal, so one path handles both.
         sub_id = obj.get("subscription")
-        if sub_id:
+        invoice_id = obj.get("id")
+        amount_paid = obj.get("amount_paid") or 0
+        currency = (obj.get("currency") or "usd").lower()
+        if sub_id and invoice_id:
             sub = stripe.Subscription.retrieve(sub_id)
             user_id = (sub.get("metadata") or {}).get("supabase_user_id") or _find_user_by_customer(sub.get("customer"))
             if user_id:
-                _grant_monthly_credits(user_id, sub)
+                _grant_monthly_credits(user_id, sub, invoice_id, amount_paid, currency)
 
 
 def _apply_pack_payment(user_id: Optional[str], session: Dict) -> None:
@@ -249,22 +261,15 @@ def _find_user_by_customer(customer_id: Optional[str]) -> Optional[str]:
 
 
 def _apply_subscription(user_id: str, sub) -> None:
-    price_id = sub["items"]["data"][0]["price"]["id"] if sub.get("items") else None
-    tier_credits = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
-    tier, credits = tier_credits
+    """Update plan metadata on subscription create/update. Credits are NOT
+    granted here — that's the `invoice.payment_succeeded` path, which fires
+    both on initial purchase and each renewal."""
+    price_id = _strip(sub["items"]["data"][0]["price"]["id"]) if sub.get("items") else ""
+    tier, credits = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
 
     from datetime import datetime, timezone
     period_end_ts = sub.get("current_period_end")
     period_end_iso = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat() if period_end_ts else None
-
-    profile = db.get_profile(user_id) or {}
-    # Top up credits when first becoming active (or upgrading); leave alone if already on this tier
-    new_credits = profile.get("credits_remaining") or 0
-    if tier != profile.get("plan_tier") or profile.get("subscription_status") != "active":
-        if credits == -1:
-            new_credits = 9999  # "unlimited" — set high; we don't decrement to zero on Unlimited
-        else:
-            new_credits = max(new_credits, credits)
 
     db.admin().table("profiles").update({
         "plan_tier": tier,
@@ -272,19 +277,59 @@ def _apply_subscription(user_id: str, sub) -> None:
         "stripe_subscription_id": sub["id"],
         "subscription_status": sub.get("status"),
         "subscription_current_period_end": period_end_iso,
-        "credits_remaining": new_credits,
     }).eq("id", user_id).execute()
 
 
-def _grant_monthly_credits(user_id: str, sub) -> None:
-    """On a successful invoice payment, refill the monthly credit allotment."""
-    price_id = sub["items"]["data"][0]["price"]["id"] if sub.get("items") else None
-    tier, credits = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
-    if credits == -1:
-        new_credits = 9999  # unlimited
-    else:
-        new_credits = credits
+def _grant_monthly_credits(
+    user_id: str,
+    sub,
+    invoice_id: str,
+    amount_paid: int = 0,
+    currency: str = "usd",
+) -> None:
+    """Additively grant the monthly allotment for this subscription, with
+    rollover. Idempotent on invoice_id — Stripe retries on transient failures
+    are no-ops once we've written the credit_purchases row.
+    """
+    price_id = _strip(sub["items"]["data"][0]["price"]["id"]) if sub.get("items") else ""
+    tier, monthly = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
+    if monthly == 0:
+        logger.warning(f"[invoice {invoice_id}] unknown price {price_id}; no credits granted")
+        return
+
+    # Idempotency: skip if this invoice was already credited (Stripe retries).
+    existing = (
+        db.admin().table("credit_purchases")
+        .select("id")
+        .eq("stripe_invoice_id", invoice_id)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        logger.info(f"[invoice {invoice_id}] already credited; skipping")
+        return
+
+    profile = db.get_profile(user_id) or {}
+    current = profile.get("credits_remaining") or 0
+    grant = 9999 if monthly == -1 else monthly
+    new_balance = current + grant  # rollover: add, don't overwrite
+
+    # Write the purchase row FIRST (the idempotency marker), then the balance.
+    # If the insert fails we don't grant; better than the inverse.
+    try:
+        db.admin().table("credit_purchases").insert({
+            "user_id": user_id,
+            "stripe_invoice_id": invoice_id,
+            "pack_size": grant,
+            "credits_added": grant,
+            "amount_cents": amount_paid,
+            "currency": currency,
+        }).execute()
+    except Exception as e:
+        logger.error(f"[invoice {invoice_id}] failed to log purchase: {e}")
+        return
+
     db.admin().table("profiles").update({
-        "credits_remaining": new_credits,
+        "credits_remaining": new_balance,
     }).eq("id", user_id).execute()
-    logger.info(f"Granted {new_credits} credits to {user_id} ({tier})")
+    logger.info(f"[invoice {invoice_id}] +{grant} credits to {user_id} ({tier}); balance {current} → {new_balance}")

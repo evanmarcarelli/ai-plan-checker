@@ -180,7 +180,7 @@ function Hero() {
         </div>
 
         <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
-          No credit card required · No subscription · Pay per check
+          First check free · Monthly plans · Credits roll over
         </p>
       </div>
     </section>
@@ -278,7 +278,7 @@ function HowItWorks() {
             className="text-3xl sm:text-4xl font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            Three steps. No subscription.
+            Three steps. Cancel anytime.
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-5">
@@ -380,10 +380,10 @@ function Pricing() {
             className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            Pay per check. No subscription.
+            Monthly plans. Credits roll over.
           </h2>
           <p className="text-base max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            One credit = one full plan review. Credits never expire. First check is free.
+            One credit = one full plan review. Unused credits carry to next month. Cancel anytime.
           </p>
         </div>
 
@@ -411,11 +411,12 @@ function Pricing() {
                       style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
                   ${p.price.toFixed(p.price % 1 === 0 ? 0 : 2)}
                 </span>
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>/mo</span>
               </div>
               <div className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
                 {p.credits === 1
-                  ? "1 check"
-                  : `${p.credits} checks · $${p.per.toFixed(2)} each`}
+                  ? "1 check / month"
+                  : `${p.credits} checks / month · $${p.per.toFixed(2)} each`}
               </div>
               <button
                 onClick={() => void startCheckout(p.credits as PackSize)}

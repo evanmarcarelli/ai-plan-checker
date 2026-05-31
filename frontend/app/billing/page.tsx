@@ -7,10 +7,10 @@ import {
   getMe, createPackCheckoutSession, type UserProfile, type PackSize,
 } from "@/lib/api";
 
-// Pay-per-use credit packs — single source of truth here, mirrors the
-// PRICING table on the marketing landing page. Change endpoints in BOTH
-// places together (or factor into a shared module if this gets edited often).
-// Endpoints: 1 = $60, 100 = $2,999. Middle tiers linearly interpolated.
+// Monthly credit-pack subscriptions — single source of truth here, mirrors
+// the PRICING table on the marketing landing page. Change in BOTH places
+// together (or factor into a shared module if this gets edited often).
+// Each tier renews monthly; unused credits roll over to the next month.
 interface Pack {
   size: PackSize;
   price: number;
@@ -93,10 +93,10 @@ function BillingInner() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-3"
               style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-            Buy credits
+            Choose your plan
           </h1>
           <p className="text-base" style={{ color: "var(--text-secondary)" }}>
-            One credit = one full plan review. Credits never expire. No subscription.
+            One credit = one full plan review. Monthly subscription — unused credits roll over.
           </p>
           {profile && profile.credits_remaining !== undefined && (
             <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
@@ -142,11 +142,12 @@ function BillingInner() {
                         style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
                     ${p.price.toLocaleString()}
                   </span>
+                  <span className="text-sm" style={{ color: "var(--text-muted)" }}>/mo</span>
                 </div>
                 <div className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>
                   {p.size === 1
-                    ? "1 check"
-                    : `${p.size} checks · $${p.per.toFixed(2)} each`}
+                    ? "1 check / month"
+                    : `${p.size} checks / month · $${p.per.toFixed(2)} each`}
                 </div>
                 <p className="text-xs mb-5 leading-relaxed flex-1" style={{ color: "var(--text-muted)" }}>
                   {p.tagline}
@@ -163,7 +164,7 @@ function BillingInner() {
                   }}
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isLoading ? "Redirecting…" : `Buy ${p.size} ${p.size === 1 ? "credit" : "credits"}`}
+                  {isLoading ? "Redirecting…" : "Subscribe"}
                 </button>
               </div>
             );
