@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from app.agents.base import BaseAgent
 from app.models.schemas import Jurisdiction, ExtractedPlanData, PlanType
 from app.services.pdf_processor import pdf_processor
+from app.services.vision_extractor import vision_title_extractor
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -115,6 +116,19 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         raw_data = pdf_processor.extract(file_path)
         plan_data = pdf_processor.parse_plan_data(raw_data)
 
+        # Vision pass on the title sheet. The regex extractors above match very
+        # narrow label formats and routinely miss the code data summary on real
+        # architectural sets (or false-positive on it — e.g. "C" for occupancy
+        # from "CERTIFICATE OF OCCUPANCY"). When those fields land as null on
+        # the JSON sent to the 10 Department reviewers, every code requirement
+        # comes back as needs_review for lack of anything to compare against.
+        # Reading them visually off the title sheet is the highest-leverage
+        # fill-in.
+        vision_data = await vision_title_extractor.extract(
+            file_path, raw_data.get("pages", {})
+        )
+        self._apply_vision_fields(plan_data, vision_data)
+
         # Build context for LLM
         title_block = raw_data.get("title_block", "") or ""
         first_pages_text = ""
@@ -126,8 +140,17 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         import os as _os
         filename_hint = _os.path.basename(file_path)
 
+        vision_summary = (
+            f"VISION-READ TITLE-SHEET FIELDS (trust these over the text-extraction "
+            f"fallback; null means vision could not read it):\n{json.dumps(vision_data, indent=2)}"
+            if vision_data
+            else "VISION-READ TITLE-SHEET FIELDS: (vision extraction skipped or returned empty)"
+        )
+
         context = f"""FILENAME (often contains project address or city):
 {filename_hint}
+
+{vision_summary}
 
 TITLE BLOCK TEXT (most important - bottom-right of drawings):
 {title_block[:3000] if title_block else "No title block extracted"}
@@ -193,7 +216,51 @@ Total pages: {raw_data.get('page_count', 0)}
             "jurisdiction": jurisdiction,
             "plan_data": plan_data,
             "raw_pdf_data": raw_data,
+            "vision_data": vision_data,
+            "vision_error": vision_title_extractor.last_error,
         }
+
+    @staticmethod
+    def _apply_vision_fields(plan_data: ExtractedPlanData, vision: Dict[str, Any]) -> None:
+        """Fold vision-extracted title-sheet fields into plan_data. Vision
+        wins for occupancy_type (the regex extractor's "C" false positive
+        from "CERTIFICATE OF OCCUPANCY" is its single most common failure);
+        for everything else vision only fills values the regex left blank
+        so we don't clobber a correctly-parsed dimension."""
+        if not vision:
+            return
+        # Override the well-known false positive. Anything else short-and-
+        # bare-letter that fails the IBC group format (A/B/E/F/H/I/M/R/S/U
+        # optionally with -digit) is almost certainly a regex misfire too.
+        occ = vision.get("occupancy_type")
+        if occ and (
+            plan_data.occupancy_type is None
+            or plan_data.occupancy_type == "C"
+            or not re.match(r"^[ABEFHIMRSU](-\d+)?(\s*[,/]\s*[ABEFHIMRSU](-\d+)?)*$",
+                            (plan_data.occupancy_type or "").strip(), re.IGNORECASE)
+        ):
+            plan_data.occupancy_type = occ
+        if vision.get("construction_type") and not plan_data.construction_type:
+            plan_data.construction_type = vision["construction_type"]
+        if vision.get("building_height_ft") is not None and plan_data.building_height is None:
+            try:
+                plan_data.building_height = float(vision["building_height_ft"])
+            except (TypeError, ValueError):
+                pass
+        if vision.get("building_area_sf") is not None and plan_data.building_area is None:
+            try:
+                plan_data.building_area = float(vision["building_area_sf"])
+            except (TypeError, ValueError):
+                pass
+        if vision.get("stories") is not None and plan_data.stories is None:
+            try:
+                plan_data.stories = int(vision["stories"])
+            except (TypeError, ValueError):
+                pass
+        if vision.get("project_name") and not plan_data.project_name:
+            plan_data.project_name = vision["project_name"]
+        if vision.get("project_address") and not plan_data.project_address:
+            plan_data.project_address = vision["project_address"]
 
     def _heuristic_jurisdiction(self, text: str, title_block: str) -> Jurisdiction:
         """Fallback heuristic extraction when LLM fails."""

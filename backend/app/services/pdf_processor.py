@@ -186,9 +186,22 @@ class PDFProcessor:
         return match.group(1).strip() if match else None
 
     def _extract_occupancy(self, text: str) -> Optional[str]:
-        pattern = r'OCCUPANCY(?:\s+(?:CLASS|TYPE|GROUP|CLASSIFICATION))?[:\s]+([A-Z][-\d]*(?:[,/]\s*[A-Z][-\d]*)*)'
+        # Anchor to the IBC group letters (A/B/E/F/H/I/M/R/S/U) plus optional
+        # subgroup digit. The previous broad `[A-Z][-\d]*` matched the "C" in
+        # "CERTIFICATE OF OCCUPANCY" — the single most common false positive
+        # on real architectural sets. Also disallow generic phrasing like
+        # "CERTIFICATE OF OCCUPANCY" / "OCCUPANCY PERMIT" by requiring a
+        # colon, "CLASS", "TYPE", "GROUP", or "CLASSIFICATION" between the
+        # word and the value.
+        pattern = (
+            r'OCCUPANCY\s+(?:CLASS|TYPE|GROUP|CLASSIFICATION)[:\s]+'
+            r'([ABEFHIMRSU](?:-\d+)?(?:[,/]\s*[ABEFHIMRSU](?:-\d+)?)*)'
+            r'|OCCUPANCY[:\s]+([ABEFHIMRSU](?:-\d+)?(?:[,/]\s*[ABEFHIMRSU](?:-\d+)?)*)\b'
+        )
         match = re.search(pattern, text, re.IGNORECASE)
-        return match.group(1).strip() if match else None
+        if not match:
+            return None
+        return (match.group(1) or match.group(2)).strip()
 
     def _extract_construction_type(self, text: str) -> Optional[str]:
         pattern = r'(?:CONSTRUCTION|CONST\.?)\s+TYPE[:\s]+((?:TYPE\s+)?[IVX]+[-A-Z]*)'

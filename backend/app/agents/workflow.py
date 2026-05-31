@@ -70,6 +70,28 @@ class PlanCheckerWorkflow:
             j = state["jurisdiction"]
             pd = state["plan_data"]
             await emit("Surveyor", f"PDF extracted: {len(pd.raw_text_by_page)} pages processed")
+
+            # Vision pass status — surfaces in the Agent Logs tab so the user
+            # can see whether the title-sheet read succeeded. Without this, a
+            # silent vision failure (bad key, rate limit) would look identical
+            # to a successful run that simply didn't find the title sheet.
+            vision_data = state.get("vision_data") or {}
+            vision_error = state.get("vision_error")
+            if vision_error:
+                await emit(
+                    "Surveyor",
+                    f"Title-sheet vision pass failed: {vision_error} "
+                    f"(falling back to text-layer regex extraction only)",
+                    level="warning",
+                    data={"vision_error": vision_error},
+                )
+            elif vision_data:
+                filled = [k for k, v in vision_data.items() if v not in (None, "", []) and k != "is_title_sheet"]
+                await emit(
+                    "Surveyor",
+                    f"Title-sheet vision pass read {len(filled)} field(s): {', '.join(filled) or '(none)'}",
+                    data={"vision_fields": filled, "is_title_sheet": vision_data.get("is_title_sheet")},
+                )
             await emit(
                 "Surveyor",
                 f"Jurisdiction: {j.city or 'Unknown'}, {j.state or 'Unknown'} (confidence {j.confidence:.0%})",
