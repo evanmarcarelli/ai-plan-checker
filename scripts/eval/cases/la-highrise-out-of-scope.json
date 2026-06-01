@@ -1,0 +1,11 @@
+{
+  "slug": "la-highrise-out-of-scope",
+  "title": "LA High-rise — 12-story new construction, out of pilot scope",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "out_of_scope",
+  "project_address": "1010 Grand Ave, Los Angeles, CA 90015",
+  "source": "synthetic",
+  "notes": "Pilot scope is SFR ministerial + commercial TI. New high-rise should be rejected at intake.",
+  "plan_text": "PROJECT DATA - 1010 GRAND AVE\nNew 12-story mixed-use tower\nOccupancy Groups: R-2 (residential floors 4-12), M (retail ground floor), S-2 (parking levels P1-P3)\nConstruction Type: I-A\nBuilding height: 145 ft\nNumber of stories: 12 above grade + 3 below\nDesign occupant load: 1,840\nFully sprinklered: NFPA 13\nHigh-rise per IBC 403 — smoke control, voice alarm, standby power, BDA all provided",
+  "ground_truth": []
+}

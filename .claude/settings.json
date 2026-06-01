@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=uapwkpuxaruefheevxdr&features=debugging%2Caccount%2Cdatabase%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
+    },
+    "tickettailor": {
+      "type": "http",
+      "url": "https://mcp.tickettailor.ai/mcp"
+    }
+  }
+}

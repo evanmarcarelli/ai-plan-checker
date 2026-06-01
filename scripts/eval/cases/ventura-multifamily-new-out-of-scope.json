@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-multifamily-new-out-of-scope",
+  "title": "Ventura County R-2 new construction — multifamily, out of pilot scope",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "2255 Daily Dr, Camarillo, CA 93010",
+  "source": "synthetic",
+  "notes": "New R-2 multifamily — pilot covers SFR + TI only. Should be classified multifamily_new_construction and rejected.",
+  "plan_text": "PROJECT DATA - 2255 DAILY DR, VENTURA COUNTY (CAMARILLO area)\nNew 12-unit apartment building\nOccupancy Group: R-2\nConstruction Type: V-A\nNumber of stories: 3\nBuilding height: 38 ft\nTotal building area: 14,200 sf\nPer-story area: 4,733 sf\nFully sprinklered: yes (NFPA 13R)\nDesign occupant load: 120\nIECC: Title 24 Part 6\nNo tenant improvement — ground-up new construction",
+  "ground_truth": []
+}

@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-coastal-zone-out-of-scope",
+  "title": "Ventura County coastal SFR — CA Coastal Commission jurisdiction, out of pilot",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "401 Solimar Beach Dr, Ventura County (unincorporated), CA 93001",
+  "source": "synthetic",
+  "notes": "Solimar Beach is in the CA Coastal Zone. Coastal Commission CDP review pre-empts our rule engine.",
+  "plan_text": "PROJECT DATA - 401 SOLIMAR BEACH DR, VENTURA COUNTY (UNINCORPORATED, COASTAL ZONE)\nLocation: California Coastal Zone — Coastal Development Permit (CDP) from CA Coastal Commission required\nProposed: replacement single-family residence\nOccupancy Group: R-3\nConstruction Type: V-B sprinklered\nNumber of stories: 2\nTotal building area: 2,900 sf\nVentura County LCP coastal hazard analysis (sea-level rise, bluff retreat) attached\nNo VHFHSZ designation",
+  "ground_truth": []
+}

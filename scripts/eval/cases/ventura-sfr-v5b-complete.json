@@ -1,0 +1,25 @@
+{
+  "slug": "ventura-sfr-v5b-complete",
+  "title": "Ventura County SFR — Type V-B single-family, complete code analysis",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "ventura_sfr_typ_vb_ministerial",
+  "project_address": "4421 Las Posas Rd, Camarillo, CA 93010",
+  "source": "synthetic",
+  "notes": "Clean baseline. Camarillo-area unincorporated SFR outside any VHFHSZ overlay; code-analysis sheet has all required fields.",
+  "plan_text": "PROJECT DATA - 4421 LAS POSAS RD, VENTURA COUNTY (CAMARILLO area)\nCODE ANALYSIS SHEET A-0.1\n2022 CBC + Ventura County Ordinance Code Division VIII\nOccupancy Group: R-3 (single-family dwelling)\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 23 ft\nTotal building area: 2,650 sf\nPer-story area: 1,325 sf\nFully sprinklered: yes (NFPA 13D residential)\nDesign occupant load: 10\nIECC compliance path: Title 24 Part 6 prescriptive\nElectrical service: 200 A service main breaker\nWater closets: WC 3\nLavatories: LAV 3\nEXIT 1 (front door)\nEXIT 2 (rear door)\nEXIT DOOR 36\" min clear width\nFire alarm: NFPA 72 smoke alarms per CRC R314\nNo commercial kitchen. No atrium. No elevator. Parcel not in CalFire VHFHSZ per Ventura County GIS.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-MIXED-OCCUPANCY",      "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "NEC-SERVICE-RATING",       "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" }
+  ]
+}

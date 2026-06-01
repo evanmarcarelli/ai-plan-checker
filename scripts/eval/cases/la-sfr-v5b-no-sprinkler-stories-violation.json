@@ -1,0 +1,18 @@
+{
+  "slug": "la-sfr-v5b-no-sprinkler-stories-violation",
+  "title": "LA SFR — Type V-B, 3 stories non-sprinklered (exceeds Table 504.4 1-story sprinkler-reduced limit)",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "la_sfr_typ_vb_ministerial",
+  "project_address": "12 Coastal Way, Los Angeles, CA 90402",
+  "source": "synthetic",
+  "notes": "Tests stories_check + sprinkler-detection negation handling.",
+  "plan_text": "PROJECT DATA - 12 COASTAL WAY\nCODE ANALYSIS A-0.1\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 3\nBuilding height: 32 ft\nTotal building area: 3,000 sf\nPer-story area: 1,000 sf\nNon-sprinklered\nDesign occupant load: 10\nIECC: Title 24 Part 6\nElectrical service: 200 A main breaker\nWC 3, LAV 3\nEXIT 1 (front)\nEXIT 2 (rear)\nNFPA 72 smoke alarms",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "fail", "expected_severity": "critical", "rationale": "3 stories exceeds 1-story non-sprinklered limit for R-2/V-B" },
+    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "fail", "expected_severity": "critical", "rationale": "Plans explicitly state non-sprinklered; required for this configuration" }
+  ]
+}

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plan Room AHJ — Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f1f5f9; }
+  .score-bar { transition: width 0.4s ease; }
+  .fade-in { animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50:'#eff6ff', 100:'#dbeafe', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a5f' }
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+// ── mock data ──────────────────────────────────────────────────────────────
+const SUBMITTALS = [
+  { id:'SUB-2024-0841', project:'Harmon Ave Mixed-Use', applicant:'Rivera Architecture LLC', submitted:'2024-05-01', occupancy:'A-2 / B', score:91, status:'Triaged', reviewer:'D. Okafor' },
+  { id:'SUB-2024-0839', project:'Lakewood Self-Storage', applicant:'Pacific Coast Dev', submitted:'2024-04-30', occupancy:'S-1', score:78, status:'In Review', reviewer:'M. Hennessy' },
+  { id:'SUB-2024-0835', project:'Cedar Hill Townhomes', applicant:'Brightline Builders', submitted:'2024-04-29', occupancy:'R-3', score:63, status:'In Review', reviewer:'D. Okafor' },
+  { id:'SUB-2024-0831', project:'Tacoma Transit Hub', applicant:'City of Tacoma — Public Works', submitted:'2024-04-28', occupancy:'A-3', score:55, status:'Triaged', reviewer:'J. Matsuda' },
+  { id:'SUB-2024-0828', project:'Harbor View Clinic', applicant:'Northshore Medical Group', submitted:'2024-04-26', occupancy:'B / I-2', score:44, status:'Triaged', reviewer:'M. Hennessy' },
+  { id:'SUB-2024-0822', project:'Pine Street Retail', applicant:'Cascade Properties', submitted:'2024-04-25', occupancy:'M', score:82, status:'In Review', reviewer:'J. Matsuda' },
+  { id:'SUB-2024-0817', project:'Fircrest Elementary Addition', applicant:'Fircrest School District', submitted:'2024-04-23', occupancy:'E', score:29, status:'Pending', reviewer:'—' },
+  { id:'SUB-2024-0809', project:'Stadium District Parking', applicant:'Downtown Tacoma LLC', submitted:'2024-04-21', occupancy:'S-2', score:88, status:'In Review', reviewer:'D. Okafor' },
+];
+
+const FINDINGS = [
+  { id:1, severity:'Fail',    ref:'IBC §1006.3.2', desc:'Means of egress documentation missing from floor plan sheets A2.1–A2.3.', draft:'Per IBC Section 1006.3.2, the submitted floor plan lacks required means of egress documentation. Please provide a fully dimensioned egress plan on sheets A2.1–A2.3 indicating all exit access travel distances, common path of egress travel, and exit widths. Reference IBC §1005.1 for minimum egress width calculations.' },
+  { id:2, severity:'Fail',    ref:'IBC §903.2.1.3', desc:'Automatic sprinkler system narrative absent. Occupancy A-2 exceeds 100-person threshold.', draft:'Per IBC Section 903.2.1.3, an automatic sprinkler system is required for Group A-2 occupancies with an occupant load exceeding 100. The submitted set does not include a fire-suppression system narrative or riser diagram. Please include a complete sprinkler design narrative prepared by a licensed fire protection engineer.' },
+  { id:3, severity:'Warning', ref:'IBC §1009.4',   desc:'Accessible route from parking to primary entrance not clearly dimensioned.', draft:'Per IBC Section 1009.4 and ADA Standards §402, an accessible route must connect accessible parking spaces to the building entrance. Sheet C1.0 does not clearly dimension the accessible path width. Please revise to confirm minimum 44-inch clear width is maintained along the entire accessible route.' },
+  { id:4, severity:'Warning', ref:'IBC §Table 1004.5', desc:'Occupant load calculations provided but do not match submitted floor area on sheet A1.0.', draft:'Per IBC Table 1004.5, occupant loads must be calculated based on the actual floor area as measured. The occupant load summary on sheet G0.1 references a gross area of 4,200 SF, which does not agree with the 3,960 SF shown on sheet A1.0. Please reconcile and resubmit a corrected occupant load table.' },
+  { id:5, severity:'Info',    ref:'IBC §1010.1.9', desc:'Hardware schedule references lever hardware — confirm ADA compliance on all accessible-route doors.', draft:'' },
+  { id:6, severity:'Pass',    ref:'IBC §1208.2',   desc:'Minimum ceiling height confirmed ≥7\'–6\\" on all occupied floors.', draft:'' },
+  { id:7, severity:'Pass',    ref:'IBC §Table 1607.1', desc:'Live load designations match occupancy classification on structural drawings.', draft:'' },
+];
+
+const MEMBERS = [
+  { name:'Dana Okafor',    email:'dokafor@tacoma.gov',   role:'Reviewer',    active:true },
+  { name:'Marcus Hennessy',email:'mhennessy@tacoma.gov', role:'Reviewer',    active:true },
+  { name:'Jun Matsuda',    email:'jmatsuda@tacoma.gov',  role:'Supervisor',  active:true },
+  { name:'Priya Nair',     email:'pnair@tacoma.gov',     role:'Intake',      active:true },
+  { name:'Carl Weber',     email:'cweber@tacoma.gov',    role:'Admin',       active:true },
+  { name:'Alicia Tran',    email:'atran@tacoma.gov',     role:'Reviewer',    active:false },
+];
+
+const RULES = [
+  { id:'r1', label:'Require sprinkler narrative for A-occupancies >100 OL', enabled:true },
+  { id:'r2', label:'Tacoma Ord. 28857 — Rainwater harvesting plan for >5,000 SF', enabled:true },
+  { id:'r3', label:'Require geotechnical report for slopes >15%', enabled:true },
+  { id:'r4', label:'Flag mixed I-2 / B occupancies for supervisor assignment', enabled:false },
+  { id:'r5', label:'Auto-assign transit-adjacent sites to accessibility reviewer', enabled:true },
+];
+
+// ── helpers ────────────────────────────────────────────────────────────────
+function scoreColor(s) {
+  if (s >= 80) return { bg:'bg-emerald-100', text:'text-emerald-800', bar:'bg-emerald-500' };
+  if (s >= 50) return { bg:'bg-amber-100',   text:'text-amber-800',   bar:'bg-amber-400' };
+  return { bg:'bg-red-100', text:'text-red-800', bar:'bg-red-500' };
+}
+
+function statusBadge(s) {
+  const map = {
+    'Triaged':   'bg-blue-100 text-blue-800',
+    'In Review': 'bg-violet-100 text-violet-800',
+    'Pending':   'bg-slate-100 text-slate-600',
+  };
+  return map[s] || 'bg-slate-100 text-slate-600';
+}
+
+function severityBadge(s) {
+  const map = {
+    'Fail':    'bg-red-100 text-red-800 border border-red-200',
+    'Warning': 'bg-amber-100 text-amber-800 border border-amber-200',
+    'Info':    'bg-blue-100 text-blue-800 border border-blue-200',
+    'Pass':    'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  };
+  return map[s] || '';
+}
+
+function roleBadge(r) {
+  const map = {
+    'Admin':      'bg-slate-700 text-white',
+    'Supervisor': 'bg-violet-100 text-violet-800',
+    'Reviewer':   'bg-blue-100 text-blue-800',
+    'Intake':     'bg-slate-100 text-slate-700',
+  };
+  return map[r] || '';
+}
+
+// ── Nav ────────────────────────────────────────────────────────────────────
+function Nav({ view, setView }) {
+  return (
+    <header className="bg-slate-900 text-white h-14 flex items-center px-6 gap-6 shadow-lg fixed top-0 left-0 right-0 z-50">
+      <span className="font-semibold text-sm tracking-tight mr-2">
+        <span className="text-blue-400">Plan Room</span> AHJ
+      </span>
+
+      <div className="flex items-center gap-1 bg-slate-800 rounded px-3 py-1 text-xs text-slate-300 cursor-pointer hover:bg-slate-700 transition-colors">
+        City of Tacoma
+        <svg className="ml-1 w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </div>
+
+      <nav className="flex gap-1 ml-2">
+        {['Queue','Analytics','Settings'].map(v => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`px-3 py-1 rounded text-sm transition-colors ${view===v ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          >{v}</button>
+        ))}
+      </nav>
+
+      <div className="ml-auto flex items-center gap-3">
+        <span className="text-xs text-slate-400">Jun Matsuda</span>
+        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-xs font-semibold">JM</div>
+      </div>
+    </header>
+  );
+}
+
+// ── Queue view ─────────────────────────────────────────────────────────────
+function QueueView({ onSelect }) {
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [search, setSearch] = useState('');
+
+  const filtered = SUBMITTALS.filter(s => {
+    if (statusFilter !== 'All' && s.status !== statusFilter) return false;
+    if (search && !s.project.toLowerCase().includes(search.toLowerCase()) && !s.id.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div className="fade-in">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">Submittal Queue</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{filtered.length} submittals · sorted by completeness score</p>
+        </div>
+        <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded font-medium transition-colors">
+          + New Submittal
+        </button>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex gap-3 mb-4">
+        <input
+          className="border border-slate-200 rounded px-3 py-1.5 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          placeholder="Search project or ID…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <div className="flex gap-1 bg-white border border-slate-200 rounded p-1">
+          {['All','Triaged','In Review','Pending'].map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${statusFilter===s ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            >{s}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">ID</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Project</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Occupancy</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Submitted</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Score</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">Reviewer</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filtered.map(row => {
+              const c = scoreColor(row.score);
+              return (
+                <tr
+                  key={row.id}
+                  onClick={() => onSelect(row)}
+                  className="hover:bg-blue-50 cursor-pointer transition-colors"
+                >
+                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.id}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-slate-900">{row.project}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{row.applicant}</div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{row.occupancy}</td>
+                  <td className="px-4 py-3 text-slate-500 text-xs">{row.submitted}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-slate-100 rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full score-bar ${c.bar}`} style={{width:`${row.score}%`}} />
+                      </div>
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${c.bg} ${c.text}`}>{row.score}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusBadge(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">{row.reviewer}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Submittal detail ───────────────────────────────────────────────────────
+function DetailView({ submittal, onBack }) {
+  const [tab, setTab] = useState('Findings');
+  const [draftText, setDraftText] = useState('');
+  const [draftRef, setDraftRef] = useState('');
+  const [accepted, setAccepted] = useState({});
+  const [page, setPage] = useState(1);
+  const totalPages = 24;
+  const c = scoreColor(submittal.score);
+
+  function handleDraft(f) {
+    if (!f.draft) return;
+    setDraftText(f.draft);
+    setDraftRef(f.ref);
+  }
+
+  function handleAccept(id) { setAccepted(a => ({...a, [id]:'accepted'})); setDraftText(''); }
+  function handleReject(id) { setAccepted(a => ({...a, [id]:'rejected'})); setDraftText(''); }
+
+  return (
+    <div className="fade-in">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 mb-4 transition-colors">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+        Back to Queue
+      </button>
+
+      {/* Header */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4 shadow-sm">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-mono text-xs text-slate-400">{submittal.id}</span>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(submittal.status)}`}>{submittal.status}</span>
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900">{submittal.project}</h2>
+            <p className="text-sm text-slate-500 mt-1">{submittal.applicant} · {submittal.occupancy} · submitted {submittal.submitted}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-slate-500 mb-1">Completeness Score</div>
+            <div className={`text-2xl font-bold ${c.text}`}>{submittal.score}<span className="text-base font-normal text-slate-400">/100</span></div>
+            <div className="w-32 bg-slate-100 rounded-full h-2 mt-2">
+              <div className={`h-2 rounded-full score-bar ${c.bar}`} style={{width:`${submittal.score}%`}} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Split layout */}
+      <div className="flex gap-4">
+        {/* PDF pane */}
+        <div className="w-80 flex-shrink-0">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-slate-800 text-slate-300 text-xs px-3 py-2 flex items-center justify-between">
+              <span>Sheet A2.1 — Floor Plan</span>
+              <span className="text-slate-500">{submittal.id}.pdf</span>
+            </div>
+            {/* Mock PDF */}
+            <div className="bg-slate-100 relative" style={{height:360}}>
+              <svg viewBox="0 0 280 360" className="w-full h-full opacity-60">
+                <rect width="280" height="360" fill="#e2e8f0"/>
+                {/* floor plan sketch */}
+                <rect x="20" y="20" width="240" height="180" fill="none" stroke="#94a3b8" strokeWidth="2"/>
+                <rect x="20" y="20" width="110" height="80" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+                <rect x="130" y="20" width="130" height="80" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+                <rect x="20" y="100" width="240" height="100" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+                <line x1="80" y1="20" x2="80" y2="32" stroke="#ef4444" strokeWidth="2"/>
+                <line x1="80" y1="28" x2="96" y2="28" stroke="#ef4444" strokeWidth="2" strokeDasharray="3"/>
+                <text x="140" y="75" textAnchor="middle" fontSize="9" fill="#64748b">DINING AREA</text>
+                <text x="65" y="55" textAnchor="middle" fontSize="7" fill="#94a3b8">KITCHEN</text>
+                <text x="195" y="55" textAnchor="middle" fontSize="7" fill="#94a3b8">BAR</text>
+                <text x="140" y="155" textAnchor="middle" fontSize="9" fill="#64748b">MAIN HALL</text>
+                <rect x="20" y="200" width="240" height="140" fill="none" stroke="#94a3b8" strokeWidth="2"/>
+                <line x1="130" y1="200" x2="130" y2="340" stroke="#94a3b8" strokeWidth="1.5"/>
+                <text x="75" y="275" textAnchor="middle" fontSize="8" fill="#94a3b8">OFFICE</text>
+                <text x="205" y="275" textAnchor="middle" fontSize="8" fill="#94a3b8">STORAGE</text>
+                {/* egress arrow missing */}
+                <circle cx="245" cy="35" r="8" fill="#fef2f2" stroke="#ef4444" strokeWidth="1.5"/>
+                <text x="245" y="39" textAnchor="middle" fontSize="9" fill="#ef4444" fontWeight="bold">!</text>
+                {/* north arrow */}
+                <text x="250" y="350" fontSize="7" fill="#94a3b8">N ↑</text>
+                <text x="20" y="355" fontSize="6" fill="#94a3b8">SCALE: 1/8" = 1'-0"</text>
+              </svg>
+              <div className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded px-1.5 py-0.5">Missing egress</div>
+            </div>
+            {/* Page controls */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} className="text-slate-500 hover:text-slate-800 disabled:opacity-30 text-xs px-2 py-1 rounded hover:bg-slate-200 transition-colors">← Prev</button>
+              <span className="text-xs text-slate-500">Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages} className="text-slate-500 hover:text-slate-800 disabled:opacity-30 text-xs px-2 py-1 rounded hover:bg-slate-200 transition-colors">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right pane */}
+        <div className="flex-1 min-w-0">
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 bg-white border border-slate-200 rounded-lg p-1 w-fit shadow-sm">
+            {['Findings','Comments'].map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${tab===t ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >{t} {t==='Findings' && <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${tab===t?'bg-slate-600':'bg-slate-100 text-slate-500'}`}>{FINDINGS.length}</span>}</button>
+            ))}
+          </div>
+
+          {tab === 'Findings' && (
+            <div className="space-y-2">
+              {FINDINGS.map(f => (
+                <div key={f.id} className={`bg-white border rounded-lg p-4 shadow-sm transition-all ${accepted[f.id]==='accepted'?'border-emerald-300 opacity-60':accepted[f.id]==='rejected'?'border-slate-200 opacity-40':'border-slate-200'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 mt-0.5 ${severityBadge(f.severity)}`}>{f.severity}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-xs text-blue-700 font-semibold">{f.ref}</span>
+                          {accepted[f.id] && <span className={`text-xs ${accepted[f.id]==='accepted'?'text-emerald-600':'text-slate-400'}`}>{accepted[f.id]==='accepted'?'✓ Accepted':'✗ Rejected'}</span>}
+                        </div>
+                        <p className="text-sm text-slate-700">{f.desc}</p>
+                      </div>
+                    </div>
+                    {f.draft && !accepted[f.id] && (
+                      <button
+                        onClick={() => handleDraft(f)}
+                        className="flex-shrink-0 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded font-medium transition-colors"
+                      >Draft Comment</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'Comments' && (
+            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-slate-500">No comments finalized yet. Accept drafted comments from the Findings tab.</p>
+            </div>
+          )}
+
+          {/* Comment composer */}
+          {draftText && (
+            <div className="mt-4 bg-white border border-blue-200 rounded-lg p-4 shadow-sm fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">AI Draft</span>
+                <span className="font-mono text-xs text-slate-500">{draftRef}</span>
+              </div>
+              <textarea
+                className="w-full border border-slate-200 rounded p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"
+                rows={5}
+                value={draftText}
+                onChange={e => setDraftText(e.target.value)}
+              />
+              <p className="text-xs text-slate-400 mt-1 mb-3">Reviewer is responsible for verifying accuracy before accepting.</p>
+              <div className="flex gap-2">
+                <button onClick={() => handleAccept(FINDINGS.find(f=>f.ref===draftRef)?.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-1.5 rounded font-medium transition-colors">Accept</button>
+                <button className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm px-4 py-1.5 rounded font-medium transition-colors">Save Edit</button>
+                <button onClick={() => { handleReject(FINDINGS.find(f=>f.ref===draftRef)?.id); }} className="text-slate-500 hover:text-slate-700 text-sm px-3 py-1.5 rounded font-medium transition-colors">Reject</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Analytics placeholder ──────────────────────────────────────────────────
+function AnalyticsView() {
+  const stats = [
+    { label:'Submittals this month', value:'47', sub:'+12% vs last month' },
+    { label:'Avg completeness score', value:'68', sub:'↑ 4 pts since March' },
+    { label:'Avg triage time', value:'3.2 min', sub:'AI pipeline' },
+    { label:'Comments drafted by AI', value:'134', sub:'89% acceptance rate' },
+  ];
+  const reviewers = [
+    { name:'D. Okafor',   count:18, avg:74 },
+    { name:'M. Hennessy', count:15, avg:71 },
+    { name:'J. Matsuda',  count:14, avg:69 },
+  ];
+  return (
+    <div className="fade-in">
+      <h1 className="text-lg font-semibold text-slate-900 mb-5">Analytics</h1>
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        {stats.map(s => (
+          <div key={s.label} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <div className="text-2xl font-bold text-slate-900">{s.value}</div>
+            <div className="text-sm font-medium text-slate-700 mt-1">{s.label}</div>
+            <div className="text-xs text-slate-400 mt-0.5">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">Reviewer Activity — May 2024</h2>
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-slate-100">
+            <th className="text-left pb-2 text-xs text-slate-500 font-medium uppercase tracking-wide">Reviewer</th>
+            <th className="text-left pb-2 text-xs text-slate-500 font-medium uppercase tracking-wide">Submittals reviewed</th>
+            <th className="text-left pb-2 text-xs text-slate-500 font-medium uppercase tracking-wide">Avg score processed</th>
+          </tr></thead>
+          <tbody className="divide-y divide-slate-50">
+            {reviewers.map(r => (
+              <tr key={r.name}>
+                <td className="py-2.5 font-medium text-slate-800">{r.name}</td>
+                <td className="py-2.5 text-slate-600">{r.count}</td>
+                <td className="py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-slate-100 rounded-full h-1.5">
+                      <div className={`h-1.5 rounded-full ${scoreColor(r.avg).bar}`} style={{width:`${r.avg}%`}} />
+                    </div>
+                    <span className="text-slate-600">{r.avg}</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Settings view ──────────────────────────────────────────────────────────
+function SettingsView() {
+  const [codeYear, setCodeYear] = useState('2021');
+  const [rules, setRules] = useState(RULES.reduce((acc,r) => ({...acc,[r.id]:r.enabled}), {}));
+
+  function toggleRule(id) { setRules(r => ({...r,[id]:!r[id]})); }
+
+  return (
+    <div className="fade-in max-w-3xl">
+      <h1 className="text-lg font-semibold text-slate-900 mb-5">Agency Settings</h1>
+
+      {/* Agency info */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">Agency</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded bg-blue-700 flex items-center justify-center text-white font-bold text-sm">TC</div>
+          <div>
+            <div className="font-semibold text-slate-900">City of Tacoma — Building Dept</div>
+            <div className="text-xs text-slate-400">tacoma.gov · Plan Check Division · Agency ID: agency_tacoma_001</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Code year */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">IBC Code Year</h2>
+        <div className="flex gap-2">
+          {['2018','2021','2024'].map(y => (
+            <button
+              key={y}
+              onClick={() => setCodeYear(y)}
+              className={`px-5 py-2 rounded border text-sm font-medium transition-colors ${codeYear===y ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >{y} IBC</button>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400 mt-2">Applies to all triage runs and code citation lookups for this agency.</p>
+      </div>
+
+      {/* Custom rules */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-700">Custom Rules & Overrides</h2>
+          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">+ Add rule</button>
+        </div>
+        <div className="space-y-3">
+          {RULES.map(r => (
+            <div key={r.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+              <span className="text-sm text-slate-700 mr-4">{r.label}</span>
+              <button
+                onClick={() => toggleRule(r.id)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${rules[r.id] ? 'bg-blue-600' : 'bg-slate-200'}`}
+              >
+                <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition duration-200 ease-in-out ${rules[r.id] ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Members */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-700">Members</h2>
+          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">+ Invite member</button>
+        </div>
+        <div className="space-y-1">
+          {MEMBERS.map(m => (
+            <div key={m.email} className={`flex items-center justify-between py-2 ${!m.active ? 'opacity-50' : ''}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600">
+                  {m.name.split(' ').map(n=>n[0]).join('')}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-slate-800">{m.name}</div>
+                  <div className="text-xs text-slate-400">{m.email}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {!m.active && <span className="text-xs text-slate-400">Inactive</span>}
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleBadge(m.role)}`}>{m.role}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState('Queue');
+  const [selected, setSelected] = useState(null);
+
+  function handleSelect(row) { setSelected(row); }
+  function handleBack()     { setSelected(null); }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <Nav view={view} setView={(v) => { setView(v); setSelected(null); }} />
+      <main className="max-w-6xl mx-auto px-6 pt-20 pb-10">
+        {view === 'Queue'     && !selected && <QueueView onSelect={handleSelect} />}
+        {view === 'Queue'     && selected  && <DetailView submittal={selected} onBack={handleBack} />}
+        {view === 'Analytics' && <AnalyticsView />}
+        {view === 'Settings'  && <SettingsView />}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

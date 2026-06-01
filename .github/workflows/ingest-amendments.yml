@@ -1,0 +1,99 @@
+# =====================================================================
+# Plan Room AHJ — manual amendment-ingest runner
+#
+# Re-ingests CA city/county amendment text into the code_chunks corpus
+# via Path A (headless Chromium via astral) for Municode / eCode360
+# sources, plain fetch for amlegal / direct_gov.
+#
+# Triggered manually from the Actions tab — NOT on PR. The ingest:
+#   - is slow (5–15 minutes for one jurisdiction; longer for many)
+#   - writes to production code_chunks
+#   - calls the OpenAI embeddings API (real $)
+# None of those belong on PR-gated CI.
+#
+# Required repo secrets:
+#   SUPABASE_URL                — prod (or staging) Supabase project URL
+#   SUPABASE_SERVICE_ROLE_KEY   — service role for the same project
+#   OPENAI_API_KEY              — billable; ~$0.10–$0.50 per jurisdiction
+#
+# Inputs:
+#   jurisdictions  — comma-separated jurisdiction_keys to re-ingest.
+#                    Default: the two pilot jurisdictions.
+#   dry_run        — fetch + chunk only, no embed / no DB write. Use
+#                    this to confirm Path A still works after a Municode
+#                    UI change before paying for embeddings.
+# =====================================================================
+name: ingest-amendments
+
+on:
+  workflow_dispatch:
+    inputs:
+      jurisdictions:
+        description: 'Comma-separated jurisdiction_keys (e.g. CA:LOS_ANGELES,CA:VENTURA_COUNTY). Empty = all.'
+        required: false
+        default: 'CA:LOS_ANGELES,CA:VENTURA_COUNTY'
+      dry_run:
+        description: 'Dry run (no DB writes, no embedding cost)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ingest-amendments
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Re-ingest amendments
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      # astral auto-downloads Chromium (~150 MB) on first run; cache it.
+      - name: Cache astral Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/astral
+          key: astral-chromium-${{ runner.os }}-v1
+
+      # Chromium dependencies on Ubuntu runners.
+      - name: Install Chromium system libs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
+            libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2
+
+      - name: Run ingester (per jurisdiction)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JURISDICTIONS: ${{ inputs.jurisdictions }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          DRY_FLAG=""
+          if [ "$DRY_RUN" = "true" ]; then DRY_FLAG="--dry-run"; fi
+
+          if [ -z "$JURISDICTIONS" ]; then
+            echo "No jurisdiction filter → ingesting all sources"
+            deno run --allow-env --allow-net --allow-read --allow-write --allow-run \
+              scripts/ingest/ingest-amendments.ts --verbose $DRY_FLAG
+          else
+            IFS=',' read -ra KEYS <<< "$JURISDICTIONS"
+            for KEY in "${KEYS[@]}"; do
+              KEY_TRIMMED=$(echo "$KEY" | xargs)
+              echo "=== Ingesting $KEY_TRIMMED ==="
+              deno run --allow-env --allow-net --allow-read --allow-write --allow-run \
+                scripts/ingest/ingest-amendments.ts \
+                --jurisdiction "$KEY_TRIMMED" --verbose $DRY_FLAG
+            done
+          fi

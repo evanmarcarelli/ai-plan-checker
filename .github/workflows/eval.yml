@@ -1,0 +1,85 @@
+# =====================================================================
+# Plan Room AHJ — pilot accuracy CI gate
+#
+# Runs on every PR + push to main. Two jobs:
+#
+#   1. unit-tests  : deterministic checker tests (no secrets, always runs)
+#   2. pilot-gate  : full eval harness + check-pilot-targets.ts
+#                    (requires Supabase secrets — see "Required secrets"
+#                     below). Blocks merge when PILOT_TARGETS regress.
+#
+# This gate enforces docs/PILOT_BRIEF.md "Forcing functions" rules 1–2.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL                 — CI/staging Supabase project URL
+#   SUPABASE_SERVICE_ROLE_KEY    — service role for the CI project
+#   OPENAI_API_KEY               — optional; only needed when --use-llm
+#                                  is added below
+#
+# NOTE on environments: the eval writes rows to eval_runs / eval_run_results
+# on every invocation. Point CI at a dedicated Supabase project (not prod)
+# so PR runs do not pollute production diagnostics.
+# =====================================================================
+name: pilot-gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pilot-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Deterministic checker tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run checker unit tests
+        run: |
+          deno test --allow-env --allow-read \
+            supabase/functions/_shared/checkers.test.ts
+
+  pilot-gate:
+    name: 90% pilot targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: unit-tests
+    # Skip on forked-PR runs where secrets are not available.
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Sync eval fixtures into Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          deno run --allow-env --allow-net --allow-read \
+            scripts/eval/run-eval.ts --sync --dry-run
+
+      - name: Run pilot-target gate (baseline, no LLM)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          deno run --allow-env --allow-net --allow-read \
+            scripts/eval/check-pilot-targets.ts \
+            --label "ci-${{ github.event_name }}-${{ github.run_id }}"

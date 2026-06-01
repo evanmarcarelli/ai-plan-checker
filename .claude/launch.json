@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "peptide-platform",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/evanmarcarelli/Downloads/peptide-platform", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "plan-room-ahj",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/evanmarcarelli/Downloads/plan-room-ahj/web", "run", "dev", "--", "--port", "3001"],
+      "port": 3001
+    },
+    {
+      "name": "ai-plan-checker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/evanmarcarelli/Downloads/ai-plan-checker/frontend", "run", "dev", "--", "--port", "3002"],
+      "port": 3002
+    }
+  ]
+}

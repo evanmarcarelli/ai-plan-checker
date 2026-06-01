@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-highrise-out-of-scope",
+  "title": "Ventura County high-rise — > 75 ft, out of pilot scope",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "300 E Esplanade Dr, Oxnard, CA 93030",
+  "source": "synthetic",
+  "notes": "Tests building-scale reject path in Ventura context.",
+  "plan_text": "PROJECT DATA - 300 E ESPLANADE DR, VENTURA COUNTY (OXNARD area)\nNew 9-story mixed-use building\nOccupancy Groups: R-2 (residential floors 3-9), B (office floor 2), M (retail ground floor)\nConstruction Type: I-B\nBuilding height: 98 ft\nNumber of stories: 9 above grade + 1 below\nDesign occupant load: 920\nFully sprinklered: NFPA 13\nHigh-rise per IBC 403 — smoke control, voice alarm, standby power",
+  "ground_truth": []
+}
