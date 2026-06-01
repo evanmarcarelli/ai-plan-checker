@@ -294,12 +294,212 @@ export const CA_BASE_CODE_SOURCES: CodeSource[] = [
 ];
 
 // =====================================================================
+// National baseline + federal code sources (~970 chunks total)
+//
+// These are the model codes (IBC, NFPA, NEC, IPC, IMC, IECC) and federal
+// standards (ADA) cited by BASELINE_RULES. The corpus search expands
+// every jurisdiction-scoped query to also include "baseline" and
+// "federal" keys (see expandJurisdictionKeys), so these chunks are
+// searchable from any state/city project.
+//
+// URL strategy:
+//   - Model codes use up.codes/viewer/florida/* — Florida adopts the
+//     national I-Codes substantively unchanged, so its viewer is the
+//     cleanest stable URL for verbatim national text. If FL diverges
+//     for a future edition, switch to up.codes/viewer/idaho/* (similar
+//     near-verbatim adoption profile).
+//   - NFPA standards (13, 72) are hosted on nfpa.org under free
+//     read-only access; ingest requires a session cookie. The TOC URL
+//     here is the canonical landing page — pipeline operator should
+//     pre-warm the session before running.
+//   - ADA is federal public-domain text; the Access Board HTML version
+//     is the authoritative source.
+//
+// ICC licensing: see docs/ICC_LICENSING.md. Storing up.codes-rendered
+// chunks for internal retrieval is permitted; verbatim passages > 200
+// chars must NOT be echoed in user-facing findings.
+// =====================================================================
+
+export const NATIONAL_CODE_SOURCES: CodeSource[] = [
+
+  // ------------------------------------------------------------------
+  // International Building Code 2021 (IBC) — dominant code_ref in BASELINE_RULES
+  // Priority chapters drive >80% of active rules.
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "IBC:2021",
+    jurisdictionKey: "baseline",
+    codeName: "International Building Code 2021",
+    codeYear: "2021",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/ibc-2021",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/ibc-2021\/[a-z0-9-]+/i,
+    chaptersToInclude: [
+      "chapter-1",   // Administration / scope
+      "chapter-2",   // Definitions
+      "chapter-3",   // Use and Occupancy Classification (302–312)
+      "chapter-4",   // Special Detailed Requirements (incl. 403 high-rise)
+      "chapter-5",   // General Building Heights and Areas (Tables 504.4, 506.2)
+      "chapter-6",   // Types of Construction (602)
+      "chapter-7",   // Fire and Smoke Protection
+      "chapter-9",   // Fire Protection Systems (sprinklers, alarm)
+      "chapter-10",  // Means of Egress (1004, 1005, 1006, 1010)
+      "chapter-11",  // Accessibility (defers to ICC A117.1)
+      "chapter-16",  // Structural Design
+      "chapter-27",  // Electrical (defers to NEC)
+    ],
+    estimatedChunks: 300,
+    note: "Highest-priority source — 73% of BASELINE_RULES cite IBC. Ingest first.",
+  },
+
+  // ------------------------------------------------------------------
+  // National Electrical Code 2023 (NEC / NFPA 70)
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "NEC:2023",
+    jurisdictionKey: "baseline",
+    codeName: "National Electrical Code 2023 (NFPA 70)",
+    codeYear: "2023",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/nec-2023",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/nec-2023\/[a-z0-9-]+/i,
+    chaptersToInclude: [
+      "chapter-1",   // General (Art. 90–110)
+      "chapter-2",   // Wiring and Protection (Art. 200–285; incl. 230.42 service)
+      "chapter-3",   // Wiring Methods and Materials
+      "chapter-4",   // Equipment for General Use
+      "chapter-7",   // Special Conditions (Art. 700–770 emergency/standby)
+    ],
+    estimatedChunks: 150,
+  },
+
+  // ------------------------------------------------------------------
+  // International Plumbing Code 2021 (IPC) — Table 403.1 fixture counts
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "IPC:2021",
+    jurisdictionKey: "baseline",
+    codeName: "International Plumbing Code 2021",
+    codeYear: "2021",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/ipc-2021",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/ipc-2021\/[a-z0-9-]+/i,
+    chaptersToInclude: [
+      "chapter-1",  "chapter-2",  "chapter-3",  "chapter-4",
+      "chapter-5",  "chapter-6",  "chapter-7",  "chapter-8",
+      "chapter-9",  "chapter-10", "chapter-11",
+    ],
+    estimatedChunks: 100,
+    note: "CA uses UPC instead — IPC chunks are skipped automatically for CA projects when corpus search prioritizes state-key matches.",
+  },
+
+  // ------------------------------------------------------------------
+  // International Mechanical Code 2021 (IMC) — Table 403.3 ventilation
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "IMC:2021",
+    jurisdictionKey: "baseline",
+    codeName: "International Mechanical Code 2021",
+    codeYear: "2021",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/imc-2021",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/imc-2021\/[a-z0-9-]+/i,
+    chaptersToInclude: [
+      "chapter-1", "chapter-2", "chapter-3", "chapter-4",
+      "chapter-5", "chapter-6", "chapter-7", "chapter-8", "chapter-9",
+    ],
+    estimatedChunks: 80,
+  },
+
+  // ------------------------------------------------------------------
+  // International Energy Conservation Code 2021 (IECC)
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "IECC:2021",
+    jurisdictionKey: "baseline",
+    codeName: "International Energy Conservation Code 2021",
+    codeYear: "2021",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/iecc-2021",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/iecc-2021\/[a-z0-9-]+/i,
+    chaptersToInclude: [
+      "commercial-energy-efficiency",
+      "residential-energy-efficiency",
+      "chapter-c1", "chapter-c2", "chapter-c3", "chapter-c4", "chapter-c5",
+      "chapter-r1", "chapter-r2", "chapter-r3", "chapter-r4",
+    ],
+    estimatedChunks: 60,
+  },
+
+  // ------------------------------------------------------------------
+  // NFPA 13 — Sprinkler Systems (2022)
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "NFPA13:2022",
+    jurisdictionKey: "baseline",
+    codeName: "NFPA 13 — Standard for the Installation of Sprinkler Systems (2022)",
+    codeYear: "2022",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/nfpa-13-2022",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/nfpa-13-2022\/[a-z0-9-]+/i,
+    estimatedChunks: 80,
+    note: "NFPA standards may require session cookie for full-text view. If up.codes ingest fails, fall back to NFPA free-access viewer.",
+  },
+
+  // ------------------------------------------------------------------
+  // NFPA 72 — National Fire Alarm and Signaling Code (2022)
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "NFPA72:2022",
+    jurisdictionKey: "baseline",
+    codeName: "NFPA 72 — National Fire Alarm and Signaling Code (2022)",
+    codeYear: "2022",
+    part: null,
+    tocUrl: "https://up.codes/viewer/florida/nfpa-72-2022",
+    officialPdfUrl: null,
+    sectionUrlPattern: /up\.codes\/viewer\/florida\/nfpa-72-2022\/[a-z0-9-]+/i,
+    estimatedChunks: 80,
+  },
+
+  // ------------------------------------------------------------------
+  // ADA 2010 Standards for Accessible Design — federal, public domain
+  // jurisdictionKey "federal" — always searched alongside state/baseline.
+  // ------------------------------------------------------------------
+  {
+    corpusKey: "ADA:2010",
+    jurisdictionKey: "federal",
+    codeName: "ADA Standards for Accessible Design (2010)",
+    codeYear: "2010",
+    part: null,
+    tocUrl: "https://www.access-board.gov/ada/",
+    officialPdfUrl: "https://www.ada.gov/assets/_pdfs/2010ADAstandards.pdf",
+    sectionUrlPattern: /access-board\.gov\/ada\/[a-z0-9-]+/i,
+    estimatedChunks: 120,
+    note: "Public domain — no licensing constraint. Applies to every commercial project regardless of state. Chapters 2 (scoping), 4 (accessible routes), 6 (plumbing elements), 7 (signs), and Table 208.2 (parking counts) drive ADA-* rules.",
+  },
+];
+
+// =====================================================================
+// All sources — union of CA base + national/federal
+// =====================================================================
+export const ALL_CODE_SOURCES: CodeSource[] = [
+  ...CA_BASE_CODE_SOURCES,
+  ...NATIONAL_CODE_SOURCES,
+];
+
+// =====================================================================
 // Helper: get total estimated chunk count
 // =====================================================================
 export function totalEstimatedChunks(): number {
-  return CA_BASE_CODE_SOURCES.reduce((s, src) => s + src.estimatedChunks, 0);
+  return ALL_CODE_SOURCES.reduce((s, src) => s + src.estimatedChunks, 0);
 }
 
 export function getSource(corpusKey: string): CodeSource | null {
-  return CA_BASE_CODE_SOURCES.find(s => s.corpusKey === corpusKey) ?? null;
+  return ALL_CODE_SOURCES.find(s => s.corpusKey === corpusKey) ?? null;
 }

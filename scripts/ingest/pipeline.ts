@@ -33,7 +33,7 @@
 // =====================================================================
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { CA_BASE_CODE_SOURCES, CodeSource, totalEstimatedChunks } from "./sources.ts";
+import { ALL_CODE_SOURCES, CodeSource, totalEstimatedChunks } from "./sources.ts";
 import { chunkDocument, CodeChunk, hashText } from "./chunker.ts";
 import { embedAll, EmbedResult } from "./embedder.ts";
 
@@ -343,12 +343,12 @@ async function main() {
   });
 
   const sources = args.corpusFilter
-    ? CA_BASE_CODE_SOURCES.filter(s => s.corpusKey === args.corpusFilter)
-    : CA_BASE_CODE_SOURCES;
+    ? ALL_CODE_SOURCES.filter(s => s.corpusKey === args.corpusFilter)
+    : ALL_CODE_SOURCES;
 
   if (sources.length === 0) {
     console.error(`No source found for corpus key: ${args.corpusFilter}`);
-    console.error("Available keys:", CA_BASE_CODE_SOURCES.map(s => s.corpusKey).join(", "));
+    console.error("Available keys:", ALL_CODE_SOURCES.map(s => s.corpusKey).join(", "));
     Deno.exit(1);
   }
 

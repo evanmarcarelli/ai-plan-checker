@@ -68,12 +68,17 @@ const EMBED_TIMEOUT_MS = 10_000;
 // For a city key like 'CA:LOS_ANGELES', we want to search chunks from:
 //   - 'CA:LOS_ANGELES' (city-specific amendments)
 //   - 'CA'             (state base codes)
-//   - 'baseline'       (national IBC baseline)
+//   - 'baseline'       (national IBC/NFPA/NEC/IPC/IMC/IECC)
+//   - 'federal'        (ADA — applies everywhere, no state opt-out)
 //
-// This ensures the researcher always has the right hierarchy.
+// This ensures the researcher always has the right hierarchy. ADA is
+// federal law — it applies to every commercial project regardless of
+// state adoption, so 'federal' is appended on every query.
 // =====================================================================
 export function expandJurisdictionKeys(jurisdictionKey: string): string[] {
-  if (!jurisdictionKey || jurisdictionKey === "baseline") return ["baseline"];
+  if (!jurisdictionKey || jurisdictionKey === "baseline") {
+    return ["baseline", "federal"];
+  }
 
   const keys: string[] = [jurisdictionKey];
 
@@ -83,8 +88,8 @@ export function expandJurisdictionKeys(jurisdictionKey: string): string[] {
     keys.push(state);
   }
 
-  // Always include baseline
-  keys.push("baseline");
+  // Always include baseline (national model codes) and federal (ADA)
+  keys.push("baseline", "federal");
 
   return [...new Set(keys)];
 }

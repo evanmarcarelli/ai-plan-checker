@@ -179,6 +179,79 @@ export const BASELINE_RULES: Rule[] = [
     description:"IECC compliance path shall be identified.",
     severity:"major", check:{ type:"required_keyword",
       patterns:["\\bIECC\\b", "energy\\s+code"] }, requires_citation: false },
+
+  // ---- ADA (federal — applies to every commercial project) ----------
+  { id:"ADA-PARKING", discipline:"Accessibility", code_ref:"ADA Table 208.2",
+    description:"Accessible parking count shall meet ADA Table 208.2 ratio of total parking provided; at least one van-accessible space per facility (208.2.4).",
+    severity:"critical", check:{ type:"required_keyword",
+      patterns:["accessible\\s+parking", "ADA\\s+parking", "van[-\\s]accessible"] },
+    requires_citation: false },
+  { id:"ADA-ROUTE", discipline:"Accessibility", code_ref:"ADA 402",
+    description:"An accessible route shall connect accessible parking, public sidewalks, and the primary entrance (ADA 402, 206.2.1).",
+    severity:"critical", check:{ type:"required_keyword",
+      patterns:["accessible\\s+route", "path\\s+of\\s+travel", "POT\\b"] },
+    requires_citation: false },
+  { id:"ADA-RESTROOM", discipline:"Accessibility", code_ref:"ADA 603",
+    description:"At least one accessible toilet compartment shall be provided per ADA 603/604 (clearances, grab bars, dispenser height).",
+    severity:"major", check:{ type:"required_keyword",
+      patterns:["accessible\\s+(?:restroom|toilet|water\\s+closet)", "ADA\\s+restroom", "ANSI\\s+A117\\.1"] },
+    requires_citation: false },
+  { id:"ADA-SIGNAGE", discipline:"Accessibility", code_ref:"ADA 703",
+    description:"Permanent room signs (exits, restrooms, stair IDs) shall have tactile characters and Braille per ADA 703.",
+    severity:"moderate", check:{ type:"required_keyword",
+      patterns:["braille", "tactile\\s+sign", "ADA\\s+sign"] },
+    requires_citation: false },
+
+  // ---- NFPA completeness — split from generic NFPA 13 / 72 keywords --
+  { id:"FLS-NFPA13R", discipline:"Fire & Life Safety", code_ref:"NFPA 13R",
+    description:"Residential occupancies (R-1, R-2) 4 stories or less may use NFPA 13R sprinkler system; declare 13 vs 13R on plan.",
+    severity:"moderate", check:{ type:"required_keyword",
+      patterns:["NFPA\\s*13R", "residential\\s+sprinkler"] },
+    requires_citation: false },
+  { id:"FLS-NFPA101", discipline:"Fire & Life Safety", code_ref:"NFPA 101",
+    description:"Reference to NFPA 101 Life Safety Code shall appear on egress/life-safety analysis when AHJ requires (most healthcare, assembly, educational).",
+    severity:"moderate", check:{ type:"required_keyword",
+      patterns:["NFPA\\s*101", "life\\s+safety\\s+code"] },
+    requires_citation: false },
+
+  // ---- Mechanical ventilation (IMC) ---------------------------------
+  { id:"MECH-VENTILATION", discipline:"Mechanical", code_ref:"IMC Table 403.3",
+    description:"Minimum outdoor air ventilation rates per IMC Table 403.3 shall be declared on mechanical schedule.",
+    severity:"major", check:{ type:"required_keyword",
+      patterns:["ventilation\\s+rate", "outdoor\\s+air", "IMC\\s+(?:Table\\s+)?403", "\\bCFM/(?:person|occupant)\\b"] },
+    requires_citation: false },
+];
+
+// =====================================================================
+// CALGreen mandatory measures (CA jurisdictions only)
+//
+// Injected by triage runner when state == "CA", same pattern as
+// CALFIRE_WUI_RULES. These are Title 24 Part 11 mandatory provisions
+// that apply on top of the base CBC/CRC/CMC/CPC review.
+// =====================================================================
+export const CALGREEN_MANDATORY_RULES: Rule[] = [
+  {
+    id: "CAL-WATER-EFF",
+    discipline: "Plumbing",
+    code_ref: "CALGreen 4.303.1",
+    description:
+      "Nonresidential plumbing fixtures shall meet CALGreen 4.303.1 maximum flow rates (1.28 gpf water closets, 0.5 gpm public lavatories). Declare fixture specs on plumbing schedule.",
+    severity: "major",
+    check: { type: "required_keyword",
+      patterns: ["CALGreen", "water[-\\s]efficient\\s+fixture", "low[-\\s]flow", "1\\.28\\s*gpf", "0\\.5\\s*gpm"] },
+    requires_citation: false,
+  },
+  {
+    id: "CAL-CONST-WASTE",
+    discipline: "General",
+    code_ref: "CALGreen 4.408.1",
+    description:
+      "Construction waste management plan shall divert ≥ 65% of non-hazardous construction & demolition debris (CALGreen 4.408.1). Plan reference required on cover sheet.",
+    severity: "moderate",
+    check: { type: "required_keyword",
+      patterns: ["construction\\s+waste\\s+management", "waste\\s+management\\s+plan", "CALGreen\\s+4\\.408"] },
+    requires_citation: false,
+  },
 ];
 
 /**

@@ -12,7 +12,7 @@
 import { LlmClient, LlmCallContext } from "./llm.ts";
 import { extractScope, BuildingScope } from "./extract.ts";
 import { evaluateAll, Finding } from "./evaluate.ts";
-import { Rule, rulesForAgency, BASELINE_RULES, CALFIRE_WUI_RULES } from "./rules.ts";
+import { Rule, rulesForAgency, BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES } from "./rules.ts";
 import { JurisdictionProfile } from "./surveyor.ts";
 import { propertyOverlayAmbiguities } from "./property.ts";
 import {
@@ -264,7 +264,9 @@ export async function runTriage(
   const isCaliforniaJurisdiction =
     options.research?.jurisdictionProfile?.state === "CA"
     || options.research?.jurisdictionKey?.startsWith("CA:");
-  const extraSystemRules = isCaliforniaJurisdiction ? CALFIRE_WUI_RULES : [];
+  const extraSystemRules: Rule[] = isCaliforniaJurisdiction
+    ? [...CALFIRE_WUI_RULES, ...CALGREEN_MANDATORY_RULES]
+    : [];
   const rules = rulesForAgency(
     [...BASELINE_RULES, ...extraSystemRules],
     agency.custom_rules ?? [],
