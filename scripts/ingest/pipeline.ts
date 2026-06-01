@@ -66,7 +66,7 @@ function parseArgs(): CliArgs {
     supabaseUrl:   get("--supabase-url") ?? Deno.env.get("SUPABASE_URL") ?? "",
     supabaseKey:   get("--supabase-key") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     openaiKey:     get("--openai-key")   ?? Deno.env.get("OPENAI_API_KEY") ?? "",
-    concurrency:   parseInt(get("--concurrency") ?? "4", 10),
+    concurrency:   parseInt(get("--concurrency") ?? "8", 10),
     verbose:       has("--verbose"),
   };
 }
@@ -234,6 +234,20 @@ async function processSource(
     return true;
   });
 
+  // Priority sort: earlier slugs in chaptersToInclude fetch first.
+  // Source authors order the include list with rule-cited chapters
+  // first (e.g. IBC chapter-5 / chapter-10 before admin chapters),
+  // so the corpus is useful even mid-ingest if the run is interrupted.
+  const priorityIndex = (url: string): number => {
+    const includes = source.chaptersToInclude;
+    if (!includes?.length) return 0;
+    for (let i = 0; i < includes.length; i++) {
+      if (url.includes(includes[i])) return i;
+    }
+    return includes.length;  // unmatched URLs to the back
+  };
+  filtered.sort((a, b) => priorityIndex(a) - priorityIndex(b));
+
   // If no links found (JavaScript-rendered site), treat TOC text as one chunk
   const urlsToFetch = filtered.length > 0 ? filtered : [source.tocUrl];
   console.log(`  [fetch] Found ${urlsToFetch.length} section URLs to ingest`);
@@ -242,24 +256,17 @@ async function processSource(
   let totalInserted = 0;
   const allChunks: CodeChunk[] = [];
 
-  // Fetch sections with bounded concurrency
-  const semaphore = { count: 0, max: args.concurrency };
-  const wait = () => new Promise<void>(resolve => {
-    const check = () => {
-      if (semaphore.count < semaphore.max) { semaphore.count++; resolve(); }
-      else setTimeout(check, 100);
-    };
-    check();
-  });
-
-  const chunkPromises = urlsToFetch.map(async (url) => {
-    await wait();
-    try {
+  // Fetch sections in fixed-size batches. Promise.allSettled means one
+  // 404 or hung connection doesn't sink the whole batch — failures are
+  // logged per-URL but the run continues.
+  const batchSize = Math.max(1, args.concurrency);
+  for (let i = 0; i < urlsToFetch.length; i += batchSize) {
+    const batch = urlsToFetch.slice(i, i + batchSize);
+    const results = await Promise.allSettled(batch.map(async (url) => {
       if (args.verbose) console.log(`  [fetch] ${url}`);
       const text = await fetchPageText(url);
-      if (!text) return;
+      if (!text) return { url, chunks: [] as CodeChunk[] };
 
-      // Extract chapter info from URL
       const chapterMatch = url.match(/chapter-([^/]+)/i);
       const chapter = chapterMatch ? `Chapter ${chapterMatch[1].toUpperCase()}` : null;
 
@@ -273,15 +280,25 @@ async function processSource(
         sourceUrl: url,
         codeYear: source.codeYear,
       });
+      return { url, chunks };
+    }));
 
-      allChunks.push(...chunks);
-      if (args.verbose) console.log(`    → ${chunks.length} chunks from ${url}`);
-    } finally {
-      semaphore.count--;
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        allChunks.push(...r.value.chunks);
+        if (args.verbose && r.value.chunks.length) {
+          console.log(`    → ${r.value.chunks.length} chunks from ${r.value.url}`);
+        }
+      } else {
+        console.warn(`  [fetch] failed:`, r.reason);
+      }
     }
-  });
 
-  await Promise.all(chunkPromises);
+    if (!args.verbose) {
+      const done = Math.min(i + batchSize, urlsToFetch.length);
+      console.log(`  [fetch] progress ${done}/${urlsToFetch.length} (${allChunks.length} chunks so far)`);
+    }
+  }
   totalChunks += allChunks.length;
   console.log(`  [chunk] ${totalChunks} chunks extracted`);
 

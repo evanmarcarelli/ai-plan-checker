@@ -7,7 +7,7 @@
 // values, with no LLM judgment involved.
 // =====================================================================
 import { Rule, HIGH_RISE_FT } from "./rules.ts";
-import { BuildingScope } from "./extract.ts";
+import { BuildingScope, EvidenceLocation, TextBlock } from "./extract.ts";
 import {
   checkAllowableArea, checkAllowableStories,
   checkMinExits, checkExitCapacity, checkFixtures,
@@ -32,6 +32,11 @@ export interface Finding {
   // surfacing this as a "fail". Mirrors Rule.requires_citation. When
   // true and no citation is produced, the runner downgrades fail → warn.
   requires_citation: boolean;
+  // Where on the planset the supporting evidence lives. Drives the PDF
+  // annotation overlay in the reviewer dashboard. Null when the finding
+  // is a missing-element check ("expected NFPA 13 callout, found none")
+  // or when no text_blocks were available at evaluation time.
+  evidence_location?: EvidenceLocation | null;
   // Optional verified citation produced by the Researcher. Present only
   // for findings that the research step looked up — typically the
   // failing critical/major ones.
@@ -45,12 +50,70 @@ export interface Finding {
   };
 }
 
-export function evaluateAll(rules: Rule[], scope: BuildingScope, fullText: string): Finding[] {
+// Map a rule's check.type to the BuildingScope evidence key whose
+// extracted verbatim snippet is the best provenance for that finding.
+// Used to attach evidence_location after the deterministic evaluation.
+function primaryEvidenceKey(rule: Rule): string | null {
+  switch (rule.check.type) {
+    case "occupancy_declared":         return "occupancies";
+    case "construction_type_declared": return "construction_type";
+    case "occupant_load_declared":     return "occupant_load";
+    case "allowable_area_check":       return "building_area_sf";
+    case "stories_check":              return "stories_above";
+    case "high_rise_check":            return "height_ft";
+    case "mixed_occupancy_check":      return "occupancies";
+    case "num_exits_check":            return "occupant_load";
+    case "exit_capacity_check":        return "occupant_load";
+    case "panic_hardware_check":       return "panic_hardware_called_out";
+    case "plumbing_fixture_calc":      return "occupancy_primary";
+    default:                            return null;
+  }
+}
+
+// Find the first text_block that contains any of the matched hits from
+// a required_keyword check. Used when the rule passed (so we have a
+// concrete substring to point at in the PDF).
+function locateKeywordMatch(
+  hits: string[],
+  blocks: TextBlock[],
+): EvidenceLocation | null {
+  if (!blocks?.length || !hits?.length) return null;
+  for (const hit of hits) {
+    const needle = hit.toLowerCase().trim();
+    if (!needle) continue;
+    for (const b of blocks) {
+      if (b.text.toLowerCase().includes(needle)) {
+        return { text: hit, page: b.page, bbox: b.bbox, sheet: b.sheet ?? null };
+      }
+    }
+  }
+  return null;
+}
+
+export function evaluateAll(
+  rules: Rule[],
+  scope: BuildingScope,
+  fullText: string,
+  textBlocks: TextBlock[] = [],
+): Finding[] {
   return rules.map(r => {
     const f = evaluate(r, scope, fullText);
     // Default to true if rule didn't specify — safer to require a citation
     // and rarely downgrade than to silently emit uncited fails.
     f.requires_citation = r.requires_citation ?? true;
+
+    // Attach evidence_location. Two sources, in priority order:
+    //   1. For typed checks, look up scope.evidence[<primary field>].
+    //   2. For required_keyword passes, scan text_blocks for the hit.
+    // Leaves evidence_location null when nothing applicable is found —
+    // typically the missing-keyword failure case ("not found anywhere").
+    const evKey = primaryEvidenceKey(r);
+    let loc: EvidenceLocation | null = evKey ? (scope.evidence?.[evKey] ?? null) : null;
+    if (!loc && r.check.type === "required_keyword" && f.status === "pass") {
+      loc = locateKeywordMatch(f.evidence, textBlocks);
+    }
+    f.evidence_location = loc;
+
     return f;
   });
 }

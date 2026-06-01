@@ -42,14 +42,21 @@ Deno.serve(async (req) => {
     .single();
   if (subErr || !submittal) return corsResponse({ error: "submittal not found" }, { status: 404 });
 
-  // Get the plan text — from request body or DB
+  // Get the plan text — from request body or DB. Also pull text_blocks
+  // (per-page spans with bounding boxes) when available, so findings can
+  // carry coordinates back to the dashboard for PDF annotation overlay.
   let planText = body.plan_text;
+  let textBlocks: import("../_shared/extract.ts").TextBlock[] = [];
   if (!planText) {
     const { data: files } = await supabase
       .from("submittal_files")
-      .select("extracted_text")
+      .select("extracted_text, text_blocks")
       .eq("submittal_id", body.submittal_id);
     planText = (files ?? []).map(f => f.extracted_text || "").join("\n\n");
+    for (const f of files ?? []) {
+      const tb = f.text_blocks as import("../_shared/extract.ts").TextBlock[] | null;
+      if (Array.isArray(tb)) textBlocks.push(...tb);
+    }
     if (!planText.trim()) {
       return corsResponse({
         error: "no_text",
@@ -120,6 +127,7 @@ Deno.serve(async (req) => {
       planText,
       {
         useLlm: body.use_llm !== false,
+        textBlocks,
         // Live web-search verification of failing critical/major findings.
         // Skipped automatically if useLlm=false (the research step is
         // gated on LLM availability). Caller can disable explicitly via

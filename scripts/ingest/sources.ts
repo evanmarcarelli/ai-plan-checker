@@ -335,22 +335,24 @@ export const NATIONAL_CODE_SOURCES: CodeSource[] = [
     tocUrl: "https://up.codes/viewer/florida/ibc-2021",
     officialPdfUrl: null,
     sectionUrlPattern: /up\.codes\/viewer\/florida\/ibc-2021\/[a-z0-9-]+/i,
+    // Ordered by rule_ref frequency in BASELINE_RULES — pipeline fetches
+    // chapters in this order so the corpus is useful mid-ingest.
     chaptersToInclude: [
+      "chapter-5",   // Heights/Areas (Tables 504.4, 506.2) — most-cited
+      "chapter-10",  // Means of Egress (1004, 1005, 1006, 1010)
+      "chapter-3",   // Use and Occupancy Classification (302–312)
+      "chapter-6",   // Types of Construction (602)
+      "chapter-9",   // Fire Protection Systems (sprinklers, alarm)
+      "chapter-4",   // Special Detailed Requirements (incl. 403 high-rise)
+      "chapter-11",  // Accessibility (defers to ICC A117.1)
+      "chapter-7",   // Fire and Smoke Protection
       "chapter-1",   // Administration / scope
       "chapter-2",   // Definitions
-      "chapter-3",   // Use and Occupancy Classification (302–312)
-      "chapter-4",   // Special Detailed Requirements (incl. 403 high-rise)
-      "chapter-5",   // General Building Heights and Areas (Tables 504.4, 506.2)
-      "chapter-6",   // Types of Construction (602)
-      "chapter-7",   // Fire and Smoke Protection
-      "chapter-9",   // Fire Protection Systems (sprinklers, alarm)
-      "chapter-10",  // Means of Egress (1004, 1005, 1006, 1010)
-      "chapter-11",  // Accessibility (defers to ICC A117.1)
       "chapter-16",  // Structural Design
       "chapter-27",  // Electrical (defers to NEC)
     ],
     estimatedChunks: 300,
-    note: "Highest-priority source — 73% of BASELINE_RULES cite IBC. Ingest first.",
+    note: "Highest-priority source — 73% of BASELINE_RULES cite IBC. Ingest first. chaptersToInclude is ordered by rule-citation frequency, not numeric order.",
   },
 
   // ------------------------------------------------------------------

@@ -15,6 +15,26 @@
 import { LlmClient, LlmCallContext } from "./llm.ts";
 import { WuiZoneResult } from "./wui.ts";
 
+// =====================================================================
+// Evidence locations — a piece of supporting text + where on the PDF
+// it lives. Page is 1-indexed; bbox is in normalized 0..1 PDF coords.
+// Both are nullable: evidence may exist without coordinates (e.g.
+// client-side OCR ran without page markers, or LLM omitted the page).
+// =====================================================================
+export interface EvidenceLocation {
+  text: string;
+  page: number | null;
+  bbox: { x: number; y: number; w: number; h: number } | null;
+  sheet?: string | null;
+}
+
+export interface TextBlock {
+  page: number;
+  text: string;
+  bbox: { x: number; y: number; w: number; h: number };
+  sheet?: string;
+}
+
 export interface BuildingScope {
   occupancies: string[];
   occupancy_primary: string | null;
@@ -34,8 +54,10 @@ export interface BuildingScope {
   mixed_occupancy: boolean;
   // Per-field confidence 0–1, set by the LLM
   confidence: Record<string, number>;
-  // Provenance: where each fact came from (sheet name / page / quote)
-  evidence: Record<string, string>;
+  // Provenance: verbatim snippet + page + bbox (when known) for each fact.
+  // page/bbox come from [PAGE:N] markers in input text or from text_blocks
+  // post-processing match.
+  evidence: Record<string, EvidenceLocation>;
   // What the extractor isn't sure about — drives reviewer questions
   ambiguities: string[];
   // Did we use the LLM or fall back to regex?
@@ -84,7 +106,20 @@ const SCOPE_SCHEMA = {
       type: "object",
       additionalProperties: { type: "number", minimum: 0, maximum: 1 },
     },
-    evidence: { type: "object", additionalProperties: { type: "string" } },
+    // Each evidence entry: verbatim snippet + page (parsed from [PAGE:N]
+    // markers in input). bbox is attached post-LLM by matching the
+    // snippet against text_blocks; the LLM is not asked to invent coords.
+    evidence: {
+      type: "object",
+      additionalProperties: {
+        type: "object",
+        properties: {
+          text: { type: "string" },
+          page: { type: ["integer", "null"] },
+        },
+        required: ["text"],
+      },
+    },
     ambiguities: { type: "array", items: { type: "string" } },
   },
   required: ["occupancies", "construction_type", "stories_above", "height_ft", "occupant_load"],
@@ -102,8 +137,7 @@ Rules you MUST follow:
 4. Construction Type must be one of: I-A, I-B, II-A, II-B, III-A, III-B, IV, IV-A, IV-B, IV-C, IV-HT, V-A, V-B.
 5. For each populated field, include a "confidence" value between 0 and 1
    (1.0 = explicit declaration, 0.7 = inferred from clear context, 0.5 = ambiguous).
-6. For each field, include an "evidence" entry: the short verbatim phrase from the
-   text that supports the value (max 80 chars, no editorializing).
+6. For each field, include an "evidence" entry as an object: { "text": "<verbatim phrase, max 80 chars, no editorializing>", "page": <integer page number parsed from the nearest preceding [PAGE:N ...] marker, or null if no marker is visible> }.
 7. List in "ambiguities" any specific question a human reviewer should resolve
    (e.g., "Two construction types referenced — I-A in code analysis, II-B on cover sheet").
 8. If a value would be a guess, leave it null and add it to ambiguities.
@@ -188,6 +222,102 @@ function regexExtract(text: string): BuildingScope {
   return scope;
 }
 
+// =====================================================================
+// Page marker parsing
+//
+// Input planText may have [PAGE:N ...] markers inserted by the upstream
+// PDF extractor. Strip them for downstream regex/LLM but remember which
+// page each character offset belongs to so we can attribute evidence.
+// =====================================================================
+const PAGE_MARKER_RE = /\[PAGE:(\d+)(?:\s+Sheet:\s*([^\]]+))?\]/g;
+
+export interface PageMap {
+  // For each character offset in cleanText, which 1-indexed page it
+  // belongs to. Stored as run-length: array of {start, page, sheet}.
+  cleanText: string;
+  ranges: { start: number; page: number; sheet?: string }[];
+}
+
+export function parsePageMarkers(text: string): PageMap {
+  const ranges: { start: number; page: number; sheet?: string }[] = [];
+  let cleanText = "";
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  PAGE_MARKER_RE.lastIndex = 0;
+  while ((m = PAGE_MARKER_RE.exec(text)) !== null) {
+    cleanText += text.slice(lastIndex, m.index);
+    ranges.push({
+      start: cleanText.length,
+      page: parseInt(m[1], 10),
+      sheet: m[2]?.trim(),
+    });
+    lastIndex = m.index + m[0].length;
+  }
+  cleanText += text.slice(lastIndex);
+  // If the document had no markers at all, default everything to page 1.
+  if (ranges.length === 0) ranges.push({ start: 0, page: 1 });
+  return { cleanText, ranges };
+}
+
+function pageForOffset(map: PageMap, offset: number): { page: number; sheet?: string } {
+  // Binary-search would be tidier but ranges are usually ≤ a few hundred.
+  let current = map.ranges[0];
+  for (const r of map.ranges) {
+    if (r.start <= offset) current = r; else break;
+  }
+  return { page: current.page, sheet: current.sheet };
+}
+
+// =====================================================================
+// Evidence → bbox attachment
+//
+// Given the LLM's evidence (text+page) and the file-level text_blocks
+// array, find the block whose normalized text contains the evidence
+// snippet and copy its bbox. Pure normalization (lowercase + whitespace
+// collapse) — no fuzzy matching, no LLM. If no block matches, bbox
+// stays null and the dashboard renders a page-level marker instead of
+// a region highlight.
+// =====================================================================
+const normalizeForMatch = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+export function attachBboxToEvidence(
+  evidence: Record<string, EvidenceLocation>,
+  blocks: TextBlock[],
+): Record<string, EvidenceLocation> {
+  if (!blocks?.length) return evidence;
+
+  // Filter by page first when available (cheap), then string-match.
+  const blocksByPage = new Map<number, TextBlock[]>();
+  for (const b of blocks) {
+    const arr = blocksByPage.get(b.page) ?? [];
+    arr.push(b);
+    blocksByPage.set(b.page, arr);
+  }
+
+  const out: Record<string, EvidenceLocation> = {};
+  for (const [field, ev] of Object.entries(evidence)) {
+    if (!ev?.text) { out[field] = ev; continue; }
+    if (ev.bbox) { out[field] = ev; continue; }  // already has coords
+
+    const needle = normalizeForMatch(ev.text);
+    if (!needle) { out[field] = ev; continue; }
+
+    const candidates = ev.page != null
+      ? (blocksByPage.get(ev.page) ?? [])
+      : blocks;
+
+    let hit: TextBlock | null = null;
+    for (const b of candidates) {
+      if (normalizeForMatch(b.text).includes(needle)) { hit = b; break; }
+    }
+
+    out[field] = hit
+      ? { ...ev, page: hit.page, bbox: hit.bbox, sheet: hit.sheet ?? ev.sheet ?? null }
+      : ev;
+  }
+  return out;
+}
+
 function positiveMention(text: string, pattern: RegExp): boolean {
   const global = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g");
   const negRe = /\b(?:no|not|without|missing|absent|lacks?|n\/a)\s+(?:\w+\s+){0,5}?$/i;
@@ -249,17 +379,39 @@ function merge(llm: BuildingScope, rgx: BuildingScope): BuildingScope {
 // =====================================================================
 // Public API
 // =====================================================================
+// Coerce loose LLM evidence output into EvidenceLocation. Older models
+// sometimes return bare strings even when the schema asks for objects.
+function coerceEvidence(raw: unknown): Record<string, EvidenceLocation> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, EvidenceLocation> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === "string") {
+      out[k] = { text: v, page: null, bbox: null };
+    } else if (v && typeof v === "object") {
+      const obj = v as Record<string, unknown>;
+      const text = typeof obj.text === "string" ? obj.text : "";
+      const page = typeof obj.page === "number" ? obj.page : null;
+      out[k] = { text, page, bbox: null };
+    }
+  }
+  return out;
+}
+
 export async function extractScope(
   llm: LlmClient,
   ctx: LlmCallContext,
   planText: string,
-  options: { useLlm?: boolean } = {},
+  options: { useLlm?: boolean; textBlocks?: TextBlock[] } = {},
 ): Promise<BuildingScope> {
   const useLlm = options.useLlm !== false;
+  const textBlocks = options.textBlocks ?? [];
 
   // Always do the regex pass — it's cheap and acts as a sanity check.
   const regexResult = regexExtract(planText);
-  if (!useLlm) return regexResult;
+  if (!useLlm) {
+    regexResult.evidence = attachBboxToEvidence(regexResult.evidence, textBlocks);
+    return regexResult;
+  }
 
   // Truncate input — only the first ~30K chars typically contain the
   // code analysis sheet. Avoids unnecessary token spend.
@@ -271,7 +423,7 @@ export async function extractScope(
       tier: "balanced",
       system: SCOPE_SYSTEM,
       user:
-`Extracted plan-set text follows. Pull the structured facts as instructed.
+`Extracted plan-set text follows. The text contains [PAGE:N Sheet: <name>] markers indicating which PDF page each block came from — use these to fill in evidence[field].page for every field you populate.
 
 <plan_text>
 ${truncated}
@@ -289,14 +441,17 @@ ${truncated}
       has_area_of_refuge:         Boolean(partial.has_area_of_refuge),
       panic_hardware_called_out:  Boolean(partial.panic_hardware_called_out),
       confidence: partial.confidence ?? {},
-      evidence:   partial.evidence   ?? {},
+      evidence: coerceEvidence(partial.evidence),
       ambiguities: partial.ambiguities ?? [],
       source: "llm",
     };
   } catch (err) {
     console.warn("LLM extraction failed; using regex only:", err);
+    regexResult.evidence = attachBboxToEvidence(regexResult.evidence, textBlocks);
     return regexResult;
   }
 
-  return merge(llmResult, regexResult);
+  const merged = merge(llmResult, regexResult);
+  merged.evidence = attachBboxToEvidence(merged.evidence, textBlocks);
+  return merged;
 }

@@ -10,7 +10,7 @@
 // Returns a triage report ready to write to triage_runs.report.
 // =====================================================================
 import { LlmClient, LlmCallContext } from "./llm.ts";
-import { extractScope, BuildingScope } from "./extract.ts";
+import { extractScope, BuildingScope, TextBlock } from "./extract.ts";
 import { evaluateAll, Finding } from "./evaluate.ts";
 import { Rule, rulesForAgency, BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES } from "./rules.ts";
 import { JurisdictionProfile } from "./surveyor.ts";
@@ -180,6 +180,11 @@ export async function runTriage(
   planText: string,
   options: {
     useLlm?: boolean;
+    // Per-page text blocks from the PDF extractor — drives evidence_location
+    // attachment on findings (PDF annotation overlay in the dashboard).
+    // Optional; when absent, evaluation still works but findings lack
+    // bounding-box coordinates.
+    textBlocks?: TextBlock[];
     // If supplied, the Researcher runs against failing critical/major
     // findings to attach a verified code citation. Requires a SupabaseClient
     // for the citation cache + a jurisdiction key for the lookups.
@@ -195,12 +200,13 @@ export async function runTriage(
   } = {},
 ): Promise<TriageReport> {
   const useLlm = options.useLlm !== false;
+  const textBlocks = options.textBlocks ?? [];
 
   // 1. Extract scope (LLM + regex hybrid, with cross-check)
   const scope = await extractScope(llm,
     { ...ctx, purpose: "extract_scope" },
     planText,
-    { useLlm },
+    { useLlm, textBlocks },
   );
 
   // 1b. Attach address-derived overlay data from Surveyor profile.
@@ -274,7 +280,7 @@ export async function runTriage(
   );
 
   // 3. Run deterministic evaluation
-  const findings = evaluateAll(rules, scope, planText);
+  const findings = evaluateAll(rules, scope, planText, textBlocks);
 
   // 4. LLM completeness judgment (or deterministic fallback)
   const completeness = useLlm
