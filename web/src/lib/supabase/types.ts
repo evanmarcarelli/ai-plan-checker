@@ -257,9 +257,40 @@ export interface TriageReport {
 
 export interface TriageFinding {
   rule_id: string
+  // NOTE: this field is historically misnamed — the backend Finding
+  // type carries BOTH severity (critical|major|moderate|minor) and
+  // status (pass|fail|warn|info). The two fields below preserve back-
+  // compat while exposing the real shape.
   severity: 'fail' | 'warning' | 'info' | 'pass'
+  // Real severity tier from the backend (mutated by Part 5 corpus gate
+  // when it downgrades critical->major, etc.). Optional for back-compat
+  // with old report JSON.
+  severity_tier?: 'critical' | 'major' | 'moderate' | 'minor'
+  status?: 'pass' | 'fail' | 'warn' | 'info'
+  summary?: string
   code_ref: string
   description: string
+  discipline?: string
+  evidence?: string[]
   confidence: number
   draft_comment?: string
+  // Set by the corpus citation pre-check (verifyCorpusCitations). When
+  // true, the displayed citation either came from a low-similarity
+  // corpus match or wasn't produced at all — reviewer must confirm.
+  citation_unverified?: boolean
+  // PDF coordinate provenance — drives the FindingCard annotation panel.
+  evidence_location?: {
+    text: string
+    page: number | null
+    bbox: { x: number; y: number; w: number; h: number } | null
+    sheet?: string | null
+  } | null
+  citation?: {
+    text: string
+    source_url: string
+    source_title: string
+    source_domain?: string
+    confidence: number
+    notes?: string
+  }
 }
