@@ -12,6 +12,8 @@ import {
   checkAllowableArea, checkAllowableStories,
   checkMinExits, checkExitCapacity, checkFixtures,
 } from "./checkers.ts";
+import { searchCodeChunks, CORPUS_CITE_THRESHOLD } from "./corpus.ts";
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 export type Status = "pass" | "fail" | "warn" | "info";
 
@@ -37,6 +39,12 @@ export interface Finding {
   // is a missing-element check ("expected NFPA 13 callout, found none")
   // or when no text_blocks were available at evaluation time.
   evidence_location?: EvidenceLocation | null;
+  // Set by verifyCorpusCitations when the rule's code_ref produced no
+  // sufficiently-similar chunk in the pre-indexed corpus. The live
+  // researcher step gets a chance to find it; if it still can't, the
+  // final citation gate downgrades fail -> warn. Drives the
+  // "Citation unverified — confirm before sending" badge.
+  citation_unverified?: boolean;
   // Optional verified citation produced by the Researcher. Present only
   // for findings that the research step looked up — typically the
   // failing critical/major ones.
@@ -341,6 +349,79 @@ function mk(
   // requires_citation is overwritten by evaluateAll() after this mk()
   // call; default true here for type-correctness of the partial object.
   return { ...base, status, summary, evidence, confidence, requires_citation: true };
+}
+
+// =====================================================================
+// Corpus citation gate
+//
+// Runs after evaluateAll() and BEFORE the live researcher step. For
+// every fail with requires_citation=true, look up the rule's code_ref
+// in the pre-indexed corpus. Two outcomes:
+//
+//   - high similarity (>= CORPUS_CITE_THRESHOLD): attach top chunk as
+//     finding.citation. The live researcher skips already-cited
+//     findings, so this is also a cost-saver.
+//   - low similarity / no hit: set citation_unverified, downgrade
+//     severity one tier (critical->major, major->moderate). The live
+//     researcher still gets a chance to attach a citation; if it
+//     succeeds it should clear citation_unverified. The final
+//     citation gate in triage.ts handles still-uncited fails.
+//
+// Pure side-effect on the findings array (mutates citation, severity,
+// citation_unverified). Returns nothing — easier to reason about than
+// a "fixed-up copy" since downstream code already mutates findings.
+// =====================================================================
+const SEVERITY_DOWNGRADE: Record<string, string> = {
+  critical: "major",
+  major: "moderate",
+  moderate: "minor",
+  minor: "minor",
+};
+
+export async function verifyCorpusCitations(
+  findings: Finding[],
+  supabase: SupabaseClient,
+  jurisdictionKey: string,
+): Promise<void> {
+  for (const f of findings) {
+    if (f.status !== "fail" || !f.requires_citation) continue;
+    if (f.citation) continue;  // already cited by an earlier pass
+
+    try {
+      const result = await searchCodeChunks(
+        supabase,
+        `${f.code_ref}: ${f.description}`,
+        { jurisdictionKey, exactSectionRef: f.code_ref, topK: 3 },
+      );
+
+      if (result.hitFound
+          && result.bestSimilarity >= CORPUS_CITE_THRESHOLD
+          && result.chunks.length > 0) {
+        const top = result.chunks[0];
+        let domain = "code-corpus";
+        if (top.source_url) {
+          try { domain = new URL(top.source_url).hostname; } catch { /* noop */ }
+        }
+        f.citation = {
+          // ICC licensing: keep verbatim excerpt <= 200 chars in user-facing output.
+          text: top.chunk_text.slice(0, 200),
+          source_url: top.source_url ?? "",
+          source_title: top.section_title
+            ? `${top.section_ref ?? top.corpus_key} — ${top.section_title}`
+            : (top.section_ref ?? top.code_name),
+          source_domain: domain,
+          confidence: top.similarity,
+          notes: `Verified against pre-indexed corpus (${(top.similarity * 100).toFixed(0)}% match, ${result.source}).`,
+        };
+      } else {
+        f.citation_unverified = true;
+        f.severity = SEVERITY_DOWNGRADE[f.severity] ?? f.severity;
+      }
+    } catch (err) {
+      console.warn(`[citation-gate] corpus lookup failed for ${f.rule_id}:`, err);
+      f.citation_unverified = true;
+    }
+  }
 }
 
 function baseConfidence(rule: Rule, scope: BuildingScope): number {

@@ -11,7 +11,7 @@
 // =====================================================================
 import { LlmClient, LlmCallContext } from "./llm.ts";
 import { extractScope, BuildingScope, TextBlock } from "./extract.ts";
-import { evaluateAll, Finding } from "./evaluate.ts";
+import { evaluateAll, verifyCorpusCitations, Finding } from "./evaluate.ts";
 import { Rule, rulesForAgency, BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES } from "./rules.ts";
 import { JurisdictionProfile } from "./surveyor.ts";
 import { propertyOverlayAmbiguities } from "./property.ts";
@@ -282,6 +282,26 @@ export async function runTriage(
   // 3. Run deterministic evaluation
   const findings = evaluateAll(rules, scope, planText, textBlocks);
 
+  // 3b. CORPUS CITATION PRE-CHECK.
+  //     Verify each citation-bearing fail against the pre-indexed corpus
+  //     BEFORE the live researcher runs. Hits attach a citation directly
+  //     (saves a researcher call); misses get citation_unverified +
+  //     severity-downgraded so the displayed risk is appropriately
+  //     hedged. Only runs when we have a Supabase client (i.e. when the
+  //     research option is configured); otherwise the corpus is
+  //     unreachable and we let the existing 4c gate handle uncited fails.
+  if (options.research) {
+    try {
+      await verifyCorpusCitations(
+        findings,
+        options.research.supabase,
+        options.research.jurisdictionKey,
+      );
+    } catch (err) {
+      console.warn("[triage] corpus citation gate failed; continuing:", err);
+    }
+  }
+
   // 4. LLM completeness judgment (or deterministic fallback)
   const completeness = useLlm
     ? await completenessJudgment(llm,
@@ -320,6 +340,10 @@ export async function runTriage(
             confidence: r.citation.confidence,
             notes: r.citation.notes,
           };
+          // Live researcher succeeded where the corpus pre-check failed.
+          // Clear the unverified flag so the reviewer doesn't see a
+          // misleading "Citation unverified" badge.
+          f.citation_unverified = false;
         }
         // Amendment lookup is independent of the research outcome —
         // even when the researcher cites the base code, we want the
