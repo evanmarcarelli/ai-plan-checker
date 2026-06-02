@@ -35,6 +35,35 @@ export interface TextBlock {
   sheet?: string;
 }
 
+// =====================================================================
+// Structured ambiguity — a question the extractor cannot resolve on its
+// own that should be put to a human reviewer. Each carries an
+// evidence_location so the dashboard can render a yellow box on the
+// PDF over the ambiguous region. Once the reviewer answers, the
+// resolve-ambiguity Edge Function (P3.d backend, separate ticket)
+// writes the answer to resolved_value, optionally re-runs affected
+// rules, and the ambiguity moves from "open" to "resolved" state.
+//
+// Back-compat: the `ambiguities` field on BuildingScope is typed as
+// `(string | Ambiguity)[]` so legacy reports (which produced plain
+// strings) continue to render. New code should always emit Ambiguity
+// objects; the union is for read-side leniency only.
+// =====================================================================
+export interface Ambiguity {
+  id: string;
+  field: string;                      // which scope field, e.g. "construction_type"
+  question: string;                   // human-readable, reviewer-facing
+  evidence_location?: EvidenceLocation | null;
+  // The values the extractor saw — let the reviewer decide which to pick.
+  llm_value?: unknown;
+  regex_value?: unknown;
+  // Populated by the reviewer via resolve-ambiguity. When set, downstream
+  // re-triage uses this value as authoritative.
+  resolved_value?: unknown;
+  resolved_at?: string;               // ISO timestamp
+  resolved_by?: string;               // user_id
+}
+
 export interface BuildingScope {
   occupancies: string[];
   occupancy_primary: string | null;
@@ -58,8 +87,11 @@ export interface BuildingScope {
   // page/bbox come from [PAGE:N] markers in input text or from text_blocks
   // post-processing match.
   evidence: Record<string, EvidenceLocation>;
-  // What the extractor isn't sure about — drives reviewer questions
-  ambiguities: string[];
+  // What the extractor isn't sure about — drives reviewer questions.
+  // Legacy reports store plain strings; new extractions emit structured
+  // Ambiguity objects. The union keeps read code lenient; the writer
+  // (merge()) always emits objects from now on.
+  ambiguities: (string | Ambiguity)[];
   // Did we use the LLM or fall back to regex?
   source: "llm" | "regex" | "merged";
   // Address-derived facts (populated externally by the triage runner, not from plan text)
@@ -318,6 +350,30 @@ export function attachBboxToEvidence(
   return out;
 }
 
+// Convert a BuildingScope field name to a reviewer-friendly label.
+// Keeps the question text from being snake_case-ugly.
+function humanizeField(field: string): string {
+  const map: Record<string, string> = {
+    occupancies: "Occupancy group(s)",
+    occupancy_primary: "Primary occupancy",
+    construction_type: "Construction type",
+    building_area_sf: "Building area",
+    per_story_area_sf: "Per-story area",
+    stories_above: "Stories above grade",
+    height_ft: "Building height",
+    sprinklered: "Sprinkler status",
+    occupant_load: "Occupant load",
+    travel_distance_ft: "Travel distance",
+    has_kitchen: "Commercial kitchen presence",
+    has_atrium: "Atrium presence",
+    has_elevator: "Elevator presence",
+    has_area_of_refuge: "Area-of-refuge presence",
+    panic_hardware_called_out: "Panic hardware callout",
+    mixed_occupancy: "Mixed-occupancy status",
+  };
+  return map[field] ?? field.replace(/_/g, " ");
+}
+
 function positiveMention(text: string, pattern: RegExp): boolean {
   const global = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g");
   const negRe = /\b(?:no|not|without|missing|absent|lacks?|n\/a)\s+(?:\w+\s+){0,5}?$/i;
@@ -359,16 +415,27 @@ function merge(llm: BuildingScope, rgx: BuildingScope): BuildingScope {
     if (llm.evidence[f as string]) out.evidence[f as string] = llm.evidence[f as string];
   }
 
-  // Discrepancies become ambiguities for the reviewer
+  // Discrepancies become structured ambiguities for the reviewer.
+  // LLM-produced ambiguities (already in llm.ambiguities) pass through
+  // unchanged — they may already be strings or objects.
   out.ambiguities = [...(llm.ambiguities ?? [])];
   for (const f of fields) {
     const a = (llm as Record<string, unknown>)[f as string];
     const b = (rgx as Record<string, unknown>)[f as string];
     if (a == null && b == null) continue;
     if (JSON.stringify(a) !== JSON.stringify(b)) {
-      out.ambiguities.push(
-        `LLM and regex disagree on ${String(f)}: LLM said ${JSON.stringify(a)}, regex said ${JSON.stringify(b)}`,
-      );
+      const key = String(f);
+      out.ambiguities.push({
+        id: crypto.randomUUID(),
+        field: key,
+        question:
+          `Plans show conflicting values for ${humanizeField(key)} — ` +
+          `the LLM read it as ${JSON.stringify(a)} and the regex extractor read ${JSON.stringify(b)}. ` +
+          `Which is correct?`,
+        evidence_location: out.evidence[key] ?? null,
+        llm_value: a,
+        regex_value: b,
+      });
     }
   }
   // Recompute mixed_occupancy from final occupancies
