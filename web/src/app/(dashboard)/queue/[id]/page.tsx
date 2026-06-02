@@ -3,22 +3,45 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { Submittal, TriageRun, ReviewComment, TriageReport, TriageFinding } from '@/lib/supabase/types'
 import CommentComposer from './CommentComposer'
+import FindingCard, { type FindingForCard } from '@/components/FindingCard'
+
+// 1 hour signed URL — long enough to span a reviewer session, short enough
+// to limit blast radius if a URL leaks. The viewer re-fetches on reload.
+const PDF_SIGN_TTL_SECONDS = 60 * 60
+
+// Translate the backend TriageFinding shape into the standalone
+// FindingForCard contract that the new card component expects.
+// Most fields map directly; we synthesize `status`/`severity` defensively
+// because TriageFinding has historically misnamed those.
+function toFindingForCard(f: TriageFinding): FindingForCard {
+  const status: FindingForCard['status'] =
+    f.status ??
+    (f.severity === 'fail' || f.severity === 'warning' || f.severity === 'pass' || f.severity === 'info'
+      ? (f.severity === 'warning' ? 'warn' : f.severity)
+      : 'info')
+  const severity = f.severity_tier
+    ?? (status === 'fail' ? 'critical' : status === 'warn' ? 'moderate' : 'minor')
+  return {
+    rule_id: f.rule_id,
+    code_ref: f.code_ref,
+    description: f.description,
+    discipline: f.discipline,
+    severity,
+    status,
+    summary: f.summary ?? f.description,
+    evidence: f.evidence,
+    confidence: f.confidence,
+    evidence_location: f.evidence_location ?? null,
+    citation_unverified: f.citation_unverified,
+    citation: f.citation,
+  }
+}
 
 function scoreColor(s: number | null) {
   if (!s) return { text: 'text-slate-500', bar: 'bg-slate-300' }
   if (s >= 80) return { text: 'text-emerald-700', bar: 'bg-emerald-500' }
   if (s >= 50) return { text: 'text-amber-700', bar: 'bg-amber-400' }
   return { text: 'text-red-700', bar: 'bg-red-500' }
-}
-
-function severityBadge(s: string) {
-  const map: Record<string, string> = {
-    fail: 'bg-red-100 text-red-800 border border-red-200',
-    warning: 'bg-amber-100 text-amber-800 border border-amber-200',
-    info: 'bg-blue-100 text-blue-800 border border-blue-200',
-    pass: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  }
-  return map[s] ?? 'bg-slate-100 text-slate-600'
 }
 
 function statusLabel(s: string) {
@@ -63,6 +86,29 @@ export default async function SubmittalDetailPage({ params }: { params: Promise<
     .order('display_order')
 
   const comments = (commentsRaw ?? []) as ReviewComment[]
+
+  // Pull the primary submittal file (most recently uploaded) and mint a
+  // signed Storage URL so the FindingCard's PDF viewer can render the
+  // page that holds each finding's evidence_location. Failing silently
+  // is the right call here — when there's no PDF, the viewer renders a
+  // "preview unavailable" empty state and the rest of the page still works.
+  const { data: primaryFileRaw } = await supabase
+    .from('submittal_files')
+    .select('storage_path')
+    .eq('submittal_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let pdfUrl: string | null = null
+  const primaryFile = primaryFileRaw as { storage_path: string } | null
+  if (primaryFile?.storage_path) {
+    const { data: signed } = await supabase
+      .storage
+      .from('submittals')
+      .createSignedUrl(primaryFile.storage_path, PDF_SIGN_TTL_SECONDS)
+    pdfUrl = signed?.signedUrl ?? null
+  }
 
   const report = triageRun?.report as TriageReport | null
   const findings: TriageFinding[] = report?.findings ?? []
@@ -147,20 +193,13 @@ export default async function SubmittalDetailPage({ params }: { params: Promise<
 
           <div className="space-y-2">
             {findings.map(f => (
-              <div key={f.rule_id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 mt-0.5 capitalize ${severityBadge(f.severity)}`}>
-                    {f.severity}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs text-blue-700 font-semibold">{f.code_ref}</span>
-                      <span className="text-xs text-slate-400">{Math.round(f.confidence * 100)}% confidence</span>
-                    </div>
-                    <p className="text-sm text-slate-700">{f.description}</p>
-                    {f.draft_comment && <CommentComposer finding={f} submittalId={id} />}
+              <div key={f.rule_id}>
+                <FindingCard finding={toFindingForCard(f)} pdfUrl={pdfUrl} />
+                {f.draft_comment && (
+                  <div className="mt-1 pl-3">
+                    <CommentComposer finding={f} submittalId={id} />
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
