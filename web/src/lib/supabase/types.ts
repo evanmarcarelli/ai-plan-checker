@@ -103,6 +103,57 @@ export interface Database {
           }
         ]
       }
+      submittal_files: {
+        Row: {
+          id: string
+          submittal_id: string
+          agency_id: string
+          storage_path: string
+          filename: string
+          size_bytes: number | null
+          mime_type: string | null
+          page_count: number | null
+          extracted_text: string | null
+          has_text_layer: boolean | null
+          text_blocks: Json | null
+          ocr_required: boolean | null
+          ocr_completed_at: string | null
+          uploaded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          submittal_id: string
+          agency_id: string
+          storage_path: string
+          filename: string
+          size_bytes?: number | null
+          mime_type?: string | null
+          page_count?: number | null
+          extracted_text?: string | null
+          has_text_layer?: boolean | null
+          text_blocks?: Json | null
+          ocr_required?: boolean | null
+          ocr_completed_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['submittal_files']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'submittal_files_submittal_id_fkey'
+            columns: ['submittal_id']
+            isOneToOne: false
+            referencedRelation: 'submittals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'submittal_files_agency_id_fkey'
+            columns: ['agency_id']
+            isOneToOne: false
+            referencedRelation: 'agencies'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       triage_runs: {
         Row: {
           id: string
