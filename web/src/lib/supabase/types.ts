@@ -239,6 +239,35 @@ export type AgencyMemberWithAgency = AgencyMember & {
   agencies: Agency
 }
 
+// Shared shape for "where on the PDF this fact came from". Mirrors
+// EvidenceLocation in supabase/functions/_shared/extract.ts.
+export interface EvidenceLocation {
+  text: string
+  page: number | null
+  bbox: { x: number; y: number; w: number; h: number } | null
+  sheet?: string | null
+}
+
+// Structured ambiguity emitted by the scope extractor when LLM and regex
+// disagree (or the LLM flags an open question). Reviewers answer these
+// via the AmbiguityCard. Legacy reports stored plain strings — the union
+// type on TriageReport.scope.ambiguities keeps both renderable.
+export interface Ambiguity {
+  id: string
+  field: string
+  question: string
+  evidence_location?: EvidenceLocation | null
+  llm_value?: unknown
+  regex_value?: unknown
+  resolved_value?: unknown
+  resolved_at?: string | null
+  resolved_by?: string | null
+}
+
+export function isStructuredAmbiguity(a: unknown): a is Ambiguity {
+  return typeof a === 'object' && a !== null && 'id' in a && 'field' in a
+}
+
 // Triage report shape (from the edge function output)
 export interface TriageReport {
   scope: {
@@ -247,12 +276,13 @@ export interface TriageReport {
     area_sqft: number | null
     stories: number | null
     sprinklered: boolean | null
+    ambiguities?: (string | Ambiguity)[]
     [key: string]: unknown
   }
   findings: TriageFinding[]
   completeness_score: number
   completeness_judgment: string
-  ambiguities: string[]
+  ambiguities: (string | Ambiguity)[]
 }
 
 export interface TriageFinding {

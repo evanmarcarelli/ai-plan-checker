@@ -7,7 +7,7 @@ export const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-agency-id",
 };
 
 export function corsResponse(body: unknown, init: ResponseInit = {}): Response {

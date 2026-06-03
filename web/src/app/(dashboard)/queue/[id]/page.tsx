@@ -1,9 +1,12 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import type { Submittal, TriageRun, ReviewComment, TriageReport, TriageFinding } from '@/lib/supabase/types'
+import type { Submittal, TriageRun, ReviewComment, TriageReport, TriageFinding, Ambiguity } from '@/lib/supabase/types'
+import { isStructuredAmbiguity } from '@/lib/supabase/types'
 import CommentComposer from './CommentComposer'
 import FindingCard, { type FindingForCard } from '@/components/FindingCard'
+import { type AmbiguityForCard } from '@/components/AmbiguityCard'
+import AmbiguityResolver from './AmbiguityResolver'
 
 // 1 hour signed URL — long enough to span a reviewer session, short enough
 // to limit blast radius if a URL leaks. The viewer re-fetches on reload.
@@ -112,6 +115,22 @@ export default async function SubmittalDetailPage({ params }: { params: Promise<
 
   const report = triageRun?.report as TriageReport | null
   const findings: TriageFinding[] = report?.findings ?? []
+  // Pull structured ambiguities out of report.scope.ambiguities. Filters
+  // out legacy plain-string entries — those render as completeness notes
+  // elsewhere and don't carry the evidence_location needed by the card.
+  const scopeAmbs = (report?.scope?.ambiguities ?? []) as (string | Ambiguity)[]
+  const structuredAmbiguities: AmbiguityForCard[] = scopeAmbs
+    .filter(isStructuredAmbiguity)
+    .map(a => ({
+      id: a.id,
+      field: a.field,
+      question: a.question,
+      evidence_location: a.evidence_location ?? null,
+      llm_value: a.llm_value,
+      regex_value: a.regex_value,
+      resolved_value: a.resolved_value,
+      resolved_at: a.resolved_at ?? null,
+    }))
   const c = scoreColor(submittal.completeness_score)
 
   return (
@@ -167,6 +186,33 @@ export default async function SubmittalDetailPage({ params }: { params: Promise<
       {/* Findings + Comments split */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
+          {structuredAmbiguities.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Open questions
+                  <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-normal">
+                    {structuredAmbiguities.length}
+                  </span>
+                </h3>
+                <span className="text-xs text-slate-400">
+                  resolve before re-triage
+                </span>
+              </div>
+              <div className="space-y-2">
+                {structuredAmbiguities.map(amb => (
+                  <AmbiguityResolver
+                    key={amb.id}
+                    ambiguity={amb}
+                    pdfUrl={pdfUrl}
+                    submittalId={id}
+                    agencyId={submittal.agency_id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-3">
             <h3 className="text-sm font-semibold text-slate-700">
               Findings
