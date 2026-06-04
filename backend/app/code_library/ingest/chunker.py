@@ -104,6 +104,23 @@ _COMPILED_RULES: List[tuple] = [
 ]
 
 
+def keywords_for_category(category: str) -> List[str]:
+    """Return the domain keywords for a department category. Reused by the
+    department reviewers to score which plan-text pages are relevant to them."""
+    for cat, kws in _CATEGORY_RULES:
+        if cat == category:
+            return list(kws)
+    return []
+
+
+def compiled_patterns_for_category(category: str):
+    """Precompiled \\b-bounded patterns for a category (word-boundary safe)."""
+    for cat, pats in _COMPILED_RULES:
+        if cat == category:
+            return pats
+    return []
+
+
 def classify_category(title: str, breadcrumb: List[str], text: str) -> str:
     """Best-effort category for routing to a department reviewer.
 

@@ -152,6 +152,64 @@ OUTPUT — return ONLY a JSON array, no prose:
             "your review and do not contradict them):\n" + "\n".join(lines)
         )
 
+    def _relevant_plan_text(
+        self, plan_data: Optional[ExtractedPlanData], budget: int = 6000, per_page: int = 2000
+    ) -> str:
+        """#3 — Per-department plan-text retrieval.
+
+        The reviewer used to see only the first page (~2,500 chars). On a
+        multi-hundred-page set that's almost nothing and the domain sheets
+        (electrical schedules, plumbing fixture schedules, ...) are never seen.
+        Here we score every page by this department's domain keywords and feed
+        the reviewer the title/code sheet (always) plus the highest-scoring
+        domain pages, up to a char budget.
+
+        Degrades safely: no plan text -> ""; no domain match anywhere -> just
+        the first page (the previous behaviour, so no regression).
+        """
+        pages = (plan_data.raw_text_by_page if plan_data else None) or {}
+        if not pages:
+            return ""
+        from app.code_library.ingest.chunker import compiled_patterns_for_category
+        patterns = compiled_patterns_for_category(self.category)
+
+        first_pageno = min(pages.keys())
+        selected: List[tuple] = []
+        used: set = set()
+        total = 0
+
+        def add(pageno: int) -> None:
+            nonlocal total
+            if pageno in used:
+                return
+            text = (pages.get(pageno) or "")[:per_page]
+            if not text.strip():
+                return
+            selected.append((pageno, text))
+            used.add(pageno)
+            total += len(text)
+
+        # Anchor: the first page almost always carries the title block + code
+        # analysis, which every department needs.
+        add(first_pageno)
+
+        # Score the rest by domain-keyword hits, add highest first until budget.
+        scored = []
+        for pageno, text in pages.items():
+            if pageno in used or not text:
+                continue
+            score = sum(1 for p in patterns if p.search(text))
+            if score > 0:
+                scored.append((score, pageno))
+        scored.sort(key=lambda t: (-t[0], t[1]))
+        for _score, pageno in scored:
+            if total >= budget:
+                break
+            add(pageno)
+
+        selected.sort(key=lambda t: t[0])
+        return "\n\n".join(f"[PAGE {pn}]\n{tx}" for pn, tx in selected)
+
     async def _call_reviewer(
         self,
         plan_data: Optional[ExtractedPlanData],
@@ -161,7 +219,7 @@ OUTPUT — return ONLY a JSON array, no prose:
     ) -> List[ComplianceFinding]:
         # Build plan summary
         plan_summary = "No plan data extracted."
-        first_page_text = ""
+        relevant_text = ""
         if plan_data:
             plan_summary = json.dumps({
                 "plan_type": plan_data.plan_type.value if plan_data.plan_type else "unknown",
@@ -176,8 +234,7 @@ OUTPUT — return ONLY a JSON array, no prose:
                 "elements_present": [e.element_type for e in plan_data.elements] if plan_data.elements else [],
                 "materials": plan_data.materials,
             }, indent=2, default=str)
-            if plan_data.raw_text_by_page:
-                first_page_text = list(plan_data.raw_text_by_page.values())[0][:2500]
+            relevant_text = self._relevant_plan_text(plan_data)
 
         # Build a code-requirements block that puts the VERBATIM code text
         # front and centre so the model is forced to ground in it rather than
@@ -210,8 +267,8 @@ OUTPUT — return ONLY a JSON array, no prose:
         fresh = f"""EXTRACTED PLAN DATA:
 {plan_summary}
 
-PLAN TEXT SAMPLE (first page, may contain title block, notes, schedules):
-{first_page_text}
+RELEVANT PLAN TEXT (the title/code sheet plus pages matched to YOUR domain — schedules, notes, callouts):
+{relevant_text}
 
 LOCAL JURISDICTION AMENDMENTS:
 {chr(10).join(f'- {a}' for a in jurisdiction_amendments) if jurisdiction_amendments else 'None'}

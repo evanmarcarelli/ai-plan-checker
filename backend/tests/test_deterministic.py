@@ -218,6 +218,37 @@ def test_deterministic_context_feeds_reviewers_by_category():
     assert building._deterministic_context(None) == ""
 
 
+def test_per_department_plan_retrieval_routes_pages():
+    """#3: each department sees the title page plus its own domain pages."""
+    from app.agents.departments import ALL_DEPARTMENTS
+
+    by_cat = {cls().category: cls() for cls in ALL_DEPARTMENTS}
+    pd = ExtractedPlanData(raw_text_by_page={
+        1: "TITLE SHEET. Code analysis: occupancy B, construction type V-B.",
+        2: "ELECTRICAL panel schedule, 400A service entrance, GFCI receptacles, grounding.",
+        3: "PLUMBING fixture schedule, water closet, lavatory, backflow, drain vent.",
+        4: "MECHANICAL HVAC ductwork exhaust ventilation combustion air refrigerant.",
+    })
+
+    def pages_seen(cat):
+        txt = by_cat[cat]._relevant_plan_text(pd)
+        return sorted(int(s.split("]")[0]) for s in txt.split("[PAGE ")[1:])
+
+    assert pages_seen("electrical") == [1, 2]
+    assert pages_seen("plumbing") == [1, 3]
+    assert pages_seen("mechanical") == [1, 4]
+    # Title page is always the anchor.
+    assert 1 in pages_seen("building_safety")
+
+
+def test_per_department_retrieval_degrades_safely():
+    """#3: no plan text -> empty string (no crash, no regression)."""
+    from app.agents.departments import ALL_DEPARTMENTS
+    dept = ALL_DEPARTMENTS[0]()
+    assert dept._relevant_plan_text(None) == ""
+    assert dept._relevant_plan_text(ExtractedPlanData()) == ""
+
+
 def test_gate_enrich_mode_never_downgrades():
     f = ComplianceFinding(
         finding_id="1",
