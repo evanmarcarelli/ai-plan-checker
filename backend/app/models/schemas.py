@@ -108,6 +108,23 @@ class ExtractedPlanData(BaseModel):
     stories: Optional[int] = None
     raw_text_by_page: Dict[int, str] = {}
     title_block_text: Optional[str] = None
+    # ---- Optional scalars consumed by the deterministic rule engine ----
+    # The Surveyor may or may not populate these yet; checkers degrade to
+    # "needs review / not applicable" when they are None, exactly like the
+    # plan-room engine. Present so the deterministic numeric checks
+    # (exits, capacity, fixtures, story sprinkler-adjust) can activate as
+    # extraction improves.
+    occupant_load: Optional[int] = None
+    sprinklered: Optional[bool] = None
+    per_story_area: Optional[float] = None
+    declared_exits: Optional[int] = None
+    declared_door_width_in: Optional[float] = None
+    declared_stair_width_in: Optional[float] = None
+    actual_wc: Optional[int] = None
+    actual_lav: Optional[int] = None
+    state_code: Optional[str] = None
+    # CalFire FHSZ overlay tier ("high" / "very_high"), address-derived.
+    wui_zone: Optional[str] = None
 
 
 # ==================== Code Requirements ====================

@@ -1,0 +1,24 @@
+{
+  "slug": "highrise-ib-office",
+  "title": "Type I-B office tower above the 75 ft high-rise threshold",
+  "notes": "Tests IBC 403 high-rise threshold (warn -> needs_review) and that a tall but in-limit building does not false-fail area/stories.",
+  "plan_data": {
+    "project_address": "555 Flower St, Los Angeles, CA",
+    "occupancy_type": "B",
+    "construction_type": "I-B",
+    "per_story_area": 18000,
+    "building_area": 360000,
+    "stories": 11,
+    "building_height": 160,
+    "occupant_load": 2400,
+    "sprinklered": true
+  },
+  "plan_text": "CODE ANALYSIS\nOccupancy: B\nType: I-B\nStories: 11\nHeight: 160 ft\nFully sprinklered NFPA 13. Fire alarm NFPA 72. Smoke control and standby power provided. Voice alarm.\nAccessible parking, accessible route, ADA restroom, braille signage.\nIECC energy code. Ventilation outdoor air per IMC 403. Panic hardware. 3000 A service. CALGreen low-flow fixtures. Construction waste management plan.",
+  "ground_truth": [
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "warn" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass" },
+    { "rule_id": "FLS-SPRINKLER", "expected_status": "pass" }
+  ]
+}

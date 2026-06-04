@@ -1,0 +1,238 @@
+"""Deterministic rule knowledge base.
+
+Ported from plan-room-ahj/supabase/functions/_shared/rules.ts. A flat list
+of typed rules the engine evaluates. Two rule families:
+
+  - Numeric / table rules (allowable_area_check, stories_check, ...) run a
+    pure checker from checkers.py.
+  - Declarative-completeness rules (required_keyword, occupancy_declared, ...)
+    check that a required element is *present* in the plan, not that a code
+    limit is met.
+
+`requires_citation` mirrors the TS flag: when True, a "fail" must carry a
+verified corpus citation before it is surfaced as non-compliant; the
+citation gate downgrades fail-without-citation to needs_review. Declarative
+rules set it False (a missing field is a structural omission, not a code
+interpretation that needs a section quote).
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+# severity: "critical" | "major" | "moderate" | "minor"
+# Maps to ai-plan-checker's ComplianceFinding.severity scale
+# (critical/high/medium/low) via engine._SEVERITY_MAP.
+
+
+@dataclass
+class Rule:
+    id: str
+    discipline: str          # maps to a department category
+    code_ref: str
+    description: str
+    severity: str            # critical | major | moderate | minor
+    check: Dict[str, Any]    # {"type": "...", ...params}
+    requires_citation: bool = False
+
+
+# Discipline -> department category (matches chunker.classify_category buckets).
+DISCIPLINE_TO_CATEGORY = {
+    "Commercial": "building_safety",
+    "General": "building_safety",
+    "Structural": "building_safety",
+    "Architectural": "building_safety",
+    "Accessibility": "accessibility",
+    "Electrical": "electrical",
+    "Mechanical": "mechanical",
+    "Plumbing": "plumbing",
+    "Fire & Life Safety": "fire",
+    "Energy": "energy",
+    "Zoning": "zoning",
+}
+
+
+CALFIRE_WUI_RULES: List[Rule] = [
+    Rule(
+        id="FIRE-WUI-7A",
+        discipline="Fire & Life Safety",
+        code_ref="CBC Chapter 7A · CA Gov Code §51182",
+        description=(
+            "Projects in a CalFire High or Very High Fire Hazard Severity Zone (FHSZ) "
+            "require wildfire-resistive exterior construction per CBC Chapter 7A: "
+            "ignition-resistant materials for roofing, exterior walls, decks, vents, and glazing."
+        ),
+        severity="critical",
+        check={"type": "wui_zone_check"},
+        requires_citation=True,
+    ),
+    Rule(
+        id="FIRE-WUI-VENT",
+        discipline="Fire & Life Safety",
+        code_ref="CBC Section 708A",
+        description=(
+            "WUI zone: attic, crawl space, and foundation vents must be ember-resistant "
+            "(CalFire-listed). Verify vent spec on architectural drawings."
+        ),
+        severity="major",
+        # Gated on WUI zone — only applies when the project sits in a CalFire
+        # FHSZ. The keyword list is the spec the engine looks for once gated.
+        check={"type": "wui_keyword_check",
+               "patterns": [r"ember[-\s]?resistant", r"708A", r"CalFire[-\s]?listed\s+vent"]},
+        requires_citation=True,
+    ),
+    Rule(
+        id="FIRE-WUI-DECK",
+        discipline="Architectural",
+        code_ref="CBC Section 709A",
+        description=(
+            "WUI zone: exterior decks and balconies >= 6 ft above grade or in Very High "
+            "FHSZ must use ignition-resistant or noncombustible material. Deck material spec required."
+        ),
+        severity="major",
+        check={"type": "wui_keyword_check",
+               "patterns": [r"ignition[-\s]?resistant", r"noncombustible\s+deck", r"709A"]},
+        requires_citation=True,
+    ),
+]
+
+
+BASELINE_RULES: List[Rule] = [
+    # ---- Building-scale code analysis ----
+    Rule("COM-OCCUPANCY-DECL", "Commercial", "IBC 302",
+         "Occupancy classification (Group A/B/E/F/H/I/M/R/S) shall be declared.",
+         "critical", {"type": "occupancy_declared"}, requires_citation=False),
+    Rule("COM-CONSTRUCTION-TYPE", "Commercial", "IBC 602",
+         "Construction Type (I-A through V-B) shall be declared.",
+         "critical", {"type": "construction_type_declared"}, requires_citation=False),
+    Rule("COM-AREA-ALLOWABLE", "Commercial", "IBC Table 506.2",
+         "Building area per story shall not exceed the tabular allowable area.",
+         "critical", {"type": "allowable_area_check"}, requires_citation=True),
+    Rule("COM-STORIES-ALLOWABLE", "Commercial", "IBC Table 504.4",
+         "Number of stories shall not exceed the tabular limit.",
+         "critical", {"type": "stories_check"}, requires_citation=True),
+    Rule("COM-HIGH-RISE", "Commercial", "IBC 403",
+         "High-rise (>75 ft) provisions: smoke control, voice alarm, standby power.",
+         "critical", {"type": "high_rise_check"}, requires_citation=True),
+
+    # ---- Egress ----
+    Rule("EGR-OCCUPANT-LOAD", "Fire & Life Safety", "IBC 1004",
+         "Design occupant load shall be declared.",
+         "critical", {"type": "occupant_load_declared"}, requires_citation=False),
+    Rule("EGR-MIN-EXITS", "Fire & Life Safety", "IBC 1006.3.2",
+         "Minimum exits: 2 (<=500), 3 (501-1000), 4 (>1000).",
+         "critical", {"type": "num_exits_check"}, requires_citation=True),
+    Rule("EGR-EXIT-CAPACITY", "Fire & Life Safety", "IBC 1005.3",
+         "Egress width: 0.2 in/occupant doors, 0.3 in/occupant stairs.",
+         "critical", {"type": "exit_capacity_check"}, requires_citation=True),
+    Rule("EGR-PANIC-HARDWARE", "Fire & Life Safety", "IBC 1010.1.10",
+         "Panic hardware required on Group A (OL >= 50) and Group E doors.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"panic\s+hardware", r"panic\s+bar"]}, requires_citation=False),
+
+    # ---- Required submittal items (completeness) ----
+    Rule("GEN-CODE-ANALYSIS", "General", "IBC Ch. 3-5",
+         "Code analysis sheet (occupancy, type, area, height) shall be provided.",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"code\s+analysis", r"occupancy\s+(?:group|classification)",
+                                   r"construction\s+type"]}, requires_citation=False),
+    Rule("FLS-SPRINKLER", "Fire & Life Safety", "IFC 903 · NFPA 13",
+         "Sprinkler system per NFPA 13 where required.",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"NFPA\s*13", r"sprinkler\s+system"]}, requires_citation=False),
+    Rule("FLS-ALARM", "Fire & Life Safety", "IFC 907 · NFPA 72",
+         "Fire alarm system per NFPA 72 where required.",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"NFPA\s*72", r"fire\s+alarm"]}, requires_citation=False),
+    Rule("NEC-SERVICE-RATING", "Electrical", "NEC 230.42",
+         "Service entrance ampacity shall be specified.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"\d+\s*A(?:MP)?\s+service", r"main\s+breaker"]}, requires_citation=False),
+    Rule("PLUMB-FIXTURES", "Plumbing", "IPC Table 403.1",
+         "Plumbing fixture count shall meet minimum ratios for occupancy.",
+         "major", {"type": "plumbing_fixture_calc"}, requires_citation=True),
+    Rule("ENR-IECC", "Energy", "IECC C401 · R401",
+         "IECC compliance path shall be identified.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"\bIECC\b", r"energy\s+code"]}, requires_citation=False),
+
+    # ---- ADA (federal — applies to every commercial project) ----
+    Rule("ADA-PARKING", "Accessibility", "ADA Table 208.2",
+         "Accessible parking count shall meet ADA Table 208.2 ratio; at least one "
+         "van-accessible space per facility (208.2.4).",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"accessible\s+parking", r"ADA\s+parking",
+                                   r"van[-\s]accessible"]}, requires_citation=False),
+    Rule("ADA-ROUTE", "Accessibility", "ADA 402",
+         "An accessible route shall connect accessible parking, public sidewalks, and "
+         "the primary entrance (ADA 402, 206.2.1).",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"accessible\s+route", r"path\s+of\s+travel", r"POT\b"]},
+         requires_citation=False),
+    Rule("ADA-RESTROOM", "Accessibility", "ADA 603",
+         "At least one accessible toilet compartment shall be provided per ADA 603/604.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"accessible\s+(?:restroom|toilet|water\s+closet)",
+                                r"ADA\s+restroom", r"ANSI\s+A117\.1"]}, requires_citation=False),
+    Rule("ADA-SIGNAGE", "Accessibility", "ADA 703",
+         "Permanent room signs shall have tactile characters and Braille per ADA 703.",
+         "moderate", {"type": "required_keyword",
+                      "patterns": [r"braille", r"tactile\s+sign", r"ADA\s+sign"]}, requires_citation=False),
+
+    # ---- NFPA completeness ----
+    Rule("FLS-NFPA13R", "Fire & Life Safety", "NFPA 13R",
+         "Residential occupancies (R-1, R-2) 4 stories or less may use NFPA 13R; declare 13 vs 13R.",
+         "moderate", {"type": "required_keyword",
+                      "patterns": [r"NFPA\s*13R", r"residential\s+sprinkler"]}, requires_citation=False),
+    Rule("FLS-NFPA101", "Fire & Life Safety", "NFPA 101",
+         "Reference to NFPA 101 Life Safety Code shall appear on egress/life-safety analysis where required.",
+         "moderate", {"type": "required_keyword",
+                      "patterns": [r"NFPA\s*101", r"life\s+safety\s+code"]}, requires_citation=False),
+
+    # ---- Mechanical ventilation (IMC) ----
+    Rule("MECH-VENTILATION", "Mechanical", "IMC Table 403.3",
+         "Minimum outdoor air ventilation rates per IMC Table 403.3 shall be declared.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"ventilation\s+rate", r"outdoor\s+air", r"IMC\s+(?:Table\s+)?403",
+                                r"\bCFM/(?:person|occupant)\b"]}, requires_citation=False),
+]
+
+
+CALGREEN_MANDATORY_RULES: List[Rule] = [
+    Rule("CAL-WATER-EFF", "Plumbing", "CALGreen 4.303.1",
+         "Nonresidential plumbing fixtures shall meet CALGreen 4.303.1 maximum flow rates "
+         "(1.28 gpf water closets, 0.5 gpm public lavatories).",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"CALGreen", r"water[-\s]efficient\s+fixture", r"low[-\s]flow",
+                                r"1\.28\s*gpf", r"0\.5\s*gpm"]}, requires_citation=False),
+    Rule("CAL-CONST-WASTE", "General", "CALGreen 4.408.1",
+         "Construction waste management plan shall divert >= 65% of non-hazardous C&D debris.",
+         "moderate", {"type": "required_keyword",
+                      "patterns": [r"construction\s+waste\s+management", r"waste\s+management\s+plan",
+                                   r"CALGreen\s+4\.408"]}, requires_citation=False),
+]
+
+
+def rules_for_agency(
+    baseline: List[Rule],
+    custom_rules: List[Rule] = None,
+    disabled: List[str] = None,
+    severity_changes: Dict[str, str] = None,
+) -> List[Rule]:
+    """Merge baseline + custom - disabled, applying severity overrides.
+
+    Mirrors rulesForAgency() in the TS engine.
+    """
+    custom_rules = custom_rules or []
+    disabled_set = set(disabled or [])
+    sev = severity_changes or {}
+    out: List[Rule] = []
+    for r in list(baseline) + list(custom_rules):
+        if r.id in disabled_set:
+            continue
+        if r.id in sev:
+            out.append(Rule(r.id, r.discipline, r.code_ref, r.description,
+                            sev[r.id], r.check, r.requires_citation))
+        else:
+            out.append(r)
+    return out

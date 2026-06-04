@@ -1,0 +1,27 @@
+{
+  "slug": "office-vb-area-violation",
+  "title": "Commercial office, Type V-B, per-story area over the Group B limit",
+  "notes": "Tests IBC Table 506.2 numeric check on a clear over-limit case.",
+  "plan_data": {
+    "project_address": "456 Market St, Los Angeles, CA",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 12000,
+    "building_area": 12000,
+    "stories": 1,
+    "building_height": 18,
+    "occupant_load": 60,
+    "sprinklered": true
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 1\nBuilding height: 18 ft\nPer-story area: 12,000 sf\nFully sprinklered: yes\nDesign occupant load: 60\nIECC: Title 24 Part 6\nElectrical: 400 A main breaker\nAccessible parking and accessible route provided. ADA restroom. Braille signage.\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nVentilation rate per IMC Table 403.3.\nPanic hardware at exits. WC 4 LAV 4. CALGreen low-flow fixtures. Construction waste management plan.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "fail" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "pass" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass" },
+    { "rule_id": "FLS-SPRINKLER", "expected_status": "pass" },
+    { "rule_id": "ADA-PARKING", "expected_status": "pass" }
+  ]
+}

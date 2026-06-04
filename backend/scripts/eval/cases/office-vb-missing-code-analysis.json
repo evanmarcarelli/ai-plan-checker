@@ -1,0 +1,26 @@
+{
+  "slug": "office-vb-missing-code-analysis",
+  "title": "Commercial office submittal missing the code analysis sheet and life-safety items",
+  "notes": "Tests declarative completeness checks (required_keyword) — these fail without needing a citation.",
+  "plan_data": {
+    "project_address": "77 Beale St, Los Angeles, CA",
+    "occupancy_type": "B",
+    "construction_type": "II-B",
+    "per_story_area": 8000,
+    "building_area": 8000,
+    "stories": 1,
+    "building_height": 16,
+    "occupant_load": 40,
+    "sprinklered": true
+  },
+  "plan_text": "ARCHITECTURAL SITE PLAN A-1.0\nProperty line and setbacks shown. Parking layout. Landscape plan. Trash enclosure detail. Sheet index lists only architectural site sheets.",
+  "ground_truth": [
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "fail" },
+    { "rule_id": "FLS-SPRINKLER", "expected_status": "fail" },
+    { "rule_id": "FLS-ALARM", "expected_status": "fail" },
+    { "rule_id": "ADA-PARKING", "expected_status": "fail" },
+    { "rule_id": "ADA-ROUTE", "expected_status": "fail" }
+  ]
+}

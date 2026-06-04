@@ -1,0 +1,43 @@
+{
+  "slug": "ladbs-sfd-palisades-rebuild",
+  "title": "LADBS SFD fire-rebuild (Pacific Palisades) — real examiner corrections",
+  "notes": "Ground truth from a REAL LADBS plan-check correction set (158 corrections, anonymized). Models the AS-SUBMITTED (R1) plan: items the examiner flagged as missing are omitted from plan_text and expected to FAIL; items shown on the submittal are present and expected to PASS. Tests whether the deterministic engine reproduces a real LADBS examiner's LA-specific corrections on an SFD.",
+  "ladbs_sfd": true,
+  "plan_data": {
+    "project_address": "100 Hillside Dr, Pacific Palisades, Los Angeles, CA 90272",
+    "state_code": "CA",
+    "city": "Los Angeles",
+    "plan_type": "residential",
+    "occupancy_type": "R-3",
+    "construction_type": "V-B",
+    "stories": 2,
+    "building_height": 30,
+    "building_area": 4500,
+    "per_story_area": 2400,
+    "wui_zone": "very_high"
+  },
+  "plan_text": "TITLE SHEET A001 — Single-Family Residence (owner redacted), Pacific Palisades, Los Angeles, CA 90272. New single-family dwelling, fire rebuild. Occupancy R-3, Construction Type V-B, 2 stories, 30 ft. CODE ANALYSIS: occupancy classification R-3, construction type V-B per CRC. SITE PLAN A1101: property lines shown with setbacks to front, side and rear. Grading and drainage per civil. Architectural floor plans, elevations, sections.",
+  "ground_truth": [
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass" },
+    { "rule_id": "LADBS-SFD-SETBACKS", "expected_status": "pass" },
+
+    { "rule_id": "LADBS-SFD-RFA", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-FOOTPRINT", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-DATUM", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-NATGRADE", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-ANTIGRAFFITI", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-EO-ELIGIBILITY", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-SPRINKLER", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-WUI", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-HILLSIDE-FIRE", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-GRN4", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-GRN1-SWPP", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-GRN11-VOC", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-FLOWRATE", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-COOLROOF", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-EV-RACEWAY", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-EXHAUST", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-FIREPLACE", "expected_status": "fail" },
+    { "rule_id": "LADBS-SFD-WALLSCHED", "expected_status": "fail" }
+  ]
+}

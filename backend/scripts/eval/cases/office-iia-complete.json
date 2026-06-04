@@ -1,0 +1,34 @@
+{
+  "slug": "office-iia-complete",
+  "title": "Commercial office, Type II-A, fully within limits and complete submittal",
+  "notes": "Negative control — nothing should fail. Tests false-positive rate.",
+  "plan_data": {
+    "project_address": "900 Wilshire Blvd, Los Angeles, CA",
+    "occupancy_type": "B",
+    "construction_type": "II-A",
+    "per_story_area": 20000,
+    "building_area": 60000,
+    "stories": 3,
+    "building_height": 45,
+    "occupant_load": 300,
+    "sprinklered": true
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: II-A\nStories: 3\nHeight: 45 ft\nPer-story area: 20,000 sf (limit 37,500)\nFully sprinklered: NFPA 13\nDesign occupant load: 300\nFire alarm: NFPA 72\nAccessible parking with van-accessible space. Accessible route / path of travel. ADA restroom per ANSI A117.1. Tactile and braille signage.\nIECC energy code compliance path identified.\nVentilation rate / outdoor air per IMC Table 403.3.\nPanic hardware at all Group B exits.\nElectrical: 800 A service, main breaker.\nCALGreen water-efficient fixtures (1.28 gpf). Construction waste management plan diverts 75%.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "pass" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass" },
+    { "rule_id": "FLS-SPRINKLER", "expected_status": "pass" },
+    { "rule_id": "FLS-ALARM", "expected_status": "pass" },
+    { "rule_id": "ADA-PARKING", "expected_status": "pass" },
+    { "rule_id": "ADA-ROUTE", "expected_status": "pass" },
+    { "rule_id": "ADA-RESTROOM", "expected_status": "pass" },
+    { "rule_id": "ENR-IECC", "expected_status": "pass" },
+    { "rule_id": "MECH-VENTILATION", "expected_status": "pass" },
+    { "rule_id": "CAL-WATER-EFF", "expected_status": "pass" },
+    { "rule_id": "CAL-CONST-WASTE", "expected_status": "pass" }
+  ]
+}

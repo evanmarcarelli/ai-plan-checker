@@ -1,0 +1,25 @@
+{
+  "slug": "wui-vhfhsz-deck-missing",
+  "title": "CA project in a Very-High FHSZ with no ignition-resistant deck/vent spec",
+  "notes": "Tests WUI gating: rules apply only when wui_zone is set, then fail when the spec is absent.",
+  "plan_data": {
+    "project_address": "200 Skyline Dr, Los Angeles, CA",
+    "occupancy_type": "B",
+    "construction_type": "V-B",
+    "per_story_area": 4000,
+    "building_area": 4000,
+    "stories": 1,
+    "building_height": 20,
+    "occupant_load": 30,
+    "sprinklered": true,
+    "wui_zone": "very_high"
+  },
+  "plan_text": "CODE ANALYSIS\nOccupancy B, Type V-B, 1 story, 20 ft, 4,000 sf, sprinklered.\nNFPA 13 sprinkler. NFPA 72 alarm. Accessible parking, route, restroom, braille.\nIECC energy. IMC 403 ventilation. Panic hardware. 400A service. CALGreen low-flow. Construction waste management plan. Standard vent and wood deck details on A-4.0.",
+  "ground_truth": [
+    { "rule_id": "FIRE-WUI-7A", "expected_status": "warn" },
+    { "rule_id": "FIRE-WUI-VENT", "expected_status": "fail" },
+    { "rule_id": "FIRE-WUI-DECK", "expected_status": "fail" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass" }
+  ]
+}
