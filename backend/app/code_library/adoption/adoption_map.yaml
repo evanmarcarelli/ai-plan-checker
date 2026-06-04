@@ -1,0 +1,117 @@
+# =====================================================================
+# Code adoption map — "jurisdiction -> adopted edition + amendment set".
+#
+# This is the UpCodes-style layer the engine was missing: it answers
+# "for THIS jurisdiction, which code editions and local amendments apply,
+# and which corpus layers should we search?".
+#
+# Resolution precedence (most -> least specific): city -> county -> state.
+# A record's `inherits` points at the parent whose `adopts` block fills in
+# any discipline the child doesn't override.
+#
+# Edition confidence:
+#   [confirmed]  verified against BSC / ICC / LADBS / city-clerk sources 2026-06
+#   [verify]     plausible but confirm exact article/year before relying on it
+#
+# Legal basis: enacted law is not copyrightable (Veeck v. SBCCI; Georgia v.
+# Public.Resource.Org). State/local amendments + LADBS bulletins are public
+# records. The ICC model base text is the only buy-license layer.
+# =====================================================================
+
+records:
+  # ---------------------------------------------------------------
+  # California state base — inherited by every CA jurisdiction
+  # ---------------------------------------------------------------
+  - id: ca_state
+    level: state
+    names: ["California", "CA"]
+    geo:
+      state_code: CA
+    authority: "California Building Standards Commission (BSC)"
+    edition_cycle: "2025 Title 24"          # [confirmed] effective 2026-01-01
+    prior_edition: "2022 Title 24"          # permits filed before 2026-01-01
+    prior_effective_until: "2025-12-31"
+    adopts:
+      building:      { code: CBC,        part: "T24 Pt 2",    edition: "2025", base_model: "2024 IBC" }   # [confirmed]
+      residential:   { code: CRC,        part: "T24 Pt 2.5",  edition: "2025", base_model: "2024 IRC" }   # [confirmed]
+      electrical:    { code: CEC,        part: "T24 Pt 3",    edition: "2025", base_model: "2023 NEC" }   # [confirmed]
+      mechanical:    { code: CMC,        part: "T24 Pt 4",    edition: "2025", base_model: "2024 UMC" }   # [verify] UMC year
+      plumbing:      { code: CPC,        part: "T24 Pt 5",    edition: "2025", base_model: "2024 UPC" }   # [verify] UPC year
+      energy:        { code: "Energy Code", part: "T24 Pt 6", edition: "2025" }
+      fire:          { code: CFC,        part: "T24 Pt 9",    edition: "2025", base_model: "2024 IFC" }   # [verify]
+      green:         { code: CALGreen,   part: "T24 Pt 11",   edition: "2025" }
+      accessibility: { code: "CBC Ch 11A/11B", part: "T24 Pt 2", edition: "2025" }
+    overlays: [very_high_fhsz, fema_flood]
+    corpus_layer_keys: ["*", "CA"]
+    sources:
+      - { layer: state_model, kind: ca_title24_bsc, url: "https://www.dgs.ca.gov/bsc/codes", access: public_index }
+      - { layer: state_model, kind: ca_title24_icc_viewer, url: "https://codes.iccsafe.org/codes/california", access: buy_license }
+
+  # ---------------------------------------------------------------
+  # City of Los Angeles — PRIMARY record (customer concentration)
+  # ---------------------------------------------------------------
+  - id: ca_los_angeles_city
+    level: city
+    inherits: ca_state
+    names: ["Los Angeles", "City of Los Angeles", "LA", "L.A."]
+    geo:
+      state_code: CA
+      county: "Los Angeles"
+      city: "Los Angeles"
+      place_fips: "0644000"
+    authority: "Los Angeles Department of Building & Safety (LADBS)"
+    # LA edits ON TOP of the CA codes, codified in the LA Municipal Code.
+    # LABC = LAMC Ch. IX Art. 1 (sections prefixed "91.") [confirmed]
+    # LARC = LAMC Ch. IX Art. 1.5 [confirmed]
+    local_amendments:
+      building:    "LABC — LAMC Ch. IX, Art. 1"        # [confirmed]
+      residential: "LARC — LAMC Ch. IX, Art. 1.5"      # [confirmed]
+      electrical:  "LAEC — LAMC Ch. IX, Art. 3"        # [verify] article
+      mechanical:  "LA Mechanical — LAMC Ch. IX, Art. 5" # [verify]
+      plumbing:    "LAPC — LAMC Ch. IX, Art. 4"        # [verify]
+      fire:        "LAFC — LAMC Ch. V, Art. 7"         # [verify]
+      green:       "LA Green Building Code — LAMC Ch. IX, Art. 9" # [verify]
+      zoning:      "LAMC Chapter I (Planning & Zoning)"
+    overlays: [very_high_fhsz, hillside, hpoz, methane_zone, liquefaction, coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Los Angeles"]
+    sources:
+      - { layer: interpretation, kind: ladbs_information_bulletins,
+          url: "https://dbs.lacity.gov/forms-publications/publications/information-bulletins-guidelines",
+          access: public_pdf }
+      - { layer: corrections, kind: ladbs_standard_corrections,
+          url: "https://dbs.lacity.gov/forms-and-publications/publications",
+          access: public_pdf }
+      - { layer: local_amend, kind: lamc_amendment_ordinances,
+          url: "https://dbs.lacity.gov/los-angeles-city-code-documents",
+          access: public_pdf }
+      - { layer: local_amend, kind: amlegal_lamc, slug: los_angeles_ca,
+          url: "https://codelibrary.amlegal.com/codes/los_angeles/latest/lamc",
+          access: cloudflare_blocked }
+      - { layer: state_model, kind: ca_title24_cbc_2025,
+          url: "https://codes.iccsafe.org/content/CABC2025P1",
+          access: buy_license }
+      - { layer: base_model, kind: icc_2024_ibc, access: buy_license }
+
+  # ---------------------------------------------------------------
+  # Los Angeles County (unincorporated)
+  # ---------------------------------------------------------------
+  - id: ca_los_angeles_county
+    level: county
+    inherits: ca_state
+    names: ["Los Angeles County", "LA County", "County of Los Angeles", "unincorporated Los Angeles"]
+    geo:
+      state_code: CA
+      county: "Los Angeles"
+      city: null
+    authority: "LA County Dept. of Public Works — Building & Safety"
+    local_amendments:
+      building: "LA County Building Code — County Code Title 26"   # [verify] title
+      fire:     "LA County Fire Code — County Code Title 32"        # [verify] title
+      zoning:   "LA County Zoning Code — County Code Title 22"
+    overlays: [very_high_fhsz, hillside, methane_zone, liquefaction, coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Los Angeles County"]
+    sources:
+      - { layer: local_amend, kind: lacounty_dpw_publications,
+          url: "https://dpw.lacounty.gov/building-and-safety/general",
+          access: public_pdf }
+      - { layer: state_model, kind: ca_title24_cbc_2025, access: buy_license }

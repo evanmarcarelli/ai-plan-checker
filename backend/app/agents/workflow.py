@@ -10,6 +10,9 @@ from app.models.schemas import (
     ComplianceSummary, ComplianceStatus, DepartmentReview,
 )
 from app.code_library.adapter import CorpusCodeSource
+from app.code_library.adoption.resolver import get_resolver
+from app.code_library.deterministic.engine import evaluate_plan
+from app.code_library.deterministic.citation_gate import apply_citation_gate
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -110,6 +113,35 @@ class PlanCheckerWorkflow:
         except Exception as e:
             await emit("Surveyor", f"Surveyor failed: {e}", level="error")
             raise
+
+        # ----- ADOPTION RESOLVER -----
+        # Resolve which code editions + local amendments + overlays apply for
+        # the jurisdiction the Surveyor found. This is the "which code stack"
+        # layer; downstream agents filter the corpus to resolved_stack's
+        # layer keys and cite the resolved edition.
+        try:
+            resolved_stack = get_resolver().resolve(j.state_code, j.county, j.city)
+            state["resolved_stack"] = resolved_stack
+            await emit(
+                "Adoption",
+                f"Adopted code: {resolved_stack.headline_code_version()} "
+                f"({resolved_stack.authority or 'baseline AHJ'}) — "
+                f"corpus layers {resolved_stack.corpus_layer_keys}",
+                data={
+                    "matched": resolved_stack.matched_id,
+                    "edition": resolved_stack.effective_edition,
+                    "layers": resolved_stack.corpus_layer_keys,
+                    "overlays": resolved_stack.overlays,
+                    "buy_license_layers": resolved_stack.buy_license_layers,
+                },
+            )
+            if resolved_stack.permit_date_note:
+                await emit("Adoption", resolved_stack.permit_date_note)
+        except Exception as e:
+            # Non-fatal: fall back to corpus-only behavior if the map can't load.
+            resolved_stack = None
+            state["resolved_stack"] = None
+            await emit("Adoption", f"Adoption resolve skipped: {e}", level="warning")
 
         # ----- LIBRARIAN -----
         job.current_agent = "Librarian"
@@ -227,6 +259,61 @@ class PlanCheckerWorkflow:
 
         reviews: List[DepartmentReview] = await asyncio.gather(*(run_one(d) for d in self.departments))
 
+        # ----- DETERMINISTIC ENGINE + CITATION GATE -----
+        # High-trust pass: the ported rule engine computes the code-math
+        # (allowable area, story limits, completeness) without the LLM, then
+        # the citation gate (a) enriches every finding it can ground with
+        # verbatim corpus text and (b) downgrades any numeric/interpretive
+        # NON_COMPLIANT it cannot back with a real citation to NEEDS_REVIEW.
+        # The deterministic findings are surfaced as their own department.
+        det_overlays = resolved_stack.overlays if resolved_stack else None
+        # LADBS SFD overlay rules apply when the resolved jurisdiction is the
+        # City of LA and the project is residential (single-family/duplex).
+        is_residential = (pd.plan_type and pd.plan_type.value in ("residential", "mixed_use"))
+        det_ladbs_sfd = bool(
+            resolved_stack and resolved_stack.matched_id == "ca_los_angeles_city" and is_residential
+        )
+        det_findings = evaluate_plan(pd, overlays=det_overlays, ladbs_sfd=det_ladbs_sfd)
+        det_gate = apply_citation_gate(det_findings, self.code_db, enforce=True)
+        # Enrich-only pass over the LLM department findings — attach source
+        # text where the corpus has it, but never downgrade (the corpus is
+        # too thin to be authoritative against the department retrieval).
+        for r in reviews:
+            apply_citation_gate(r.findings, self.code_db, enforce=False)
+
+        if det_findings:
+            det_summary = self._summarize(det_findings)
+            det_status = (
+                "rejected" if det_summary.non_compliant and det_summary.critical_issues
+                else "conditional" if (det_summary.non_compliant or det_summary.needs_review)
+                else "cleared"
+            )
+            reviews.append(DepartmentReview(
+                department="Deterministic Code Check",
+                department_code="deterministic",
+                icon="📐",
+                summary=det_summary,
+                findings=det_findings,
+                review_status=det_status,
+                notes=(
+                    f"Deterministic engine: {len(det_findings)} finding(s). "
+                    f"Citation gate verified {det_gate.verified}, "
+                    f"downgraded {det_gate.downgraded} unverifiable assertion(s) to needs-review."
+                ),
+            ))
+            await emit(
+                "Deterministic Code Check",
+                f"Computed {len(det_findings)} code-math finding(s); citation gate "
+                f"verified {det_gate.verified}, downgraded {det_gate.downgraded}.",
+                data={
+                    "findings": len(det_findings),
+                    "verified": det_gate.verified,
+                    "downgraded": det_gate.downgraded,
+                    "non_compliant": det_summary.non_compliant,
+                    "needs_review": det_summary.needs_review,
+                },
+            )
+
         # ----- SYNTHESIZE FINAL REPORT -----
         await emit("Coordinator", "Aggregating findings across all departments...")
         all_findings: List[ComplianceFinding] = []
@@ -262,7 +349,7 @@ class PlanCheckerWorkflow:
             summary=overall_summary,
             recommendations=recommendations,
             code_versions={"primary": code_version},
-            sources_used=["code_library/bm25"],
+            sources_used=["code_library/bm25", "deterministic_engine", "citation_gate"],
             auditor_notes=self._overall_notes(reviews, overall_summary),
         )
 

@@ -89,44 +89,39 @@ class CorpusCodeSource:
         chunk = self._corpus.get(citation_or_section)
         return chunk.text if chunk else None
 
-    # ---- jurisdiction metadata (delegated to legacy DB for amendment notes) ----
+    # ---- jurisdiction metadata (delegated to the adoption map) ----
 
-    def get_jurisdiction_amendments(self, state: Optional[str], city: Optional[str]) -> List[str]:
-        # Build from corpus: any chunk whose jurisdictions include this state
+    def get_jurisdiction_amendments(
+        self, state: Optional[str], city: Optional[str], county: Optional[str] = None
+    ) -> List[str]:
+        """Local amendment labels for a jurisdiction, from the adoption map.
+
+        Replaces the old corpus-scan + hardcoded heuristics. Returns the
+        discipline-tagged local amendments (e.g. "building: LABC — LAMC Ch.
+        IX, Art. 1") plus an authority line.
+        """
+        from app.code_library.adoption.resolver import get_resolver
+
         if not state:
             return []
-        state_u = state.upper()
-        amendments: List[str] = []
-        seen = set()
-        for c in self._corpus.chunks:
-            for j in c.jurisdictions:
-                key = j.upper()
-                if "*" in key:
-                    continue
-                if key == state_u or key.startswith(state_u + ":"):
-                    label = f"{c.code_name} ({c.version})"
-                    if label not in seen:
-                        amendments.append(label)
-                        seen.add(label)
-        # Stable extras for known triggers
-        if state_u == "CA":
-            if city:
-                if "altadena" in city.lower() or "pasadena" in city.lower():
-                    amendments.append("LA County Building & Safety jurisdiction")
-                    amendments.append("CBC Chapter 7A (WUI) — Eaton Fire rebuild zone")
-                if "los angeles" in city.lower():
-                    amendments.append("LADBS requirements apply")
-        return amendments
+        stack = get_resolver().resolve(state, county, city)
+        out: List[str] = []
+        if stack.authority and stack.level != "state":
+            out.append(f"AHJ: {stack.authority}")
+        for disc, label in stack.amendments.items():
+            out.append(f"{disc}: {label}")
+        return out
 
-    def get_code_version(self, state: Optional[str]) -> str:
-        # Pick the most modern primary building code available in the corpus
-        versions = {
-            "CA": "2022 California Building Code + Title 24 Part 6",
-            "FL": "2023 Florida Building Code",
-            "NY": "2022 NYC Building Code",
-            "TX": "2021 IBC with Texas amendments",
-            "WA": "2021 Washington State Building Code",
-        }
+    def get_code_version(
+        self, state: Optional[str], city: Optional[str] = None, county: Optional[str] = None
+    ) -> str:
+        """Headline adopted code version from the adoption map.
+
+        Was a hardcoded dict that had gone stale ("2022 CA Building Code");
+        now resolves the live edition (e.g. 2025 CBC for LA) via the map.
+        """
+        from app.code_library.adoption.resolver import get_resolver
+
         if not state:
             return "2021 IBC"
-        return versions.get(state.upper(), "2021 IBC")
+        return get_resolver().resolve(state, county, city).headline_code_version()
