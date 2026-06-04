@@ -255,3 +255,111 @@ def ingest_ladbs(kind: str, *, max_docs: Optional[int] = None) -> int:
     chunks = list(chunk_many(iter(sections), target))
     write_jsonl(target, chunks)   # hardened: refuses to clobber on empty
     return len(chunks)
+
+
+# =====================================================================
+# Local-file ingest — for bulletin PDFs the operator downloaded by hand.
+#
+# This is the clean path: no scraping at all. The operator vouches for
+# currency (they downloaded them from the live LADBS site), so the
+# filename-year currency guard is NOT applied — bulletins carry old issue
+# years in the filename (P/GI 2014-006) while the actual DOCUMENT NO. inside
+# is current (P/GI 2026-006). We parse the real number + effective date from
+# the PDF header instead.
+# =====================================================================
+
+# Bulletin header parsing. The standard LADBS IB header carries:
+#   DOCUMENT NO.: P/GI 2026-006   Effective: 01-01-2026
+_DOCNO_RE = re.compile(
+    r"DOCUMENT\s+NO\.?:?\s*(P/[A-Z]{2,3}(?:\s+CODE)?\s+\d{4}-\d{3,4})", re.IGNORECASE
+)
+_EFFECTIVE_RE = re.compile(r"Effective:\s*([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{4})", re.IGNORECASE)
+# Strip the IB-number token from a filename to recover a human title.
+_IB_TOKEN_RE = re.compile(r"ib[-_]?p[-_][a-z]{2,3}[-_]?\d{4}[-_]?\d{0,4}", re.IGNORECASE)
+_REV_TOKEN_RE = re.compile(r"_?rev[-_].*$", re.IGNORECASE)
+
+
+def _title_from_filename(stem: str) -> str:
+    s = _IB_TOKEN_RE.sub("", stem)
+    s = _REV_TOKEN_RE.sub("", s)
+    s = s.replace("-", " ").replace("_", " ").strip()
+    return " ".join(w.capitalize() for w in s.split())[:140] or stem
+
+
+def _parse_bulletin_header(text: str, stem: str):
+    """Return (doc_no, effective_year, title) parsed from the bulletin."""
+    m = _DOCNO_RE.search(text or "")
+    doc_no = re.sub(r"\s+", " ", m.group(1)).upper() if m else stem.upper()[:40]
+    eff = _EFFECTIVE_RE.search(text or "")
+    eff_year = eff.group(1).split("/")[-1].split("-")[-1] if eff else "2025"
+    title = _title_from_filename(stem)
+    return doc_no, eff_year, title
+
+
+def ingest_ladbs_files(paths: List[str], output_filename: str = "ladbs_bulletins.jsonl") -> int:
+    """Ingest a list of locally-downloaded LADBS bulletin PDFs into the corpus.
+
+    Trusted curation: no currency guard. Returns chunks written. Appends to any
+    existing output file's docs by merging on document number so repeated runs
+    (operator adds more PDFs) accumulate rather than clobber.
+    """
+    from app.code_library.ingest.chunker import chunk_many
+    from app.code_library.ingest.writer import CORPUS_DIR
+
+    sections: List[RawSection] = []
+    for p in paths:
+        path = Path(p)
+        if not path.exists() or path.suffix.lower() != ".pdf":
+            logger.warning(f"[ladbs-local] skip {p}: not a PDF / missing")
+            continue
+        try:
+            text = _pdf_text(path.read_bytes())
+        except Exception as e:
+            logger.warning(f"[ladbs-local] skip {path.name}: {type(e).__name__}: {e}")
+            continue
+        if len(text.strip()) < 100:
+            logger.warning(f"[ladbs-local] skip {path.name}: too little text")
+            continue
+        doc_no, eff_year, title = _parse_bulletin_header(text, path.stem)
+        sections.append(RawSection(
+            breadcrumb=["LADBS Information Bulletin", title],
+            section_number=doc_no,
+            title=title,
+            text=text,
+            source_url=f"LADBS IB {doc_no} (eff. {eff_year})",
+        ))
+        logger.info(f"[ladbs-local] parsed {doc_no} — {title}")
+
+    if not sections:
+        logger.error("[ladbs-local] no usable PDFs; nothing written")
+        return 0
+
+    target = IngestTarget(
+        code_short="LADBS-IB",
+        code_name="LADBS Information Bulletins",
+        version="2026",
+        jurisdictions=["CA:Los Angeles"],
+        output_filename=output_filename,
+    )
+    new_chunks = list(chunk_many(iter(sections), target))
+
+    # Merge with any existing curated bulletins (dedupe by chunk_id) so the
+    # operator can drop in more PDFs over time without losing earlier ones.
+    out_path = CORPUS_DIR / output_filename
+    merged: dict = {}
+    if out_path.exists():
+        import json
+        for line in out_path.open():
+            line = line.strip()
+            if line:
+                try:
+                    c = json.loads(line)
+                    merged[c.get("chunk_id")] = c
+                except json.JSONDecodeError:
+                    continue
+    for c in new_chunks:
+        merged[c["chunk_id"]] = c
+
+    from app.code_library.ingest.writer import write_jsonl
+    write_jsonl(target, list(merged.values()))
+    return len(new_chunks)

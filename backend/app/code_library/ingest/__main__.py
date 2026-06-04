@@ -92,6 +92,22 @@ def cmd_ladbs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ladbs_local(args: argparse.Namespace) -> int:
+    import glob as _glob
+    from app.code_library.ingest.ladbs import ingest_ladbs_files
+
+    paths: list = []
+    for d in args.dir or []:
+        paths.extend(sorted(_glob.glob(f"{d.rstrip('/')}/*.pdf")))
+    paths.extend(args.file or [])
+    if not paths:
+        print("Pass --dir <folder> and/or --file <pdf> (one or more)", file=sys.stderr)
+        return 2
+    written = ingest_ladbs_files(paths)
+    logger.info(f"[ladbs-local] wrote/merged {written} new chunk(s) from {len(paths)} file(s)")
+    return 0
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     """Print the targets configured for each source."""
     with CONFIG_PATH.open() as f:
@@ -121,6 +137,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_la.add_argument("--max", type=int, default=None, help="cap docs per kind (test runs)")
     p_la.add_argument("--fail-fast", action="store_true", help="stop on first kind failure")
     p_la.set_defaults(func=cmd_ladbs)
+
+    p_ll = sub.add_parser("ladbs-local", help="ingest hand-downloaded LADBS bulletin PDFs (no scraping)")
+    p_ll.add_argument("--dir", action="append", help="folder of *.pdf (repeatable)")
+    p_ll.add_argument("--file", action="append", help="a single PDF (repeatable)")
+    p_ll.set_defaults(func=cmd_ladbs_local)
 
     p_ls = sub.add_parser("list", help="show configured targets")
     p_ls.set_defaults(func=cmd_list)
