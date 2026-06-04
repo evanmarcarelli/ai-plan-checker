@@ -10,7 +10,7 @@ from app.agents.librarian import LibrarianAgent
 from app.agents.auditor import AuditorAgent
 from app.models.schemas import (
     Jurisdiction, ExtractedPlanData, PlanType, CodeRequirement,
-    ComplianceStatus
+    ComplianceStatus, PlanElement,
 )
 from app.services.code_database import CodeDatabase
 
@@ -46,9 +46,9 @@ def sample_plan_data():
             "occupant_load": 50,
         },
         elements=[
-            MagicMock(element_type="fire_suppression"),
-            MagicMock(element_type="egress"),
-            MagicMock(element_type="accessibility"),
+            PlanElement(element_type="fire_suppression", description="Sprinkler system"),
+            PlanElement(element_type="egress", description="Exit corridors"),
+            PlanElement(element_type="accessibility", description="ADA route"),
         ],
         materials=["concrete", "steel"],
         raw_text_by_page={1: "Sample plan text"},
@@ -69,7 +69,9 @@ class TestCodeDatabase:
         codes = code_database.get_applicable_codes(None, None)
         assert len(codes) > 0
         categories = {c.category for c in codes}
-        assert "fire_safety" in categories
+        # Category was renamed "fire_safety" -> "fire" to match the department
+        # reviewer categories.
+        assert "fire" in categories
         assert "accessibility" in categories
 
     def test_get_applicable_codes_california(self, code_database):
