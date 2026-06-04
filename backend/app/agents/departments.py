@@ -19,6 +19,43 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# #5 — Confidence gate threshold. A NON_COMPLIANT finding whose reviewer
+# confidence is below this is downgraded to NEEDS_REVIEW so an uncertain
+# reviewer never hard-blocks a permit (the trust-preserving default).
+LOW_CONFIDENCE_THRESHOLD = 0.55
+
+_UNCERTAIN_NOTE = (
+    " [Reviewer confidence below threshold — downgraded from non-compliant to "
+    "needs-review; a human should confirm.]"
+)
+
+
+def _coerce_confidence(raw) -> float:
+    """Parse an LLM-supplied confidence into 0..1. Missing/garbage -> 1.0 so a
+    reviewer that doesn't report confidence is not auto-downgraded."""
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return 1.0
+    if v != v:  # NaN
+        return 1.0
+    return max(0.0, min(1.0, v))
+
+
+def gate_low_confidence(
+    findings: List[ComplianceFinding], threshold: float = LOW_CONFIDENCE_THRESHOLD
+) -> int:
+    """Downgrade low-confidence NON_COMPLIANT findings to NEEDS_REVIEW in place.
+    Returns the number downgraded. Pure post-processing — no LLM/network."""
+    downgraded = 0
+    for f in findings:
+        if f.status == ComplianceStatus.NON_COMPLIANT and f.confidence < threshold:
+            f.status = ComplianceStatus.NEEDS_REVIEW
+            if _UNCERTAIN_NOTE.strip() not in (f.description or ""):
+                f.description = (f.description or "") + _UNCERTAIN_NOTE
+            downgraded += 1
+    return downgraded
+
 
 class DepartmentReviewer(BaseAgent):
     """Base class for all department-level plan reviewers.
@@ -83,9 +120,14 @@ OUTPUT — return ONLY a JSON array, no prose:
     "description": "1-3 sentence explanation specific to THIS plan",
     "recommendation": "concrete next step for the applicant, or null if compliant",
     "severity": "critical|high|medium|low",
+    "confidence": 0.0 to 1.0 (your certainty THIS finding is correct; use <0.55 when the plan is ambiguous or you are guessing),
     "page_references": [page numbers if known, else []]
   }}
-]"""
+]
+
+CONFIDENCE: be honest. A non_compliant finding you are unsure about is more
+harmful than a needs_review — if you cannot clearly demonstrate the violation
+from the plan text + code provided, lower your confidence rather than asserting."""
 
     async def review(
         self,
@@ -119,6 +161,9 @@ OUTPUT — return ONLY a JSON array, no prose:
         findings = await self._call_reviewer(
             plan_data, requirements, jurisdiction_amendments, deterministic_findings
         )
+        # #5 — Confidence gate: an uncertain reviewer must not hard-block a
+        # permit. Low-confidence NON_COMPLIANT findings become NEEDS_REVIEW.
+        gate_low_confidence(findings)
         summary = self._summarize(findings)
         status = self._derive_status(summary)
 
@@ -340,6 +385,7 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                     recommendation=item.get("recommendation"),
                     severity=item.get("severity", "medium"),
                     category=req.category,
+                    confidence=_coerce_confidence(item.get("confidence")),
                     page_references=item.get("page_references") or [],
                     verified=verified,
                     source_text=source_text,

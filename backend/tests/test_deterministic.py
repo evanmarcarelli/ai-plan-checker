@@ -264,6 +264,35 @@ def test_few_shot_corrections_in_every_department_prompt():
     assert not re.search(r"16026|miami way|walker|scofield|B26VN", blob, re.I)
 
 
+def test_confidence_gate_downgrades_only_low_confidence_noncompliant():
+    """#5: a low-confidence NON_COMPLIANT becomes NEEDS_REVIEW; everything else
+    is untouched."""
+    from app.agents.departments import gate_low_confidence, _coerce_confidence
+
+    assert _coerce_confidence(None) == 1.0          # missing -> no gating
+    assert _coerce_confidence("0.3") == 0.3
+    assert _coerce_confidence(1.5) == 1.0           # clamped
+    assert _coerce_confidence("junk") == 1.0
+
+    def mk(status, conf):
+        return ComplianceFinding(
+            finding_id="1",
+            code_requirement=CodeRequirement(code_id="X", description="x"),
+            status=status, description="finding", confidence=conf,
+        )
+
+    low = mk(ComplianceStatus.NON_COMPLIANT, 0.3)
+    high = mk(ComplianceStatus.NON_COMPLIANT, 0.9)
+    nr = mk(ComplianceStatus.NEEDS_REVIEW, 0.1)
+    ok = mk(ComplianceStatus.COMPLIANT, 0.2)
+    n = gate_low_confidence([low, high, nr, ok])
+    assert n == 1
+    assert low.status == ComplianceStatus.NEEDS_REVIEW
+    assert high.status == ComplianceStatus.NON_COMPLIANT
+    assert nr.status == ComplianceStatus.NEEDS_REVIEW
+    assert ok.status == ComplianceStatus.COMPLIANT
+
+
 def test_gate_enrich_mode_never_downgrades():
     f = ComplianceFinding(
         finding_id="1",

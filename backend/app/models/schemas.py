@@ -157,6 +157,11 @@ class ComplianceFinding(BaseModel):
     severity: str = "medium"  # low, medium, high, critical
     page_references: List[int] = []
     category: str = "general"
+    # Reviewer's self-reported certainty 0..1. Low-confidence NON_COMPLIANT
+    # assertions are downgraded to NEEDS_REVIEW by the confidence gate so an
+    # uncertain reviewer never hard-blocks a permit. Default 1.0 = no gating
+    # when a reviewer (or the deterministic engine) doesn't report confidence.
+    confidence: float = 1.0
     # ---- RAG provenance (new) ----
     # verified=True means the cited section was retrieved from the real code corpus,
     # not invented by the LLM. source_text is the verbatim code language.
