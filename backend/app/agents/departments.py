@@ -90,8 +90,16 @@ OUTPUT — return ONLY a JSON array, no prose:
         requirements: List[CodeRequirement],
         jurisdiction_amendments: List[str],
         code_version: str,
+        deterministic_findings: Optional[List[ComplianceFinding]] = None,
     ) -> DepartmentReview:
-        """Run this department's review and return a DepartmentReview."""
+        """Run this department's review and return a DepartmentReview.
+
+        `deterministic_findings` are the high-trust results from the rule
+        engine (allowable area, story limits, LADBS completeness, ...). The
+        reviewer is shown the ones in its own category as authoritative facts
+        so it does NOT recompute the code-math (where LLMs silently err) and
+        builds its judgment review on top of them.
+        """
 
         if not requirements:
             return DepartmentReview(
@@ -105,7 +113,9 @@ OUTPUT — return ONLY a JSON array, no prose:
                 review_status="cleared",
             )
 
-        findings = await self._call_reviewer(plan_data, requirements, jurisdiction_amendments)
+        findings = await self._call_reviewer(
+            plan_data, requirements, jurisdiction_amendments, deterministic_findings
+        )
         summary = self._summarize(findings)
         status = self._derive_status(summary)
 
@@ -120,11 +130,34 @@ OUTPUT — return ONLY a JSON array, no prose:
             review_status=status,
         )
 
+    def _deterministic_context(
+        self, deterministic_findings: Optional[List[ComplianceFinding]]
+    ) -> str:
+        """Format this department's verified deterministic findings for the
+        prompt. Filters to findings in this department's category so each
+        reviewer only sees what's relevant to it."""
+        if not deterministic_findings:
+            return ""
+        mine = [f for f in deterministic_findings if f.category == self.category]
+        if not mine:
+            return ""
+        lines = []
+        for f in mine:
+            cid = f.code_requirement.code_id
+            status = f.status.value if hasattr(f.status, "value") else str(f.status)
+            lines.append(f"- [{cid}] {status.upper()} ({f.severity}): {f.description}")
+        return (
+            "VERIFIED DETERMINISTIC FINDINGS (computed by a deterministic rule engine — "
+            "these are authoritative facts. Do NOT recompute this math; factor them into "
+            "your review and do not contradict them):\n" + "\n".join(lines)
+        )
+
     async def _call_reviewer(
         self,
         plan_data: Optional[ExtractedPlanData],
         requirements: List[CodeRequirement],
         jurisdiction_amendments: List[str],
+        deterministic_findings: Optional[List[ComplianceFinding]] = None,
     ) -> List[ComplianceFinding]:
         # Build plan summary
         plan_summary = "No plan data extracted."
@@ -173,6 +206,7 @@ OUTPUT — return ONLY a JSON array, no prose:
 
         # ---- FRESH content (not cached) ----
         # The actual plan under review changes every run, so it stays uncached.
+        det_block = self._deterministic_context(deterministic_findings)
         fresh = f"""EXTRACTED PLAN DATA:
 {plan_summary}
 
@@ -181,7 +215,7 @@ PLAN TEXT SAMPLE (first page, may contain title block, notes, schedules):
 
 LOCAL JURISDICTION AMENDMENTS:
 {chr(10).join(f'- {a}' for a in jurisdiction_amendments) if jurisdiction_amendments else 'None'}
-
+{(chr(10) + det_block + chr(10)) if det_block else ''}
 Using the CODE REQUIREMENTS shown above, review every requirement against this
 plan. For each, return a finding whose code_id is EXACTLY the bracketed citation
 (e.g. "IBC 1011.5.2"). Do NOT invent new section numbers. If a code is not

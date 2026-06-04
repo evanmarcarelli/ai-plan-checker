@@ -190,6 +190,34 @@ def test_ladbs_wui_rules_gate_on_zone():
     assert "LADBS-SFD-WUI" in with_zone          # fires in VHFHSZ when notes absent
 
 
+def test_deterministic_context_feeds_reviewers_by_category():
+    """#2: department reviewers receive their category's verified findings as
+    authoritative context, and only their category's."""
+    from app.agents.departments import ALL_DEPARTMENTS
+
+    pd = _plan(per_story_area=12000, building_area=12000, stories=3)
+    det = evaluate_plan(pd)  # produces building_safety findings (area/stories)
+
+    by_cat = {cls().category: cls() for cls in ALL_DEPARTMENTS}
+    building = by_cat.get("building_safety")
+    assert building is not None
+    block = building._deterministic_context(det)
+    # The building reviewer sees the area/story findings as authoritative.
+    assert "VERIFIED DETERMINISTIC FINDINGS" in block
+    assert "do NOT recompute" in block.lower() or "Do NOT recompute" in block
+    assert "COM-AREA-ALLOWABLE" in block
+
+    # A department whose category has no findings sees nothing (no false
+    # context). public_works has no deterministic rules.
+    public_works = by_cat.get("public_works")
+    if public_works is not None:
+        assert public_works._deterministic_context(det) == ""
+
+    # No findings -> empty context.
+    assert building._deterministic_context([]) == ""
+    assert building._deterministic_context(None) == ""
+
+
 def test_gate_enrich_mode_never_downgrades():
     f = ComplianceFinding(
         finding_id="1",

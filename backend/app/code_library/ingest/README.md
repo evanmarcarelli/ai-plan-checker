@@ -35,11 +35,25 @@ python -m app.code_library.ingest ladbs                               # all thre
 
 Output: `../corpus/ladbs_<kind>.jsonl`, tagged `jurisdictions: ["CA:Los Angeles"]`.
 
-**Review currency before relying on it.** The LADBS publications index mixes
-current and *archived* documents (e.g. the amendments page still links 2010
-CALGreen / 2007 standards). Spot-check the pulled set and drop stale editions
-so the citation gate doesn't verify findings against superseded code text. The
-`corrections` and `bulletins` sets are generally the most current.
+**Currency guard (automatic).** The ingester now skips any doc whose detected
+edition year predates `MIN_EDITION_YEAR` (2022) — so a 2010 CALGreen or 2007
+standards PDF can no longer land in the corpus and let the citation gate
+"verify" findings against dead code.
+
+**Known limitation — static pages only expose the archive (verified
+2026-06).** All three public LADBS landing pages (`bulletins`, `corrections`,
+`amendments`) resolve via static HTML to the *same* ~13 archive PDFs (mostly
+2007–2013 editions, filtered out by the guard). The genuinely current docs —
+the live Information Bulletins (e.g. P/GI 2023-026) and current Standard
+Correction Lists — sit behind the site's **dynamic bulletin database / search
+UI**, which one-level static scraping does not reach. Net yield from the
+public static pages after the guard: ~1–2 current docs. **Meaningful LA corpus
+growth needs one of:**
+  1. a **headless-browser fetch** (Playwright/astral) that renders the
+     bulletin-database pages (the same Path-A approach the Cloudflare note
+     describes), or
+  2. the **licensed 2025 CBC / Title 24 text** (ICC Digital Codes), or
+  3. **hand-curated JSONL** for the specific current bulletins you care about.
 
 ## Current blocker: Cloudflare (as of 2026-06)
 

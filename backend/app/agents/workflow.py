@@ -188,6 +188,27 @@ class PlanCheckerWorkflow:
         for c in full_codes:
             codes_by_category.setdefault(c.category, []).append(c)
 
+        # ----- DETERMINISTIC ENGINE (runs BEFORE the LLM reviewers) -----
+        # Compute the high-trust code-math up front so each department reviewer
+        # is handed its verified findings as authoritative context — the LLM
+        # never recomputes area/story/completeness math (where it silently
+        # errs). The gated findings also surface as their own department below.
+        det_overlays = resolved_stack.overlays if resolved_stack else None
+        is_residential = (pd.plan_type and pd.plan_type.value in ("residential", "mixed_use"))
+        det_ladbs_sfd = bool(
+            resolved_stack and resolved_stack.matched_id == "ca_los_angeles_city" and is_residential
+        )
+        det_findings = evaluate_plan(pd, overlays=det_overlays, ladbs_sfd=det_ladbs_sfd)
+        det_gate = apply_citation_gate(det_findings, self.code_db, enforce=True)
+        await emit(
+            "Deterministic Code Check",
+            f"Computed {len(det_findings)} code-math finding(s) up front; citation gate "
+            f"verified {det_gate.verified}, downgraded {det_gate.downgraded}. "
+            f"Sharing verified facts with the department reviewers.",
+            data={"findings": len(det_findings), "verified": det_gate.verified,
+                  "downgraded": det_gate.downgraded},
+        )
+
         # Bounded concurrency: limit the parallel reviewers so Render Free
         # is not asked to juggle 10 simultaneous outbound HTTPS calls.
         sem = asyncio.Semaphore(DEPARTMENT_CONCURRENCY)
@@ -200,7 +221,10 @@ class PlanCheckerWorkflow:
 
         async def _do_review(dept: DepartmentReviewer, dept_codes: list) -> DepartmentReview:
             try:
-                review = await dept.review(pd, dept_codes, amendments, code_version)
+                review = await dept.review(
+                    pd, dept_codes, amendments, code_version,
+                    deterministic_findings=det_findings,
+                )
                 s = review.summary
                 # If the LLM call failed silently and we fell back to the
                 # mock response, every requirement comes back as needs_review.
@@ -259,25 +283,12 @@ class PlanCheckerWorkflow:
 
         reviews: List[DepartmentReview] = await asyncio.gather(*(run_one(d) for d in self.departments))
 
-        # ----- DETERMINISTIC ENGINE + CITATION GATE -----
-        # High-trust pass: the ported rule engine computes the code-math
-        # (allowable area, story limits, completeness) without the LLM, then
-        # the citation gate (a) enriches every finding it can ground with
-        # verbatim corpus text and (b) downgrades any numeric/interpretive
-        # NON_COMPLIANT it cannot back with a real citation to NEEDS_REVIEW.
-        # The deterministic findings are surfaced as their own department.
-        det_overlays = resolved_stack.overlays if resolved_stack else None
-        # LADBS SFD overlay rules apply when the resolved jurisdiction is the
-        # City of LA and the project is residential (single-family/duplex).
-        is_residential = (pd.plan_type and pd.plan_type.value in ("residential", "mixed_use"))
-        det_ladbs_sfd = bool(
-            resolved_stack and resolved_stack.matched_id == "ca_los_angeles_city" and is_residential
-        )
-        det_findings = evaluate_plan(pd, overlays=det_overlays, ladbs_sfd=det_ladbs_sfd)
-        det_gate = apply_citation_gate(det_findings, self.code_db, enforce=True)
-        # Enrich-only pass over the LLM department findings — attach source
-        # text where the corpus has it, but never downgrade (the corpus is
-        # too thin to be authoritative against the department retrieval).
+        # ----- CITATION GATE (enrich the LLM findings) + DET DEPARTMENT -----
+        # The deterministic findings were computed up front (above) and shared
+        # with the reviewers. Here we (a) enrich the LLM department findings
+        # with verbatim corpus text where groundable (never downgrading — the
+        # corpus is too thin to be authoritative against dept retrieval), and
+        # (b) surface the deterministic findings as their own department.
         for r in reviews:
             apply_citation_gate(r.findings, self.code_db, enforce=False)
 
@@ -301,18 +312,6 @@ class PlanCheckerWorkflow:
                     f"downgraded {det_gate.downgraded} unverifiable assertion(s) to needs-review."
                 ),
             ))
-            await emit(
-                "Deterministic Code Check",
-                f"Computed {len(det_findings)} code-math finding(s); citation gate "
-                f"verified {det_gate.verified}, downgraded {det_gate.downgraded}.",
-                data={
-                    "findings": len(det_findings),
-                    "verified": det_gate.verified,
-                    "downgraded": det_gate.downgraded,
-                    "non_compliant": det_summary.non_compliant,
-                    "needs_review": det_summary.needs_review,
-                },
-            )
 
         # ----- SYNTHESIZE FINAL REPORT -----
         await emit("Coordinator", "Aggregating findings across all departments...")

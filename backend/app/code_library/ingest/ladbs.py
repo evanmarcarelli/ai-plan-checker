@@ -43,6 +43,26 @@ DEFAULT_DELAY_SEC = 1.0
 DEFAULT_TIMEOUT = 45
 HOST = "dbs.lacity.gov"
 
+# Currency guard. The LADBS publications index mixes current docs with an
+# archive (2007/2010/2011/2013 editions). Injecting superseded code text would
+# let the citation gate "verify" findings against dead code — worse than
+# nothing. Skip any doc whose detected edition year predates this cutoff.
+# (Current cycle: 2025 Title 24 / 2023 LARC.)
+MIN_EDITION_YEAR = 2022
+_YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
+
+
+def _superseded_year(stem: str, text: str) -> int | None:
+    """Return the doc's edition year if it is clearly superseded (< cutoff),
+    else None. Looks at the filename first (most reliable), then the head of
+    the text. Only flags when a year is actually present."""
+    for hay in (stem, (text or "")[:300]):
+        m = _YEAR_RE.search(hay)
+        if m:
+            yr = int(m.group(0))
+            return yr if yr < MIN_EDITION_YEAR else None
+    return None
+
 # Seed index pages per kind. Multiple seeds are merged.
 KIND_SEEDS: Dict[str, List[str]] = {
     "bulletins": [
@@ -200,6 +220,11 @@ def fetch_sections(
                 continue
             if len(text.strip()) < 100:
                 logger.warning(f"[ladbs] skip {pdf_url}: too little text ({len(text)} chars)")
+                continue
+            stem = Path(urlparse(pdf_url).path).stem
+            old_year = _superseded_year(stem, text)
+            if old_year is not None:
+                logger.info(f"[ladbs] skip {stem}: superseded {old_year} edition (< {MIN_EDITION_YEAR})")
                 continue
             number, title = _derive_number_title(pdf_url, text)
             yield RawSection(
