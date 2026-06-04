@@ -249,6 +249,21 @@ def test_per_department_retrieval_degrades_safely():
     assert dept._relevant_plan_text(ExtractedPlanData()) == ""
 
 
+def test_few_shot_corrections_in_every_department_prompt():
+    """#4: each department's system prompt carries domain example corrections,
+    and the examples contain no project PII."""
+    import re
+    from app.agents.departments import ALL_DEPARTMENTS
+    from app.agents.few_shot_corrections import EXAMPLE_CORRECTIONS
+
+    for cls in ALL_DEPARTMENTS:
+        d = cls()
+        assert "EXAMPLE CORRECTIONS" in d._get_system_prompt(), d.category
+
+    blob = " ".join(sum(EXAMPLE_CORRECTIONS.values(), []))
+    assert not re.search(r"16026|miami way|walker|scofield|B26VN", blob, re.I)
+
+
 def test_gate_enrich_mode_never_downgrades():
     f = ComplianceFinding(
         finding_id="1",

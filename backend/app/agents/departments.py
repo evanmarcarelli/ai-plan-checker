@@ -49,12 +49,15 @@ class DepartmentReviewer(BaseAgent):
         raise NotImplementedError("Use review() for department agents")
 
     def _get_system_prompt(self) -> str:
+        from app.agents.few_shot_corrections import few_shot_block
+        examples = few_shot_block(self.category)
+        examples_section = f"\n\n{examples}\n" if examples else ""
         return f"""You are a senior {self.department_name} plan reviewer for a city/county building department.
 You have 15+ years of experience and are responsible for ensuring the submitted plans comply with applicable codes.
 
 YOUR DOMAIN: {self.domain_expertise}
 
-YOUR REVIEW FOCUS: {self.review_focus}
+YOUR REVIEW FOCUS: {self.review_focus}{examples_section}
 
 YOUR TASK:
 1. Cross-reference the EXTRACTED PLAN DATA against the CODE REQUIREMENTS provided.
