@@ -161,26 +161,62 @@ def _make_tags(breadcrumb: List[str], extra: Optional[List[str]]) -> List[str]:
     return out
 
 
+def _hard_wrap(text: str, limit: int) -> List[str]:
+    """Last-resort splitter for a block with no paragraph breaks (common in
+    PDF-extracted text). Splits on line, then sentence, then raw character
+    boundaries so no single chunk exceeds ~limit. Without this, PDF code text
+    that pdfplumber joins with single newlines would yield one giant chunk
+    that matches every BM25 query and cites nothing precisely."""
+    if len(text) <= limit:
+        return [text]
+    out: List[str] = []
+    buf = ""
+    # Prefer line boundaries, then sentence ends, as soft break points.
+    units = re.split(r"(?<=\n)|(?<=[.;:]\s)", text)
+    for u in units:
+        while len(u) > limit:                 # a single monster unit
+            out.append(u[:limit])
+            u = u[limit:]
+        if len(buf) + len(u) > limit and buf:
+            out.append(buf)
+            buf = ""
+        buf += u
+    if buf.strip():
+        out.append(buf)
+    return [c.strip() for c in out if c.strip()]
+
+
 def _split_oversize(text: str) -> List[str]:
-    """Split a too-long section body on paragraph boundaries. Each chunk
-    stays under SOFT_MAX_CHARS. The last partial paragraph is included
-    intact even if it overshoots slightly."""
+    """Split a too-long section body. First on blank-line paragraph
+    boundaries; any resulting part that is still oversize (e.g. PDF text with
+    no blank lines) is hard-wrapped so every chunk stays near SOFT_MAX_CHARS."""
     if len(text) <= SOFT_MAX_CHARS:
         return [text]
     paragraphs = re.split(r"\n\s*\n", text)
     chunks: List[str] = []
     buf: List[str] = []
     buf_len = 0
+
+    def flush():
+        if buf:
+            chunks.append("\n\n".join(buf).strip())
+
     for p in paragraphs:
+        # A single paragraph bigger than the cap (PDF with no blank lines):
+        # flush what we have, then hard-wrap the monster paragraph.
+        if len(p) > SOFT_MAX_CHARS:
+            flush()
+            buf, buf_len = [], 0
+            chunks.extend(_hard_wrap(p, SOFT_MAX_CHARS))
+            continue
         p_len = len(p) + 2
         if buf_len + p_len > SOFT_MAX_CHARS and buf:
-            chunks.append("\n\n".join(buf).strip())
+            flush()
             buf, buf_len = [], 0
         buf.append(p)
         buf_len += p_len
-    if buf:
-        chunks.append("\n\n".join(buf).strip())
-    return chunks
+    flush()
+    return [c for c in chunks if c.strip()]
 
 
 def chunk_section(section: RawSection, target: IngestTarget) -> List[Dict]:

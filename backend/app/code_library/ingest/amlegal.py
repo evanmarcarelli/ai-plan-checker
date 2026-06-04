@@ -253,6 +253,17 @@ class AmLegalIngester(BaseIngester):
         if self.delay_sec:
             time.sleep(self.delay_sec)
         resp = self._client.get(url)
+        # Cloudflare bot-challenge detection. As of 2026 American Legal sits
+        # behind Cloudflare and returns 403 with `cf-mitigated: challenge` to
+        # plain HTTP clients. Surface that explicitly so the operator doesn't
+        # mistake it for a transient error or a markup-drift bug — it needs a
+        # browser-based challenge solver or a licensed data feed, not a retry.
+        if resp.status_code == 403 and resp.headers.get("cf-mitigated") == "challenge":
+            raise RuntimeError(
+                "Cloudflare bot-challenge (403 cf-mitigated). American Legal is "
+                "blocking automated HTTP fetches. Plain scraping cannot proceed — "
+                "use a headless-browser challenge solver or a licensed data feed."
+            )
         resp.raise_for_status()
         return resp.text
 

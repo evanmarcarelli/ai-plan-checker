@@ -74,6 +74,24 @@ def cmd_amlegal(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ladbs(args: argparse.Namespace) -> int:
+    from app.code_library.ingest.ladbs import KIND_SEEDS, ingest_ladbs
+
+    kinds = [args.kind] if args.kind else list(KIND_SEEDS)
+    total = 0
+    for kind in kinds:
+        try:
+            written = ingest_ladbs(kind, max_docs=args.max)
+            logger.info(f"[ladbs] {kind}: wrote {written} chunks")
+            total += written
+        except Exception as e:
+            logger.error(f"[ladbs] {kind} failed: {type(e).__name__}: {e}")
+            if args.fail_fast:
+                return 3
+    logger.info(f"[ladbs] DONE. {total} chunks across {len(kinds)} kind(s)")
+    return 0
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     """Print the targets configured for each source."""
     with CONFIG_PATH.open() as f:
@@ -96,6 +114,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_am.add_argument("--max", type=int, default=None, help="cap sections per jurisdiction (test runs)")
     p_am.add_argument("--fail-fast", action="store_true", help="stop the batch on first jurisdiction failure")
     p_am.set_defaults(func=cmd_amlegal)
+
+    p_la = sub.add_parser("ladbs", help="ingest public LADBS publications (dbs.lacity.gov)")
+    p_la.add_argument("--kind", choices=["bulletins", "corrections", "amendments"],
+                      help="which LADBS publication set (default: all)")
+    p_la.add_argument("--max", type=int, default=None, help="cap docs per kind (test runs)")
+    p_la.add_argument("--fail-fast", action="store_true", help="stop on first kind failure")
+    p_la.set_defaults(func=cmd_ladbs)
 
     p_ls = sub.add_parser("list", help="show configured targets")
     p_ls.set_defaults(func=cmd_list)
