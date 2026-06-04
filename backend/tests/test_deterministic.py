@@ -293,6 +293,27 @@ def test_confidence_gate_downgrades_only_low_confidence_noncompliant():
     assert ok.status == ComplianceStatus.COMPLIANT
 
 
+def test_department_model_tier_defaults_cheap_and_upgrades_by_config():
+    """#6: every reviewer uses the cheap model by default; only categories in
+    strong_review_categories use the premium model. No auto-upgrade."""
+    from app.agents.departments import ALL_DEPARTMENTS
+    from app.config import settings
+
+    cheap, strong = settings.anthropic_model_cheap, settings.anthropic_model
+    original = settings.strong_review_categories
+    try:
+        settings.strong_review_categories = ""
+        assert all(cls().model_override == cheap for cls in ALL_DEPARTMENTS)
+
+        settings.strong_review_categories = "building_safety, fire"
+        by_cat = {cls().category: cls() for cls in ALL_DEPARTMENTS}
+        assert by_cat["building_safety"].model_override == strong
+        assert by_cat["fire"].model_override == strong
+        assert by_cat["plumbing"].model_override == cheap
+    finally:
+        settings.strong_review_categories = original
+
+
 def test_gate_enrich_mode_never_downgrades():
     f = ComplianceFinding(
         finding_id="1",

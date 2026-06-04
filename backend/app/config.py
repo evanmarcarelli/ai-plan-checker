@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # change to "4-7" without verifying with the Anthropic API first.
     anthropic_model_cheap: str = "claude-sonnet-4-6"   # ~5x cheaper, used by 10 department reviewers
     anthropic_max_tokens: int = 4096
+    # #6 — Per-department model tier. Department CATEGORIES listed here use the
+    # premium model (anthropic_model) instead of the cheap one. Empty by
+    # default: every reviewer stays on Sonnet (no surprise cost). Set the env
+    # var STRONG_REVIEW_CATEGORIES="building_safety,fire" to upgrade the
+    # judgment-heavy reviewers once credits allow — no code change needed.
+    strong_review_categories: str = ""
 
     # Supabase
     supabase_url: str = ""

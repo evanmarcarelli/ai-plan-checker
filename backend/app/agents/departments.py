@@ -67,7 +67,18 @@ class DepartmentReviewer(BaseAgent):
 
     @property
     def model_override(self):  # type: ignore[override]
+        # #6 — Per-department model tier. Default: Sonnet (cheap) for every
+        # reviewer. A category listed in settings.strong_review_categories
+        # (env STRONG_REVIEW_CATEGORIES) uses the premium model instead, so the
+        # operator can upgrade judgment-heavy reviewers (structural, life-safety)
+        # without touching code. No category is upgraded by default — keeps cost
+        # flat unless the operator opts in.
         from app.config import settings as _s
+        strong = {
+            c.strip() for c in (_s.strong_review_categories or "").split(",") if c.strip()
+        }
+        if self.category in strong:
+            return _s.anthropic_model
         return _s.anthropic_model_cheap
 
     # Subclasses override these
