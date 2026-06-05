@@ -89,7 +89,7 @@ export function ChatWidget({
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg"
-        style={{ background: "#0B0E14", color: "#fff" }}
+        style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
       >
         <Sparkles className="w-4 h-4" />
         <span className="text-sm font-medium">Ask the AI assistant</span>
@@ -115,7 +115,7 @@ export function ChatWidget({
         <div className="flex items-center gap-2">
           <div
             className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
-            style={{ background: "#0B0E14" }}
+            style={{ background: "var(--btn-primary-bg)" }}
           >
             <Bot className="w-4 h-4 text-white" />
           </div>
@@ -209,7 +209,7 @@ export function ChatWidget({
           type="submit"
           disabled={busy || !draft.trim()}
           className="p-2 rounded-lg disabled:opacity-50"
-          style={{ background: "#0B0E14", color: "#fff" }}
+          style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
           aria-label="Send"
         >
           <Send className="w-4 h-4" />
@@ -232,7 +232,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       <div
         className="max-w-[85%] rounded-xl px-3 py-2"
         style={{
-          background: isUser ? "#0B0E14" : "var(--bg-elevated)",
+          background: isUser ? "var(--btn-primary-bg)" : "var(--bg-elevated)",
           color: isUser ? "#fff" : "var(--text-primary)",
           border: isUser ? "none" : "1px solid var(--border)",
         }}

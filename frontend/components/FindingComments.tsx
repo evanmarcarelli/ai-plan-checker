@@ -126,7 +126,7 @@ export function FindingComments({
                 type="submit"
                 disabled={posting || !draft.trim()}
                 className="p-2 rounded-lg disabled:opacity-50"
-                style={{ background: "#0B0E14", color: "#fff" }}
+                style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
                 aria-label="Post comment"
               >
                 <Send className="w-4 h-4" />

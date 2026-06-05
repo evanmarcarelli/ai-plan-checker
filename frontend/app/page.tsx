@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createPackCheckoutSession, type PackSize } from "@/lib/api";
 import InteractiveDemo from "@/components/demo/InteractiveDemo";
 import Reveal from "@/components/Reveal";
+import AutoplayReel from "@/components/marketing/AutoplayReel";
 
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
@@ -56,6 +57,7 @@ export default function MarketingHome() {
     <div style={{ background: "var(--bg)" }}>
       <Nav isAuthed={isAuthed} />
       <Hero />
+      <AutoplayReel />
       <CredibilityBar />
       <DemoSection />
       <HowItWorks />
@@ -72,56 +74,56 @@ export default function MarketingHome() {
 function Nav({ isAuthed }: { isAuthed: boolean | null }) {
   return (
     <header
-      className="sticky top-0 z-30 px-6 py-3 border-b backdrop-blur"
-      style={{ background: "rgba(255,255,255,0.85)", borderColor: "var(--border)" }}
+      className="sticky top-0 z-30 px-6 backdrop-blur border-b"
+      style={{ background: "rgba(247, 248, 250, 0.85)", borderColor: "var(--border)" }}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5">
           <div
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ background: "#0B0E14" }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
+            style={{ background: "var(--accent)", boxShadow: "0 2px 8px rgba(47,91,255,0.25)" }}
           >
-            <Building2 className="w-4 h-4 text-white" />
+            <span className="text-white text-[14px] font-bold leading-none tracking-tight">U</span>
           </div>
           <span
-            className="font-bold text-base tracking-tight"
-            style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
+            className="font-semibold text-[15px] tracking-tight"
+            style={{ color: "var(--text-primary)" }}
           >
-            Up2Code AI
+            Up2Code
           </span>
         </Link>
 
-        <nav className="hidden sm:flex items-center gap-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-          <a href="#how" className="hover:underline">How it works</a>
-          <a href="#demo" className="hover:underline">Demo</a>
-          <a href="#pricing" className="hover:underline">Pricing</a>
-          <Link href="/feedback" className="hover:underline">Feedback</Link>
+        <nav className="hidden md:flex items-center gap-9 text-[14px]" style={{ color: "var(--text-secondary)" }}>
+          <a href="#how" className="hover:opacity-70 transition-opacity duration-150">How it works</a>
+          <a href="#demo" className="hover:opacity-70 transition-opacity duration-150">Demo</a>
+          <a href="#pricing" className="hover:opacity-70 transition-opacity duration-150">Pricing</a>
+          <Link href="/feedback" className="hover:opacity-70 transition-opacity duration-150">Feedback</Link>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isAuthed === false && (
             <>
               <Link
                 href="/login?redirect=/dashboard"
-                className="text-sm font-medium px-3 py-1.5 rounded-lg"
-                style={{ color: "var(--text-secondary)" }}
+                className="text-[14px] font-medium hover:opacity-70 transition-opacity duration-150"
+                style={{ color: "var(--text-primary)" }}
               >
                 Sign in
               </Link>
               <Link
                 href="/signup?redirect=/dashboard"
-                className="text-sm font-medium px-3 py-1.5 rounded-lg"
-                style={{ background: "#0B0E14", color: "#fff" }}
+                className="text-[13px] font-semibold px-3.5 py-2 rounded-lg hover:opacity-90 transition-opacity duration-150"
+                style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
               >
-                Get started for free
+                Try Up2Code
               </Link>
             </>
           )}
           {isAuthed === true && (
             <Link
               href="/dashboard"
-              className="text-sm font-medium px-3 py-1.5 rounded-lg"
-              style={{ background: "#0B0E14", color: "#fff" }}
+              className="text-[13px] font-semibold px-3.5 py-2 rounded-lg hover:opacity-90 transition-opacity duration-150"
+              style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
             >
               Open dashboard
             </Link>
@@ -136,53 +138,57 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
 
 function Hero() {
   return (
-    <section className="px-6 pt-16 pb-12">
-      <div className="max-w-4xl mx-auto text-center">
-        <div
-          className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full mb-6"
-          style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-        >
-          <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent-bright)" }} />
-          90-second pre-submittal code review · grounded in real code text
+    <section className="px-6 pt-20 pb-24 lg:pt-28 lg:pb-32">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12">
+          <div className="lg:col-span-7">
+            <div
+              className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] uppercase mb-6"
+              style={{ color: "var(--accent)" }}
+            >
+              Multi-agent AI for AEC
+            </div>
+            <h1
+              className="text-[44px] sm:text-[60px] lg:text-[80px] font-semibold leading-[1.02] tracking-[-0.03em]"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Plan review, reimagined.
+            </h1>
+          </div>
+
+          <div className="lg:col-span-5 lg:pt-8 flex flex-col">
+            <p
+              className="text-[17px] leading-[1.55] max-w-md"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Up2Code dispatches a multi-agent system across your drawings,
+              extracting geometry, resolving applicable code, and returning
+              structured findings with verifiable citations.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link
+                href="/signup?redirect=/dashboard"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-[14px] font-semibold hover:opacity-90 transition-opacity duration-100"
+                style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
+              >
+                Try Up2Code free
+              </Link>
+              <a
+                href="#demo"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-[14px] font-semibold hover:bg-black/[0.03] transition-colors duration-100"
+                style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              >
+                See a sample report
+              </a>
+            </div>
+            <p
+              className="mt-4 text-[13px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              First check free · Monthly plans · Credits roll over
+            </p>
+          </div>
         </div>
-
-        <h1
-          className="text-5xl sm:text-6xl font-bold tracking-tight mb-5"
-          style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)", lineHeight: 1.05 }}
-        >
-          Catch building-code issues<br />
-          <span style={{ color: "var(--accent-bright)" }}>before the city does.</span>
-        </h1>
-
-        <p
-          className="text-lg max-w-2xl mx-auto mb-8"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Upload a PDF plan set. <strong style={{ color: "var(--text-primary)" }}>12 specialist AI agents</strong> identify
-          your jurisdiction and audit it against every code chapter a real city plan check runs. All in 90 seconds.
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/signup?redirect=/dashboard"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold"
-            style={{ background: "#0B0E14", color: "#fff" }}
-          >
-            Run your first check, free
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <a
-            href="#demo"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-medium"
-            style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}
-          >
-            See a sample report
-          </a>
-        </div>
-
-        <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
-          First check free · Monthly plans · Credits roll over
-        </p>
       </div>
     </section>
   );
@@ -425,8 +431,8 @@ function Pricing() {
                 disabled={busyPack !== null}
                 className="mt-auto text-center text-sm font-medium py-2 rounded-lg disabled:opacity-60"
                 style={{
-                  background: p.highlight ? "#0B0E14" : "var(--bg-elevated)",
-                  color: p.highlight ? "#fff" : "var(--text-primary)",
+                  background: p.highlight ? "var(--btn-primary-bg)" : "var(--bg-elevated)",
+                  color: p.highlight ? "var(--btn-primary-text)" : "var(--text-primary)",
                   border: p.highlight ? "none" : "1px solid var(--border)",
                 }}
               >
@@ -468,7 +474,7 @@ function FinalCta() {
         <Link
           href="/signup?redirect=/dashboard"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base"
-          style={{ background: "#0B0E14", color: "#fff" }}
+          style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
         >
           Run your first check, free
           <ArrowRight className="w-4 h-4" />

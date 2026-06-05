@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,10 +7,10 @@
 :root {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'DM Mono', monospace;
-  --font-display: 'Syne', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
 
   /* Surfaces — soft white, slightly off so cards have separation */
-  --bg: #FAFBFC;
+  --bg: #F7F8FA;
   --bg-card: #FFFFFF;
   --bg-elevated: #F2F4F7;
 
@@ -19,32 +19,32 @@
   --border-bright: #CBD2DA;
 
   /* Typography */
-  --text-primary: #0B0E14;          /* near-black */
-  --text-secondary: #4A5260;        /* slate grey body text */
+  --text-primary: #0B1220;          /* deep navy */
+  --text-secondary: #4A5260;        /* slate body text */
   --text-muted: #8A93A6;             /* fine print / captions */
 
-  /* Accent — gold, used sparingly (links, badges, icon strokes, focus rings) */
-  --accent: #B8941F;                 /* readable on white */
-  --accent-bright: #D4AF37;          /* classic gold for highlights */
-  --accent-soft: #E5C158;            /* light gold for shimmer / badges */
-  --accent-glow: rgba(184, 148, 31, 0.10);
+  /* Accent — blue */
+  --accent: #2F5BFF;                 /* primary brand blue */
+  --accent-bright: #3B82F6;          /* lighter blue for highlights */
+  --accent-soft: #E8EEFF;             /* very light blue for badge backgrounds */
+  --accent-glow: rgba(47, 91, 255, 0.10);
 
-  /* Buttons — black primary, neutral secondary */
-  --btn-primary-bg: #0B0E14;
-  --btn-primary-bg-hover: #1A1F2A;
+  /* Buttons — blue primary, neutral secondary */
+  --btn-primary-bg: #2F5BFF;
+  --btn-primary-bg-hover: #1E40AF;
   --btn-primary-text: #FFFFFF;
 
   --btn-secondary-bg: #F2F4F7;
   --btn-secondary-bg-hover: #E5E7EB;
-  --btn-secondary-text: #0B0E14;
+  --btn-secondary-text: #0B1220;
 
-  /* Status colors — saturated enough to read on white */
+  /* Status colors — semantic, decoupled from brand */
   --compliant: #15803D;
   --compliant-bg: rgba(21, 128, 61, 0.08);
   --non-compliant: #B91C1C;
   --non-compliant-bg: rgba(185, 28, 28, 0.08);
-  --needs-review: #B8941F;
-  --needs-review-bg: rgba(184, 148, 31, 0.10);
+  --needs-review: #F59E0B;
+  --needs-review-bg: rgba(245, 158, 11, 0.10);
   --na: #6B7280;
   --na-bg: rgba(107, 114, 128, 0.08);
 }
@@ -74,9 +74,9 @@ body {
 /* No glows */
 .glow-blue { box-shadow: none; }
 
-/* Hero title — solid near-black with optional gold shimmer */
+/* Hero title — solid near-black with optional blue shimmer */
 .text-gradient {
-  background: linear-gradient(135deg, #0B0E14 0%, #B8941F 55%, #0B0E14 100%);
+  background: linear-gradient(135deg, #0B1220 0%, #2F5BFF 55%, #0B1220 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

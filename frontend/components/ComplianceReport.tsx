@@ -472,7 +472,7 @@ export default function ComplianceReport({
             <button
               onClick={() => setShareOpen(true)}
               className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-medium"
-              style={{ background: "#0B0E14", color: "#fff" }}
+              style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
             >
               <Share2 className="w-4 h-4" />
               Share with contractor / inspector

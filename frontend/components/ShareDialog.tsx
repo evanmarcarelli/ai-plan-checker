@@ -196,7 +196,7 @@ export function ShareDialog({
             type="submit"
             disabled={creating}
             className="w-full font-medium py-2.5 rounded-lg disabled:opacity-60"
-            style={{ background: "#0B0E14", color: "#fff" }}
+            style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
           >
             {creating ? "Generating link…" : "Generate share link"}
           </button>

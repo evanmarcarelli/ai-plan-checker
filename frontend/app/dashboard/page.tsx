@@ -280,7 +280,7 @@ export default function Dashboard() {
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "#0B0E14" }}
+              style={{ background: "var(--btn-primary-bg)" }}
             >
               <Building2 className="w-4.5 h-4.5 text-white" />
             </div>
@@ -335,7 +335,7 @@ export default function Dashboard() {
                 <button
                   onClick={() => router.push("/signup?redirect=/dashboard")}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg"
-                  style={{ background: "#0B0E14", color: "#fff" }}
+                  style={{ background: "var(--btn-primary-bg)", color: "#fff" }}
                 >
                   Get started — free
                 </button>
@@ -377,7 +377,7 @@ export default function Dashboard() {
                     onClick={() => router.push("/billing")}
                     className="px-3 py-1 rounded-md font-medium transition-all"
                     style={{
-                      background: "#0B0E14",
+                      background: "var(--btn-primary-bg)",
                       color: "#fff",
                     }}
                   >
