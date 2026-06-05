@@ -1,0 +1,20 @@
+{
+  "slug": "ventura-commercial-ti-missing-fixtures",
+  "title": "Ventura County Commercial TI — Group B, plumbing fixture count omitted",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "ventura_ti_commercial",
+  "project_address": "1290 Esplanade Dr Ste 110, Oxnard, CA 93030",
+  "source": "synthetic",
+  "notes": "PLUMB-FIXTURES should fail; everything else passes. Tests fixture-count rule in Ventura context.",
+  "plan_text": "PROJECT DATA - 1290 ESPLANADE DR STE 110, VENTURA COUNTY (OXNARD area)\nTENANT IMPROVEMENT\nA-0.1\nOccupancy Group: B\nConstruction Type: II-B (existing shell)\nNumber of stories: 1 (TI on 2nd floor of existing)\nBuilding height: existing\nTenant area: 5,100 sf\nFully sprinklered: yes (existing NFPA 13)\nDesign occupant load: 51\nIECC: Title 24 Part 6\nElectrical service: 200 A subpanel\nEXIT 1, EXIT 2 corridors\nNFPA 72 fire alarm tie-in. No commercial kitchen. No atrium.\nPlumbing fixture count not stated on plans.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "PLUMB-FIXTURES",           "expected_status": "fail", "expected_severity": "major", "rationale": "Plumbing fixture count required for B occupancy TI is missing" },
+    { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" }
+  ]
+}

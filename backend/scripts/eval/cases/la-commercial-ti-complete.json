@@ -1,0 +1,25 @@
+{
+  "slug": "la-commercial-ti-complete",
+  "title": "LA Commercial TI — Group B, complete interior tenant improvement",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "la_ti_commercial",
+  "project_address": "5555 Wilshire Blvd Ste 200, Los Angeles, CA 90036",
+  "source": "synthetic",
+  "notes": "Interior TI archetype — most zoning rules out of scope; egress/fixture/sprinkler still apply.",
+  "plan_text": "PROJECT DATA - 5555 WILSHIRE BLVD STE 200\nTENANT IMPROVEMENT\nCODE ANALYSIS SHEET A-0.1\n2023 LA BUILDING CODE\nOccupancy Group: B (business)\nConstruction Type: II-A (existing shell)\nNumber of stories: 1 (TI on 4th floor of existing building)\nBuilding height: existing\nTenant area: 4,200 sf\nFully sprinklered: yes (existing NFPA 13)\nDesign occupant load: 42\nIECC compliance path: Title 24 Part 6 prescriptive (alterations)\nElectrical service: 200 A subpanel\nWater closets: WC 4 (shared core, existing)\nLavatories: LAV 4 (shared core, existing)\nEXIT 1 (corridor west)\nEXIT 2 (corridor east)\nEXIT DOOR 36\" each\nNFPA 72 fire alarm tie-in to base building\nNo commercial kitchen. No atrium.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "NEC-SERVICE-RATING",       "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "PLUMB-FIXTURES",           "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" }
+  ]
+}

@@ -5,9 +5,12 @@ from typing import Dict, Any, Callable, List, Optional
 from app.agents.surveyor import SurveyorAgent
 from app.agents.librarian import LibrarianAgent
 from app.agents.departments import ALL_DEPARTMENTS, DepartmentReviewer
+from app.agents.archetype import classify_archetype, render_archetype_banner
+from app.agents.critic import critique_finding, apply_critique
+from app.config.pilot import PIPELINE_GATES
 from app.models.schemas import (
     ProcessingJob, AgentLog, ComplianceReport, ComplianceFinding,
-    ComplianceSummary, ComplianceStatus, DepartmentReview,
+    ComplianceSummary, ComplianceStatus, DepartmentReview, CodeRequirement,
 )
 from app.code_library.adapter import CorpusCodeSource
 from app.code_library.adoption.resolver import get_resolver
@@ -113,6 +116,31 @@ class PlanCheckerWorkflow:
         except Exception as e:
             await emit("Surveyor", f"Surveyor failed: {e}", level="error")
             raise
+
+        # ----- ARCHETYPE GATE -----
+        # Decide whether this submittal falls inside the current pilot's
+        # broad-scope 90% target. Out-of-pilot archetypes (Hillside, HPOZ,
+        # Coastal Zone, high-rise, Ventura VHFHSZ, ag buildings, multi-
+        # family new construction, mixed-use new) get a prominent CRITICAL
+        # finding prepended to the report so reviewers see "manual review
+        # required" before they read any AI output. The downstream pipeline
+        # still runs — we don't yet hard short-circuit because the dashboard
+        # doesn't have a graceful "out-of-scope" view. The CRITICAL finding
+        # is sufficient signal for now. See docs/PILOT_BRIEF.md.
+        plan_text_for_gate = "\n".join(pd.raw_text_by_page.values()) if pd.raw_text_by_page else ""
+        archetype_result = classify_archetype(pd, plan_text_for_gate)
+        state["archetype"] = archetype_result
+        await emit(
+            "Archetype",
+            render_archetype_banner(archetype_result),
+            level="info" if archetype_result.in_pilot_scope else "warning",
+            data={
+                "archetype": archetype_result.archetype,
+                "in_pilot_scope": archetype_result.in_pilot_scope,
+                "excluded_overlays": archetype_result.excluded_overlays,
+                "reasoning": archetype_result.reasoning,
+            },
+        )
 
         # ----- ADOPTION RESOLVER -----
         # Resolve which code editions + local amendments + overlays apply for
@@ -318,6 +346,89 @@ class PlanCheckerWorkflow:
         all_findings: List[ComplianceFinding] = []
         for r in reviews:
             all_findings.extend(r.findings)
+
+        # ----- OUT-OF-PILOT INJECTION -----
+        # If the archetype gate flagged this submittal as out-of-scope, prepend
+        # a CRITICAL finding so reviewers see "manual review required" above
+        # any AI-generated findings. The downstream pipeline already ran;
+        # this is the loudest defensible signal we can attach short of a
+        # full short-circuit (which the dashboard doesn't yet support).
+        archetype_result = state.get("archetype")
+        if archetype_result is not None and not archetype_result.in_pilot_scope:
+            why = (
+                "; ".join(archetype_result.excluded_overlays)
+                if archetype_result.excluded_overlays
+                else (archetype_result.reasoning[-1] if archetype_result.reasoning else "out of pilot scope")
+            )
+            all_findings.insert(0, ComplianceFinding(
+                finding_id=str(uuid.uuid4()),
+                code_requirement=CodeRequirement(
+                    code_id=f"PILOT-SCOPE-{archetype_result.archetype}",
+                    code_name="Pilot scope gate",
+                    section=archetype_result.archetype,
+                    description="Submittal archetype is outside the current AI pilot scope.",
+                    category="intake",
+                    source="archetype_gate",
+                ),
+                status=ComplianceStatus.NEEDS_REVIEW,
+                plan_value=archetype_result.archetype,
+                required_value="in-pilot archetype",
+                description=(
+                    f"OUT OF PILOT SCOPE ({archetype_result.archetype}). "
+                    f"Reason: {why}. AI findings below are advisory only — "
+                    f"this submittal needs manual reviewer attention."
+                ),
+                recommendation="Send to manual review — outside current AI pilot scope.",
+                severity="critical",
+                confidence=1.0,
+                verified=True,
+                source_text="docs/PILOT_BRIEF.md — out-of-pilot archetypes",
+                source_citation=f"Pilot scope ({archetype_result.archetype})",
+            ))
+
+        # ----- ADVERSARIAL CRITIC LOOP -----
+        # Run a cross-model critique on the top-N non_compliant findings to
+        # suppress false positives. Different model from the proposer
+        # (Sonnet → Opus). Disagreements with high confidence downgrade the
+        # finding to needs_review with the rebuttal attached.
+        sev_order_for_critic = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        critic_candidates = sorted(
+            [f for f in all_findings if f.status == ComplianceStatus.NON_COMPLIANT],
+            key=lambda f: sev_order_for_critic.get(f.severity, 4),
+        )[: PIPELINE_GATES.critic_max_findings_per_run]
+        if critic_candidates:
+            await emit(
+                "Critic",
+                f"Cross-model adversarial review on {len(critic_candidates)} top non_compliant finding(s)...",
+                data={"count": len(critic_candidates), "max": PIPELINE_GATES.critic_max_findings_per_run},
+            )
+            plan_text_excerpt = "\n".join(pd.raw_text_by_page.values())[:4000] if pd.raw_text_by_page else None
+            downgraded = 0
+            disputed = 0
+            for f in critic_candidates:
+                try:
+                    verdict = await critique_finding(
+                        finding=f,
+                        scope=pd,
+                        plan_text_excerpt=plan_text_excerpt,
+                    )
+                    pre_status = f.status
+                    apply_critique(f, verdict)
+                    if not verdict.agrees:
+                        disputed += 1
+                        if f.status != pre_status:
+                            downgraded += 1
+                except Exception as critic_err:
+                    await emit(
+                        "Critic",
+                        f"Critique failed for {f.finding_id}: {critic_err}",
+                        level="warning",
+                    )
+            await emit(
+                "Critic",
+                f"Critic run complete. {disputed} disputed, {downgraded} downgraded to needs_review.",
+                data={"disputed": disputed, "downgraded": downgraded},
+            )
 
         # Overall summary
         overall_summary = self._summarize(all_findings)

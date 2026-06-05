@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-vhfhsz-sfr-out-of-scope-2",
+  "title": "Ventura County SFR near Lake Casitas — explicit WUI callout, out of pilot",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "12100 Santa Ana Rd, Ventura County (unincorporated), CA 93001",
+  "source": "synthetic",
+  "notes": "Second VHFHSZ fixture so the gate has variety in plan-text phrasing.",
+  "plan_text": "PROJECT DATA - 12100 SANTA ANA RD, VENTURA COUNTY (UNINCORPORATED, near Lake Casitas)\nWildland-Urban Interface (WUI) zone — Very High Fire Hazard Severity Zone\nCBC Chapter 7A wildfire-resistive materials required throughout exterior envelope\nOccupancy Group: R-3\nConstruction Type: V-B sprinklered (NFPA 13D)\nNumber of stories: 1\nTotal building area: 2,100 sf\nClass A roof, ignition-resistant siding, ember-resistant vents per CBC 706A/707A\nVentura County FPD defensible space review required",
+  "ground_truth": []
+}

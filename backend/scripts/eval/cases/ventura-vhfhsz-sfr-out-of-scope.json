@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-vhfhsz-sfr-out-of-scope",
+  "title": "Ventura County SFR in Very-High FHSZ — should be rejected at intake (CBC Ch. 7A out of pilot)",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "8520 Box Canyon Rd, Ventura County (unincorporated), CA 93063",
+  "source": "synthetic",
+  "notes": "Ventura's biggest unincorporated risk category. Classifier should mark out_of_scope on VHFHSZ + Ch. 7A cues.",
+  "plan_text": "PROJECT DATA - 8520 BOX CANYON RD, VENTURA COUNTY UNINCORPORATED\nParcel is in a CalFire designated Very High Fire Hazard Severity Zone (VHFHSZ)\nWUI construction required per CBC Chapter 7A\nProposed: new single-family residence\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 2\nTotal building area: 3,400 sf\nDefensible space plan per Ventura County FPD Chapter 49\nIgnition-resistant exterior assemblies — schedule on A-7.0",
+  "ground_truth": []
+}

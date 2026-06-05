@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-mixed-use-out-of-scope",
+  "title": "Ventura County mixed-use new build (R-over-M) — out of pilot scope",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "880 Town Center Dr, Moorpark, CA 93021",
+  "source": "synthetic",
+  "notes": "Mixed-use new construction. Should classify as mixed_use_new_construction (out of pilot).",
+  "plan_text": "PROJECT DATA - 880 TOWN CENTER DR, VENTURA COUNTY (MOORPARK area)\nNew mixed-use building (retail ground floor + 2 stories residential above)\nOccupancy Groups: M (ground floor retail), R-2 (floors 2-3)\nMixed occupancy: yes (non-separated per CBC 508.3)\nConstruction Type: V-A\nNumber of stories: 3\nBuilding height: 41 ft\nTotal building area: 18,500 sf\nFully sprinklered: yes (NFPA 13)\nNo tenant improvement — ground-up new construction",
+  "ground_truth": []
+}

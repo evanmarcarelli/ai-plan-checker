@@ -1,0 +1,11 @@
+{
+  "slug": "ventura-ag-building-out-of-scope",
+  "title": "Ventura County agricultural building — county-specific exemptions, out of pilot",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "out_of_scope",
+  "project_address": "5640 Bardsdale Ave, Ventura County (unincorporated), CA 93015",
+  "source": "synthetic",
+  "notes": "Ag-zoned utility/storage structure. County overlays + CBC §312 — exemption logic not in pilot.",
+  "plan_text": "PROJECT DATA - 5640 BARDSDALE AVE, VENTURA COUNTY UNINCORPORATED\nZONING: A-E (Agricultural Exclusive)\nProposed: agricultural storage building (open space agricultural overlay)\nOccupancy Group: U (utility/misc, CBC §312)\nConstruction Type: II-B\nBuilding area: 4,800 sf\nNumber of stories: 1\nHeight: 22 ft\nAgricultural building exemption claimed per Ventura County Title 8 / CBC §312",
+  "ground_truth": []
+}

@@ -1,0 +1,19 @@
+{
+  "slug": "ventura-sfr-v5b-missing-code-analysis",
+  "title": "Ventura County SFR — Type V-B, code-analysis sheet missing required fields",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "ventura_sfr_typ_vb_ministerial",
+  "project_address": "1188 Ridgeline Dr, Simi Valley, CA 93065",
+  "source": "synthetic",
+  "notes": "GEN-CODE-ANALYSIS should fail — sheet omits occupant load + IECC path. Tests negative finding generation in a Ventura context.",
+  "plan_text": "PROJECT DATA - 1188 RIDGELINE DR, VENTURA COUNTY (SIMI VALLEY area)\nA-0.1 PROJECT DATA\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 22 ft\nTotal building area: 2,400 sf\nPer-story area: 1,200 sf\nSprinklered: yes (NFPA 13D)\nWC 3, LAV 3\nEXIT 1 (front), EXIT 2 (rear)\nSmoke alarms NFPA 72\nElectrical service 200 A\nNo Title 24 Part 6 compliance path called out. Occupant load not stated.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "fail", "expected_severity": "critical", "rationale": "Code-analysis sheet omits occupant load and IECC compliance path" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "fail", "expected_severity": "critical", "rationale": "Occupant load not declared on plans" },
+    { "rule_id": "ENR-IECC",                 "expected_status": "fail", "expected_severity": "major", "rationale": "Title 24 Part 6 compliance path not declared" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}

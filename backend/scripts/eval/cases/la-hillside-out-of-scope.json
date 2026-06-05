@@ -1,0 +1,11 @@
+{
+  "slug": "la-hillside-out-of-scope",
+  "title": "LA Hillside SFR — should be rejected at intake (Baseline Hillside Ordinance not in pilot)",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "out_of_scope",
+  "project_address": "8800 Mulholland Dr, Los Angeles, CA 90046",
+  "source": "synthetic",
+  "notes": "Pilot scope excludes Hillside / BMO / HPOZ. The intake classifier should mark this as out_of_scope and skip rule evaluation. Ground truth is empty — we measure classifier accuracy separately.",
+  "plan_text": "PROJECT DATA - 8800 MULHOLLAND DR\nZONING: RE40-1H (Hillside Overlay)\nBaseline Hillside Ordinance applies\nResponsible Slope Band: per LAMC 12.21.C.10\nLot is on a designated hillside per ZIMAS\nProposed: new single-family residence 4,200 sf\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 3 (terraced into slope)\nHeight envelope per BHO\nEncroachment plane analysis sheet A-0.5",
+  "ground_truth": []
+}

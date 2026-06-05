@@ -1,0 +1,19 @@
+{
+  "slug": "ventura-sfr-v5b-area-violation",
+  "title": "Ventura County SFR — Type V-B, per-story area exceeds Table 506.2 allowable",
+  "jurisdiction_key": "CA:VENTURA_COUNTY",
+  "archetype": "ventura_sfr_typ_vb_ministerial",
+  "project_address": "2207 Foothill Rd, Ojai, CA 93023",
+  "source": "synthetic",
+  "notes": "Per-story area 8,200 sf exceeds R-3/V-B unsprinklered allowable. Tests area_check + sprinkler interaction.",
+  "plan_text": "PROJECT DATA - 2207 FOOTHILL RD, VENTURA COUNTY (OJAI area, NOT in VHFHSZ per county GIS)\nCODE ANALYSIS A-0.1\n2022 CBC + Ventura County Ord Code Div. VIII\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 1\nBuilding height: 18 ft\nTotal building area: 8,200 sf\nPer-story area: 8,200 sf\nNon-sprinklered\nDesign occupant load: 22\nIECC: Title 24 Part 6\nElectrical service: 200 A\nWC 3, LAV 3\nEXIT 1 (north), EXIT 2 (south)\nNFPA 72 smoke alarms",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "fail", "expected_severity": "critical", "rationale": "8,200 sf exceeds R-3/V-B per-story allowable without sprinkler increase" },
+    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}
