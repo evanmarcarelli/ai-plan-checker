@@ -512,6 +512,71 @@ async def diag_llm():
     return info
 
 
+@router.get("/_diag/textract")
+async def diag_textract():
+    """Diagnostic: confirm AWS Textract is configured and the IAM user has
+    the right permission. Public on purpose (mirrors `/diag/llm`) so the
+    founder can debug from a browser without auth fight. Returns only
+    non-sensitive info: whether the flag is on, whether creds look set,
+    the region, and the result of one minimal Textract API call against a
+    1×1 white PNG (which exercises auth + permission without OCR'ing
+    anything substantive)."""
+    info: Dict[str, Any] = {
+        "enabled_flag": settings.aws_textract_enabled,
+        "key_set": bool(settings.aws_access_key_id),
+        "secret_set": bool(settings.aws_secret_access_key),
+        "region": settings.aws_region,
+        "min_chars_per_page": settings.textract_min_chars_per_page,
+        "max_pages": settings.textract_max_pages,
+    }
+    if not settings.aws_textract_enabled:
+        info["status"] = "DISABLED"
+        info["hint"] = (
+            "AWS_TEXTRACT_ENABLED is false. Set to 'true' in Render env vars "
+            "and redeploy to turn on the OCR fallback."
+        )
+        return info
+    if not (settings.aws_access_key_id and settings.aws_secret_access_key):
+        info["status"] = "NO_KEY"
+        info["hint"] = (
+            "AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is empty on Render. "
+            "Paste the IAM user's keys and redeploy."
+        )
+        return info
+    try:
+        from app.services.textract_extractor import textract_extractor
+        client = textract_extractor._get_client()
+        if client is None:
+            info["status"] = "CLIENT_INIT_FAILED"
+            info["error"] = textract_extractor._init_error or "unknown"
+            info["hint"] = "Check the backend logs for the detailed boto3 init error."
+            return info
+        # Smallest possible call: a 1×1 white PNG. Exercises auth + the
+        # textract:AnalyzeDocument permission without doing real OCR.
+        # PNG header is well-known; we hand-build the smallest valid PNG
+        # rather than pulling in PIL.
+        import base64
+        tiny_png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        )
+        client.analyze_document(Document={"Bytes": tiny_png}, FeatureTypes=["FORMS"])
+        info["status"] = "OK"
+        info["hint"] = "Textract auth + AnalyzeDocument permission verified. OCR fallback is live."
+    except Exception as e:
+        info["status"] = "ERROR"
+        info["error_type"] = type(e).__name__
+        info["error"] = str(e)[:500]
+        if "InvalidSignatureException" in info["error"] or "UnrecognizedClientException" in info["error"]:
+            info["hint"] = "AWS key/secret rejected. Re-paste the values cleanly — common cause is a stray space or wrong AWS account."
+        elif "AccessDenied" in info["error"]:
+            info["hint"] = "IAM user lacks textract:AnalyzeDocument. Attach the AmazonTextractFullAccess policy (or a scoped equivalent) and re-test."
+        elif "could not be found" in info["error"].lower() or "endpoint" in info["error"].lower():
+            info["hint"] = f"AWS_REGION={settings.aws_region} may not have Textract. us-west-2 and us-east-1 always do."
+        else:
+            info["hint"] = "The Textract SDK call itself failed. Check the error above."
+    return info
+
+
 @router.get("/me")
 async def get_me(user: Dict[str, Any] = Depends(get_current_user)):
     profile = db.get_profile(user["id"]) or {}

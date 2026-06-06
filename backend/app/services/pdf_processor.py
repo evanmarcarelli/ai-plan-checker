@@ -60,6 +60,27 @@ class PDFProcessor:
 
             doc.close()
 
+            # AWS Textract OCR fallback for pages whose text layer is too
+            # thin. Feature-flagged (off by default) so an unconfigured
+            # environment behaves exactly like before. When it fires, it
+            # both enriches the per-page text AND surfaces a
+            # `code_data_summary` dict of canonical KV pairs the surveyor
+            # uses to fill the structured fields the LLM department reviews
+            # depend on.
+            try:
+                from app.services.textract_extractor import textract_extractor
+                if textract_extractor.enabled:
+                    enhanced = textract_extractor.enhance(file_path, result["pages"])
+                    result["pages"] = enhanced["pages"]
+                    result["all_text"] = "\n\n".join(
+                        result["pages"].get(p, "") for p in sorted(result["pages"])
+                    )
+                    if enhanced["code_data_summary"]:
+                        result["code_data_summary"] = enhanced["code_data_summary"]
+                    result["textract_stats"] = enhanced["stats"]
+            except Exception as e:
+                logger.error(f"Textract enhancement failed (continuing without): {e}")
+
         except Exception as e:
             logger.error(f"PyMuPDF extraction failed: {e}")
             # Fallback to pdfplumber

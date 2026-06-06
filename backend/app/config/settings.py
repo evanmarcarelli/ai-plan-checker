@@ -91,6 +91,26 @@ class Settings(BaseSettings):
     upload_folder: str = "./uploads"
     export_folder: str = "./exports"
 
+    # AWS Textract (OCR fallback for image-only or scan-heavy plan sheets).
+    # Off by default — only kicks in when set. When `aws_textract_enabled` is
+    # true and a page yields too little text from the PyMuPDF text layer, the
+    # page is rendered to PNG and run through Textract. Cheaper than Claude
+    # vision per page (~$1.50/1k pages with TABLES+FORMS) and the structured
+    # KV pairs feed the code-data-summary fields directly. Costs $0 when
+    # off; costs $0 per plan whose text layer extracts cleanly.
+    aws_textract_enabled: bool = False
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-west-2"
+    # If a page's text layer yields fewer than this many chars, fall back to
+    # Textract. 200 chars is roughly "title block but no labels readable" —
+    # tuned to skip the cheap-and-clean PDFs and only pay for scans.
+    textract_min_chars_per_page: int = 200
+    # Cap pages-per-document sent to Textract. 0 = no cap (every thin page
+    # gets OCR'd, full plan set covered). Set to a positive integer to bound
+    # spend per plan if a particular workflow needs it.
+    textract_max_pages: int = 0
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"

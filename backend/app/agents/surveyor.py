@@ -112,9 +112,25 @@ OUTPUT: Return ONLY valid JSON matching this schema:
 
         logger.info(f"[Surveyor] Extracting PDF: {file_path}")
 
-        # Extract PDF content
+        # Extract PDF content. PyMuPDF text layer first; Textract OCR
+        # fills in any pages whose text layer is too thin (gated by the
+        # AWS_TEXTRACT_ENABLED flag). The pdf_processor handles all that
+        # behind the call; we just consume what it returns.
         raw_data = pdf_processor.extract(file_path)
         plan_data = pdf_processor.parse_plan_data(raw_data)
+
+        # Surface Textract's canonical KV pairs (when present) onto plan_data
+        # before vision runs. This means the surveyor's LLM context starts
+        # with structured fields filled when Textract read them off the
+        # title-sheet code-data box, and vision becomes the second opinion
+        # rather than the only opinion.
+        textract_kvs = raw_data.get("code_data_summary") or {}
+        if textract_kvs:
+            logger.info(
+                f"[Surveyor] Textract code_data_summary populated "
+                f"{len(textract_kvs)} field(s): {list(textract_kvs.keys())}"
+            )
+            self._apply_textract_fields(plan_data, textract_kvs)
 
         # Vision pass on the title sheet. The regex extractors above match very
         # narrow label formats and routinely miss the code data summary on real
@@ -261,6 +277,56 @@ Total pages: {raw_data.get('page_count', 0)}
             plan_data.project_name = vision["project_name"]
         if vision.get("project_address") and not plan_data.project_address:
             plan_data.project_address = vision["project_address"]
+
+    @staticmethod
+    def _apply_textract_fields(plan_data: ExtractedPlanData, kvs: Dict[str, str]) -> None:
+        """Fold Textract code-data-summary KV pairs into plan_data BEFORE
+        vision runs. Same conservative rule as vision: only fill values
+        the regex extractor left blank, except for occupancy where we
+        override the known-bad "C" false positive.
+
+        Vision runs after this and may still override anything Textract
+        couldn't read confidently — Textract is high-precision/low-recall
+        on architectural sheets, vision is the inverse, and we want both
+        contributing without either getting the last word for free.
+        """
+        if not kvs:
+            return
+        occ = kvs.get("occupancy")
+        if occ and (
+            plan_data.occupancy_type is None
+            or plan_data.occupancy_type == "C"
+        ):
+            plan_data.occupancy_type = occ
+        if kvs.get("construction_type") and not plan_data.construction_type:
+            plan_data.construction_type = kvs["construction_type"]
+        if kvs.get("project_name") and not plan_data.project_name:
+            plan_data.project_name = kvs["project_name"]
+        if kvs.get("project_address") and not plan_data.project_address:
+            plan_data.project_address = kvs["project_address"]
+        # Numeric fields: Textract returns raw strings like '45 FT' or
+        # '12,500 SF'. Strip non-digit/decimal characters before casting.
+        def _to_float(raw: str):
+            try:
+                cleaned = re.sub(r"[^\d.]", "", (raw or "").replace(",", ""))
+                return float(cleaned) if cleaned else None
+            except (TypeError, ValueError):
+                return None
+        if plan_data.building_height is None:
+            v = _to_float(kvs.get("building_height", ""))
+            if v is not None:
+                plan_data.building_height = v
+        if plan_data.building_area is None:
+            v = _to_float(kvs.get("building_area", ""))
+            if v is not None:
+                plan_data.building_area = v
+        if plan_data.stories is None:
+            try:
+                cleaned = re.sub(r"[^\d]", "", kvs.get("stories", "") or "")
+                if cleaned:
+                    plan_data.stories = int(cleaned)
+            except (TypeError, ValueError):
+                pass
 
     def _heuristic_jurisdiction(self, text: str, title_block: str) -> Jurisdiction:
         """Fallback heuristic extraction when LLM fails."""

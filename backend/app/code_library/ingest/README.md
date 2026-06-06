@@ -4,21 +4,66 @@ Grows the BM25 code corpus (`../corpus/*.jsonl`) past the hand-curated seed
 set by scraping public municipal code and chunking it into the same JSONL
 shape the retriever loads.
 
+## Sources covered
+
+| Publisher | Module | Hosts | LA County coverage |
+|-----------|--------|-------|--------------------|
+| American Legal Publishing | `amlegal.py` | codelibrary.amlegal.com | Pasadena, Long Beach, Glendale, Burbank, Santa Monica, Beverly Hills, West Hollywood, Culver City, Inglewood, Compton, Torrance, Alhambra, Arcadia, Monrovia, Claremont, Pomona, West Covina, Covina, Glendora, San Gabriel, Monterey Park, Rosemead, Temple City, Sierra Madre, La Cañada Flintridge, South Pasadena, San Fernando, Santa Clarita, Lancaster, Palmdale |
+| Municode | `municode.py` | library.municode.com | **LA city (LAMC)**, **LA County (unincorporated)**, Malibu, Calabasas, Agoura Hills, Westlake Village, Hidden Hills, Carson, Cerritos, Lakewood, Bellflower, Paramount, Downey, South Gate, Lynwood, Norwalk, La Mirada, Whittier, Pico Rivera, Montebello, Commerce, Santa Fe Springs, Bell, Bell Gardens, Maywood, Cudahy, Huntington Park, Vernon, Gardena, Lawndale, Hawthorne, El Monte, South El Monte, Baldwin Park, Irwindale, Azusa, Duarte, Bradbury, La Verne, San Dimas, Diamond Bar, Walnut, City of Industry, La Puente, Hawaiian Gardens, Artesia, Signal Hill, Avalon |
+| Quality Code Publishing | `qcode.py` | qcode.us | Hermosa Beach, Manhattan Beach, Redondo Beach, El Segundo, Palos Verdes Estates, Rancho Palos Verdes, Rolling Hills, Rolling Hills Estates, Lomita, San Marino, La Habra Heights |
+| General Code | `ecode360.py` | ecode360.com | (placeholder — verify slugs before use) |
+| LADBS publications | `ladbs.py` | dbs.lacity.gov | LA City information bulletins, correction lists, amendments |
+
+> **Neighborhoods of Los Angeles** (Hollywood, Venice, Silver Lake, Echo Park,
+> Studio City, etc.) are **not separate jurisdictions** — they sit inside the
+> City of LA and are governed by the LAMC plus LADBS bulletins. They do not
+> need separate ingester entries.
+
 ## Run it
 
 ```bash
 cd backend
-# list configured targets
+
+# show every configured target, flagging which are in LA County
 python -m app.code_library.ingest list
+
 # one jurisdiction, capped for a test run
-python -m app.code_library.ingest amlegal --jurisdiction pasadena_ca --max 50
-# every amlegal jurisdiction
-python -m app.code_library.ingest amlegal --all
+python -m app.code_library.ingest amlegal  --jurisdiction pasadena_ca   --max 50
+python -m app.code_library.ingest municode --jurisdiction losangeles_ca --max 50
+python -m app.code_library.ingest qcode    --jurisdiction hermosabeach  --max 50
+
+# every target for one publisher
+python -m app.code_library.ingest amlegal  --all
+python -m app.code_library.ingest municode --all
+
+# THE LA WEDGE: every LA County jurisdiction across every publisher + LADBS
+python -m app.code_library.ingest la-county
+
+# cap chunks per jurisdiction while you verify slugs
+python -m app.code_library.ingest la-county --max 25
+
+# skip LADBS if you only want the municipal codes
+python -m app.code_library.ingest la-county --skip-ladbs
 ```
 
-Output: one `amlegal_<slug>.jsonl` per jurisdiction in `../corpus/`. The
+Output: one `<publisher>_<slug>.jsonl` per jurisdiction in `../corpus/`. The
 loader picks them up on the next process start (or call
 `corpus_loader.reload_corpus()`).
+
+## Slug verification (one-time, per jurisdiction)
+
+The yaml ships with best-effort slugs marked `# verify`. Before running each
+publisher's `--all`, do one pass to confirm the URL each slug resolves to.
+Quick smoke test:
+
+```bash
+# Run a tiny --max so a wrong slug fails fast and cheap
+python -m app.code_library.ingest municode --jurisdiction calabasas_ca --max 5
+```
+
+If you see `404` or `failed to load root TOC`, the slug is wrong. Open the
+publisher's search UI, find the city, and update the `source_id` in
+`jurisdictions.yaml`. Once it returns sections, drop the `# verify` comment.
 
 ## LADBS publications (Los Angeles — works today, no Cloudflare)
 
@@ -35,7 +80,7 @@ python -m app.code_library.ingest ladbs                               # all thre
 
 Output: `../corpus/ladbs_<kind>.jsonl`, tagged `jurisdictions: ["CA:Los Angeles"]`.
 
-**Currency guard (automatic).** The ingester now skips any doc whose detected
+**Currency guard (automatic).** The ingester skips any doc whose detected
 edition year predates `MIN_EDITION_YEAR` (2022) — so a 2010 CALGreen or 2007
 standards PDF can no longer land in the corpus and let the citation gate
 "verify" findings against dead code.
@@ -57,14 +102,14 @@ growth needs one of:**
 
 ## Current blocker: Cloudflare (as of 2026-06)
 
-American Legal Publishing (`codelibrary.amlegal.com`) now sits behind a
+American Legal Publishing, Municode, qcode, and ecode360 may sit behind a
 Cloudflare bot-challenge. Plain HTTP fetches return:
 
 ```
 403 Forbidden   (cf-mitigated: challenge)
 ```
 
-The scraper detects this and **stops with a clear message** instead of
+Each scraper detects this and **stops with a clear message** instead of
 silently writing an empty file. A run that hits the challenge produces **0
 chunks and leaves any existing corpus file intact** — a failed scrape can no
 longer wipe good data (`writer.write_jsonl` refuses to overwrite with empty
@@ -73,7 +118,8 @@ and writes atomically via a `.tmp` rename).
 To actually pull text you need one of:
 
 1. **A licensed data feed** from the publisher (the clean path — also the
-   only one without copyright exposure for republishing code text).
+   only one without copyright exposure for republishing code text). For ICC
+   I-Codes, see `docs/ICC_LICENSING_INQUIRY_EMAIL.md`.
 2. **A headless-browser challenge solver** (Playwright/astral) that renders
    the page and passes the JS challenge. This is ToS-gray and is **not**
    wired here on purpose — bypassing a bot-challenge is a deliberate decision
@@ -96,4 +142,11 @@ python -m scripts.eval.run_eval --with-gate  # engine + gate    → F1 lower
 
 The gap between the two F1 numbers is your corpus-coverage debt. Every
 section you add that matches a cited rule closes part of it.
-```
+
+## Citation-grounded retrieval
+
+For the production grounding layer (structural retrieval, claim
+verification, fair-use bounded quoting) see
+`../citation_retrieval.py`. The ingesters above are the *supply* side;
+`citation_retrieval` is the *consumption* side that turns chunks into
+auditable agent citations.

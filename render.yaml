@@ -64,3 +64,13 @@ services:
         sync: false
       - key: SUPPORT_EMAIL
         value: esmith.marc@gmail.com
+      # AWS Textract — leave AWS_TEXTRACT_ENABLED=false until the IAM keys
+      # are pasted in below and the service is redeployed.
+      - key: AWS_TEXTRACT_ENABLED
+        value: "false"
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-west-2

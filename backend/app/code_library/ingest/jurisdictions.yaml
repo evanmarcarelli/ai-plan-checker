@@ -1,16 +1,36 @@
 # Target list for the ingest pipeline.
 #
-# `slug` is the source-specific identifier (e.g. amlegal's `pasadena_ca`).
+# `source_id` is the source-specific identifier (e.g. amlegal's `pasadena_ca`,
+# municode's `losangeles`, qcode's `hermosabeach`).
 # `jurisdictions` is the list of corpus-side scope strings — same values
 # the BM25 retriever filters on. Use "CA" for state-wide, "CA:<city>" for
 # city, "CA:<county>" for county, "*" for federal.
 #
-# Top-15 California targets are organized by source. amlegal first (it's
-# what ingest_amlegal_slug consumes); the others have skeleton entries
-# pending implementation.
+# ─────────────────────────────────────────────────────────────────────────
+# LA County coverage
+# ─────────────────────────────────────────────────────────────────────────
+# Goal: every one of the 88 incorporated cities in LA County + LA County
+# unincorporated. Cities are organized by publisher because the ingester
+# is publisher-specific. A note on terminology:
+#
+#   "Neighborhoods of Los Angeles" (Hollywood, Venice, Silver Lake, Echo
+#   Park, Studio City, etc.) are NOT separate jurisdictions. They sit
+#   inside the City of Los Angeles and are governed by LAMC + LADBS
+#   bulletins. We capture that one code book under municode/losangeles
+#   below; the neighborhoods do not need separate entries.
+#
+# Slug verification:
+#   Many slugs below are best-effort and marked with `# verify` until a
+#   live run confirms the URL pattern. The runbook step is:
+#     1. Paste the slug into the publisher's search UI.
+#     2. Confirm the URL the site redirects to.
+#     3. Drop the `# verify` once confirmed.
 
+# ─────────────────────────────────────────────────────────────────────────
+# American Legal Publishing  (codelibrary.amlegal.com)
+# ─────────────────────────────────────────────────────────────────────────
 amlegal:
-  # Big LA-area jurisdictions (the user's near-term wedge)
+  # Originally configured (verified working when Cloudflare permits).
   - source_id: pasadena_ca
     code_name: "Pasadena Municipal Code"
     code_short: PASADENA-MC
@@ -53,61 +73,516 @@ amlegal:
     jurisdictions: ["CA:Beverly Hills"]
     output_filename: amlegal_beverlyhills_ca.jsonl
 
-  # Bay Area
-  - source_id: oakland_ca
-    code_name: "Oakland Municipal Code"
-    code_short: OAKLAND-MC
+  # LA County additions
+  - source_id: westhollywood_ca
+    code_name: "West Hollywood Municipal Code"
+    code_short: WESTHOLLYWOOD-MC
     version: "2024"
-    jurisdictions: ["CA:Oakland"]
-    output_filename: amlegal_oakland_ca.jsonl
+    jurisdictions: ["CA:West Hollywood"]
+    output_filename: amlegal_westhollywood_ca.jsonl
 
-  - source_id: berkeley_ca
-    code_name: "Berkeley Municipal Code"
-    code_short: BERKELEY-MC
+  - source_id: culvercity_ca
+    code_name: "Culver City Municipal Code"
+    code_short: CULVERCITY-MC
     version: "2024"
-    jurisdictions: ["CA:Berkeley"]
-    output_filename: amlegal_berkeley_ca.jsonl
+    jurisdictions: ["CA:Culver City"]
+    output_filename: amlegal_culvercity_ca.jsonl
 
-  - source_id: sanjose_ca
-    code_name: "San Jose Municipal Code"
-    code_short: SANJOSE-MC
+  - source_id: inglewood_ca   # verify
+    code_name: "Inglewood Municipal Code"
+    code_short: INGLEWOOD-MC
     version: "2024"
-    jurisdictions: ["CA:San Jose"]
-    output_filename: amlegal_sanjose_ca.jsonl
+    jurisdictions: ["CA:Inglewood"]
+    output_filename: amlegal_inglewood_ca.jsonl
 
-  # Coastal / North
-  - source_id: santabarbara_ca
-    code_name: "Santa Barbara Municipal Code"
-    code_short: SANTABARBARA-MC
+  - source_id: compton_ca   # verify
+    code_name: "Compton Municipal Code"
+    code_short: COMPTON-MC
     version: "2024"
-    jurisdictions: ["CA:Santa Barbara"]
-    output_filename: amlegal_santabarbara_ca.jsonl
+    jurisdictions: ["CA:Compton"]
+    output_filename: amlegal_compton_ca.jsonl
 
-  - source_id: ventura_ca
-    code_name: "Ventura Municipal Code"
-    code_short: VENTURA-MC
+  - source_id: torrance_ca   # verify
+    code_name: "Torrance Municipal Code"
+    code_short: TORRANCE-MC
     version: "2024"
-    jurisdictions: ["CA:Ventura", "CA:Ventura County"]
-    output_filename: amlegal_ventura_ca.jsonl
+    jurisdictions: ["CA:Torrance"]
+    output_filename: amlegal_torrance_ca.jsonl
 
-  - source_id: sacramento_ca
-    code_name: "Sacramento City Code"
-    code_short: SACRAMENTO-MC
+  - source_id: alhambra_ca   # verify
+    code_name: "Alhambra Municipal Code"
+    code_short: ALHAMBRA-MC
     version: "2024"
-    jurisdictions: ["CA:Sacramento"]
-    output_filename: amlegal_sacramento_ca.jsonl
+    jurisdictions: ["CA:Alhambra"]
+    output_filename: amlegal_alhambra_ca.jsonl
 
-# These three are NOT on amlegal but on Municode (different ingester).
-# Listed here so the full target set is in one file. Municode ingester
-# is a stub today; add the implementation when Phase 1 expands.
+  - source_id: arcadia_ca   # verify
+    code_name: "Arcadia Municipal Code"
+    code_short: ARCADIA-MC
+    version: "2024"
+    jurisdictions: ["CA:Arcadia"]
+    output_filename: amlegal_arcadia_ca.jsonl
+
+  - source_id: monrovia_ca   # verify
+    code_name: "Monrovia Municipal Code"
+    code_short: MONROVIA-MC
+    version: "2024"
+    jurisdictions: ["CA:Monrovia"]
+    output_filename: amlegal_monrovia_ca.jsonl
+
+  - source_id: claremont_ca   # verify
+    code_name: "Claremont Municipal Code"
+    code_short: CLAREMONT-MC
+    version: "2024"
+    jurisdictions: ["CA:Claremont"]
+    output_filename: amlegal_claremont_ca.jsonl
+
+  - source_id: pomona_ca   # verify
+    code_name: "Pomona City Code"
+    code_short: POMONA-MC
+    version: "2024"
+    jurisdictions: ["CA:Pomona"]
+    output_filename: amlegal_pomona_ca.jsonl
+
+  - source_id: westcovina_ca   # verify
+    code_name: "West Covina Municipal Code"
+    code_short: WESTCOVINA-MC
+    version: "2024"
+    jurisdictions: ["CA:West Covina"]
+    output_filename: amlegal_westcovina_ca.jsonl
+
+  - source_id: covina_ca   # verify
+    code_name: "Covina Municipal Code"
+    code_short: COVINA-MC
+    version: "2024"
+    jurisdictions: ["CA:Covina"]
+    output_filename: amlegal_covina_ca.jsonl
+
+  - source_id: glendora_ca   # verify
+    code_name: "Glendora Municipal Code"
+    code_short: GLENDORA-MC
+    version: "2024"
+    jurisdictions: ["CA:Glendora"]
+    output_filename: amlegal_glendora_ca.jsonl
+
+  - source_id: sangabriel_ca   # verify
+    code_name: "San Gabriel Municipal Code"
+    code_short: SANGABRIEL-MC
+    version: "2024"
+    jurisdictions: ["CA:San Gabriel"]
+    output_filename: amlegal_sangabriel_ca.jsonl
+
+  - source_id: monterey_park_ca   # verify
+    code_name: "Monterey Park Municipal Code"
+    code_short: MONTEREYPARK-MC
+    version: "2024"
+    jurisdictions: ["CA:Monterey Park"]
+    output_filename: amlegal_montereypark_ca.jsonl
+
+  - source_id: rosemead_ca   # verify
+    code_name: "Rosemead Municipal Code"
+    code_short: ROSEMEAD-MC
+    version: "2024"
+    jurisdictions: ["CA:Rosemead"]
+    output_filename: amlegal_rosemead_ca.jsonl
+
+  - source_id: templecity_ca   # verify
+    code_name: "Temple City Municipal Code"
+    code_short: TEMPLECITY-MC
+    version: "2024"
+    jurisdictions: ["CA:Temple City"]
+    output_filename: amlegal_templecity_ca.jsonl
+
+  - source_id: sierramadre_ca   # verify
+    code_name: "Sierra Madre Municipal Code"
+    code_short: SIERRAMADRE-MC
+    version: "2024"
+    jurisdictions: ["CA:Sierra Madre"]
+    output_filename: amlegal_sierramadre_ca.jsonl
+
+  - source_id: lacañada_ca   # verify  (some slugs strip the tilde)
+    code_name: "La Cañada Flintridge Municipal Code"
+    code_short: LCF-MC
+    version: "2024"
+    jurisdictions: ["CA:La Cañada Flintridge"]
+    output_filename: amlegal_lacanada_ca.jsonl
+
+  - source_id: southpasadena_ca   # verify
+    code_name: "South Pasadena Municipal Code"
+    code_short: SOUTHPAS-MC
+    version: "2024"
+    jurisdictions: ["CA:South Pasadena"]
+    output_filename: amlegal_southpasadena_ca.jsonl
+
+  - source_id: sanfernando_ca   # verify
+    code_name: "San Fernando Municipal Code"
+    code_short: SANFERNANDO-MC
+    version: "2024"
+    jurisdictions: ["CA:San Fernando"]
+    output_filename: amlegal_sanfernando_ca.jsonl
+
+  - source_id: santaclarita_ca   # verify
+    code_name: "Santa Clarita Municipal Code"
+    code_short: SANTACLARITA-MC
+    version: "2024"
+    jurisdictions: ["CA:Santa Clarita"]
+    output_filename: amlegal_santaclarita_ca.jsonl
+
+  - source_id: lancaster_ca   # verify
+    code_name: "Lancaster Municipal Code"
+    code_short: LANCASTER-MC
+    version: "2024"
+    jurisdictions: ["CA:Lancaster"]
+    output_filename: amlegal_lancaster_ca.jsonl
+
+  - source_id: palmdale_ca   # verify
+    code_name: "Palmdale Municipal Code"
+    code_short: PALMDALE-MC
+    version: "2024"
+    jurisdictions: ["CA:Palmdale"]
+    output_filename: amlegal_palmdale_ca.jsonl
+
+# ─────────────────────────────────────────────────────────────────────────
+# Municode  (library.municode.com)
+# ─────────────────────────────────────────────────────────────────────────
 municode:
   - source_id: losangeles_ca
-    code_name: "Los Angeles Municipal Code"
+    code_name: "Los Angeles Municipal Code (LAMC)"
     code_short: LAMC
     version: "2024"
     jurisdictions: ["CA:Los Angeles"]
     output_filename: municode_losangeles_ca.jsonl
 
+  - source_id: losangelescounty_ca
+    code_name: "Los Angeles County Code"
+    code_short: LACOUNTY-MC
+    version: "2024"
+    jurisdictions: ["CA:Los Angeles County", "CA:LA County Unincorporated"]
+    output_filename: municode_losangelescounty_ca.jsonl
+
+  - source_id: malibu_ca   # verify
+    code_name: "Malibu Municipal Code"
+    code_short: MALIBU-MC
+    version: "2024"
+    jurisdictions: ["CA:Malibu"]
+    output_filename: municode_malibu_ca.jsonl
+
+  - source_id: calabasas_ca   # verify
+    code_name: "Calabasas Municipal Code"
+    code_short: CALABASAS-MC
+    version: "2024"
+    jurisdictions: ["CA:Calabasas"]
+    output_filename: municode_calabasas_ca.jsonl
+
+  - source_id: agourahills_ca   # verify
+    code_name: "Agoura Hills Municipal Code"
+    code_short: AGOURAHILLS-MC
+    version: "2024"
+    jurisdictions: ["CA:Agoura Hills"]
+    output_filename: municode_agourahills_ca.jsonl
+
+  - source_id: westlakevillage_ca   # verify
+    code_name: "Westlake Village Municipal Code"
+    code_short: WESTLAKEVIL-MC
+    version: "2024"
+    jurisdictions: ["CA:Westlake Village"]
+    output_filename: municode_westlakevillage_ca.jsonl
+
+  - source_id: hiddenhills_ca   # verify
+    code_name: "Hidden Hills Municipal Code"
+    code_short: HIDDENHILLS-MC
+    version: "2024"
+    jurisdictions: ["CA:Hidden Hills"]
+    output_filename: municode_hiddenhills_ca.jsonl
+
+  - source_id: carson_ca   # verify
+    code_name: "Carson Municipal Code"
+    code_short: CARSON-MC
+    version: "2024"
+    jurisdictions: ["CA:Carson"]
+    output_filename: municode_carson_ca.jsonl
+
+  - source_id: cerritos_ca   # verify
+    code_name: "Cerritos Municipal Code"
+    code_short: CERRITOS-MC
+    version: "2024"
+    jurisdictions: ["CA:Cerritos"]
+    output_filename: municode_cerritos_ca.jsonl
+
+  - source_id: lakewood_ca   # verify
+    code_name: "Lakewood Municipal Code"
+    code_short: LAKEWOOD-MC
+    version: "2024"
+    jurisdictions: ["CA:Lakewood"]
+    output_filename: municode_lakewood_ca.jsonl
+
+  - source_id: bellflower_ca   # verify
+    code_name: "Bellflower Municipal Code"
+    code_short: BELLFLOWER-MC
+    version: "2024"
+    jurisdictions: ["CA:Bellflower"]
+    output_filename: municode_bellflower_ca.jsonl
+
+  - source_id: paramount_ca   # verify
+    code_name: "Paramount Municipal Code"
+    code_short: PARAMOUNT-MC
+    version: "2024"
+    jurisdictions: ["CA:Paramount"]
+    output_filename: municode_paramount_ca.jsonl
+
+  - source_id: downey_ca   # verify
+    code_name: "Downey Municipal Code"
+    code_short: DOWNEY-MC
+    version: "2024"
+    jurisdictions: ["CA:Downey"]
+    output_filename: municode_downey_ca.jsonl
+
+  - source_id: southgate_ca   # verify
+    code_name: "South Gate Municipal Code"
+    code_short: SOUTHGATE-MC
+    version: "2024"
+    jurisdictions: ["CA:South Gate"]
+    output_filename: municode_southgate_ca.jsonl
+
+  - source_id: lynwood_ca   # verify
+    code_name: "Lynwood Municipal Code"
+    code_short: LYNWOOD-MC
+    version: "2024"
+    jurisdictions: ["CA:Lynwood"]
+    output_filename: municode_lynwood_ca.jsonl
+
+  - source_id: norwalk_ca   # verify
+    code_name: "Norwalk Municipal Code"
+    code_short: NORWALK-MC
+    version: "2024"
+    jurisdictions: ["CA:Norwalk"]
+    output_filename: municode_norwalk_ca.jsonl
+
+  - source_id: lamirada_ca   # verify
+    code_name: "La Mirada Municipal Code"
+    code_short: LAMIRADA-MC
+    version: "2024"
+    jurisdictions: ["CA:La Mirada"]
+    output_filename: municode_lamirada_ca.jsonl
+
+  - source_id: whittier_ca   # verify
+    code_name: "Whittier Municipal Code"
+    code_short: WHITTIER-MC
+    version: "2024"
+    jurisdictions: ["CA:Whittier"]
+    output_filename: municode_whittier_ca.jsonl
+
+  - source_id: picorivera_ca   # verify
+    code_name: "Pico Rivera Municipal Code"
+    code_short: PICORIVERA-MC
+    version: "2024"
+    jurisdictions: ["CA:Pico Rivera"]
+    output_filename: municode_picorivera_ca.jsonl
+
+  - source_id: montebello_ca   # verify
+    code_name: "Montebello Municipal Code"
+    code_short: MONTEBELLO-MC
+    version: "2024"
+    jurisdictions: ["CA:Montebello"]
+    output_filename: municode_montebello_ca.jsonl
+
+  - source_id: commerce_ca   # verify
+    code_name: "Commerce Municipal Code"
+    code_short: COMMERCE-MC
+    version: "2024"
+    jurisdictions: ["CA:Commerce"]
+    output_filename: municode_commerce_ca.jsonl
+
+  - source_id: santafesprings_ca   # verify
+    code_name: "Santa Fe Springs Municipal Code"
+    code_short: SFSPRINGS-MC
+    version: "2024"
+    jurisdictions: ["CA:Santa Fe Springs"]
+    output_filename: municode_santafesprings_ca.jsonl
+
+  - source_id: bell_ca   # verify
+    code_name: "Bell Municipal Code"
+    code_short: BELL-MC
+    version: "2024"
+    jurisdictions: ["CA:Bell"]
+    output_filename: municode_bell_ca.jsonl
+
+  - source_id: bellgardens_ca   # verify
+    code_name: "Bell Gardens Municipal Code"
+    code_short: BELLGARDENS-MC
+    version: "2024"
+    jurisdictions: ["CA:Bell Gardens"]
+    output_filename: municode_bellgardens_ca.jsonl
+
+  - source_id: maywood_ca   # verify
+    code_name: "Maywood Municipal Code"
+    code_short: MAYWOOD-MC
+    version: "2024"
+    jurisdictions: ["CA:Maywood"]
+    output_filename: municode_maywood_ca.jsonl
+
+  - source_id: cudahy_ca   # verify
+    code_name: "Cudahy Municipal Code"
+    code_short: CUDAHY-MC
+    version: "2024"
+    jurisdictions: ["CA:Cudahy"]
+    output_filename: municode_cudahy_ca.jsonl
+
+  - source_id: huntingtonpark_ca   # verify
+    code_name: "Huntington Park Municipal Code"
+    code_short: HUNTINGTONPK-MC
+    version: "2024"
+    jurisdictions: ["CA:Huntington Park"]
+    output_filename: municode_huntingtonpark_ca.jsonl
+
+  - source_id: vernon_ca   # verify
+    code_name: "Vernon Municipal Code"
+    code_short: VERNON-MC
+    version: "2024"
+    jurisdictions: ["CA:Vernon"]
+    output_filename: municode_vernon_ca.jsonl
+
+  - source_id: gardena_ca   # verify
+    code_name: "Gardena Municipal Code"
+    code_short: GARDENA-MC
+    version: "2024"
+    jurisdictions: ["CA:Gardena"]
+    output_filename: municode_gardena_ca.jsonl
+
+  - source_id: lawndale_ca   # verify
+    code_name: "Lawndale Municipal Code"
+    code_short: LAWNDALE-MC
+    version: "2024"
+    jurisdictions: ["CA:Lawndale"]
+    output_filename: municode_lawndale_ca.jsonl
+
+  - source_id: hawthorne_ca   # verify
+    code_name: "Hawthorne Municipal Code"
+    code_short: HAWTHORNE-MC
+    version: "2024"
+    jurisdictions: ["CA:Hawthorne"]
+    output_filename: municode_hawthorne_ca.jsonl
+
+  - source_id: elmonte_ca   # verify
+    code_name: "El Monte Municipal Code"
+    code_short: ELMONTE-MC
+    version: "2024"
+    jurisdictions: ["CA:El Monte"]
+    output_filename: municode_elmonte_ca.jsonl
+
+  - source_id: southelmonte_ca   # verify
+    code_name: "South El Monte Municipal Code"
+    code_short: SELMONTE-MC
+    version: "2024"
+    jurisdictions: ["CA:South El Monte"]
+    output_filename: municode_southelmonte_ca.jsonl
+
+  - source_id: baldwinpark_ca   # verify
+    code_name: "Baldwin Park Municipal Code"
+    code_short: BALDWINPK-MC
+    version: "2024"
+    jurisdictions: ["CA:Baldwin Park"]
+    output_filename: municode_baldwinpark_ca.jsonl
+
+  - source_id: irwindale_ca   # verify
+    code_name: "Irwindale Municipal Code"
+    code_short: IRWINDALE-MC
+    version: "2024"
+    jurisdictions: ["CA:Irwindale"]
+    output_filename: municode_irwindale_ca.jsonl
+
+  - source_id: azusa_ca   # verify
+    code_name: "Azusa Municipal Code"
+    code_short: AZUSA-MC
+    version: "2024"
+    jurisdictions: ["CA:Azusa"]
+    output_filename: municode_azusa_ca.jsonl
+
+  - source_id: duarte_ca   # verify
+    code_name: "Duarte Municipal Code"
+    code_short: DUARTE-MC
+    version: "2024"
+    jurisdictions: ["CA:Duarte"]
+    output_filename: municode_duarte_ca.jsonl
+
+  - source_id: bradbury_ca   # verify
+    code_name: "Bradbury Municipal Code"
+    code_short: BRADBURY-MC
+    version: "2024"
+    jurisdictions: ["CA:Bradbury"]
+    output_filename: municode_bradbury_ca.jsonl
+
+  - source_id: laverne_ca   # verify
+    code_name: "La Verne Municipal Code"
+    code_short: LAVERNE-MC
+    version: "2024"
+    jurisdictions: ["CA:La Verne"]
+    output_filename: municode_laverne_ca.jsonl
+
+  - source_id: sandimas_ca   # verify
+    code_name: "San Dimas Municipal Code"
+    code_short: SANDIMAS-MC
+    version: "2024"
+    jurisdictions: ["CA:San Dimas"]
+    output_filename: municode_sandimas_ca.jsonl
+
+  - source_id: diamondbar_ca   # verify
+    code_name: "Diamond Bar Municipal Code"
+    code_short: DIAMONDBAR-MC
+    version: "2024"
+    jurisdictions: ["CA:Diamond Bar"]
+    output_filename: municode_diamondbar_ca.jsonl
+
+  - source_id: walnut_ca   # verify
+    code_name: "Walnut Municipal Code"
+    code_short: WALNUT-MC
+    version: "2024"
+    jurisdictions: ["CA:Walnut"]
+    output_filename: municode_walnut_ca.jsonl
+
+  - source_id: industry_ca   # verify
+    code_name: "City of Industry Municipal Code"
+    code_short: INDUSTRY-MC
+    version: "2024"
+    jurisdictions: ["CA:Industry"]
+    output_filename: municode_industry_ca.jsonl
+
+  - source_id: lapuente_ca   # verify
+    code_name: "La Puente Municipal Code"
+    code_short: LAPUENTE-MC
+    version: "2024"
+    jurisdictions: ["CA:La Puente"]
+    output_filename: municode_lapuente_ca.jsonl
+
+  - source_id: hawaiiangardens_ca   # verify
+    code_name: "Hawaiian Gardens Municipal Code"
+    code_short: HAWGARDENS-MC
+    version: "2024"
+    jurisdictions: ["CA:Hawaiian Gardens"]
+    output_filename: municode_hawaiiangardens_ca.jsonl
+
+  - source_id: artesia_ca   # verify
+    code_name: "Artesia Municipal Code"
+    code_short: ARTESIA-MC
+    version: "2024"
+    jurisdictions: ["CA:Artesia"]
+    output_filename: municode_artesia_ca.jsonl
+
+  - source_id: signalhill_ca   # verify
+    code_name: "Signal Hill Municipal Code"
+    code_short: SIGNALHILL-MC
+    version: "2024"
+    jurisdictions: ["CA:Signal Hill"]
+    output_filename: municode_signalhill_ca.jsonl
+
+  - source_id: avalon_ca   # verify  (Catalina Island)
+    code_name: "Avalon Municipal Code"
+    code_short: AVALON-MC
+    version: "2024"
+    jurisdictions: ["CA:Avalon"]
+    output_filename: municode_avalon_ca.jsonl
+
+# Other CA cities (non-LA) covered by municode — kept for completeness.
   - source_id: sandiego_ca
     code_name: "San Diego Municipal Code"
     code_short: SDMC
@@ -121,3 +596,98 @@ municode:
     version: "2024"
     jurisdictions: ["CA:San Francisco"]
     output_filename: municode_sanfrancisco_ca.jsonl
+
+# ─────────────────────────────────────────────────────────────────────────
+# Quality Code Publishing  (qcode.us)
+# Typically used by the South Bay / Peninsula beach cities.
+# ─────────────────────────────────────────────────────────────────────────
+qcode:
+  - source_id: hermosabeach   # verify
+    code_name: "Hermosa Beach Municipal Code"
+    code_short: HERMOSA-MC
+    version: "2024"
+    jurisdictions: ["CA:Hermosa Beach"]
+    output_filename: qcode_hermosabeach_ca.jsonl
+
+  - source_id: manhattanbeach   # verify
+    code_name: "Manhattan Beach Municipal Code"
+    code_short: MANHATTAN-MC
+    version: "2024"
+    jurisdictions: ["CA:Manhattan Beach"]
+    output_filename: qcode_manhattanbeach_ca.jsonl
+
+  - source_id: redondobeach   # verify
+    code_name: "Redondo Beach Municipal Code"
+    code_short: REDONDO-MC
+    version: "2024"
+    jurisdictions: ["CA:Redondo Beach"]
+    output_filename: qcode_redondobeach_ca.jsonl
+
+  - source_id: elsegundo   # verify
+    code_name: "El Segundo Municipal Code"
+    code_short: ELSEGUNDO-MC
+    version: "2024"
+    jurisdictions: ["CA:El Segundo"]
+    output_filename: qcode_elsegundo_ca.jsonl
+
+  - source_id: palosverdesestates   # verify
+    code_name: "Palos Verdes Estates Municipal Code"
+    code_short: PVE-MC
+    version: "2024"
+    jurisdictions: ["CA:Palos Verdes Estates"]
+    output_filename: qcode_palosverdesestates_ca.jsonl
+
+  - source_id: ranchopalosverdes   # verify
+    code_name: "Rancho Palos Verdes Municipal Code"
+    code_short: RPV-MC
+    version: "2024"
+    jurisdictions: ["CA:Rancho Palos Verdes"]
+    output_filename: qcode_ranchopalosverdes_ca.jsonl
+
+  - source_id: rollinghills   # verify
+    code_name: "Rolling Hills Municipal Code"
+    code_short: ROLLINGHILLS-MC
+    version: "2024"
+    jurisdictions: ["CA:Rolling Hills"]
+    output_filename: qcode_rollinghills_ca.jsonl
+
+  - source_id: rollinghillsestates   # verify
+    code_name: "Rolling Hills Estates Municipal Code"
+    code_short: RHE-MC
+    version: "2024"
+    jurisdictions: ["CA:Rolling Hills Estates"]
+    output_filename: qcode_rollinghillsestates_ca.jsonl
+
+  - source_id: lomita   # verify
+    code_name: "Lomita Municipal Code"
+    code_short: LOMITA-MC
+    version: "2024"
+    jurisdictions: ["CA:Lomita"]
+    output_filename: qcode_lomita_ca.jsonl
+
+  - source_id: sanmarino   # verify
+    code_name: "San Marino Municipal Code"
+    code_short: SANMARINO-MC
+    version: "2024"
+    jurisdictions: ["CA:San Marino"]
+    output_filename: qcode_sanmarino_ca.jsonl
+
+  - source_id: labrahabraheights   # verify
+    code_name: "La Habra Heights Municipal Code"
+    code_short: LHH-MC
+    version: "2024"
+    jurisdictions: ["CA:La Habra Heights"]
+    output_filename: qcode_lahabrabhts_ca.jsonl
+
+# ─────────────────────────────────────────────────────────────────────────
+# General Code  (ecode360.com)
+# Less common in California; placeholder for the few LA-area cities that
+# use it. Verify before running.
+# ─────────────────────────────────────────────────────────────────────────
+ecode360:
+  - source_id: placeholder_ecode_la   # verify
+    code_name: "(LA-area ecode360 jurisdiction — verify and rename)"
+    code_short: ECODE-PLACEHOLDER
+    version: "2024"
+    jurisdictions: []
+    output_filename: ecode360_placeholder.jsonl
