@@ -14,7 +14,7 @@ import { ArrowUpRight } from "lucide-react";
 // R3F touches `window` and `WebGLRenderingContext` — disable SSR.
 const BuildingScene = dynamic(() => import("./BuildingScene"), {
   ssr: false,
-  loading: () => <div style={{ position: "absolute", inset: 0, background: "#F2EAD7" }} />,
+  loading: () => <div style={{ position: "absolute", inset: 0, background: "#FFFFFF" }} />,
 });
 
 const TRUSTED_BY = ["SKANSKA", "AECOM", "PROCORE", "AUTODESK", "GENSLER", "JACOBS"];
@@ -29,9 +29,10 @@ export default function ScrollBuildingHero() {
   });
 
   // Overlay opacity curves — keep them in sync with BuildingScene's phase ranges.
-  const headerOpacity   = useTransform(scrollYProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
-  const taglineOpacity  = useTransform(scrollYProgress, [0.70, 0.85],       [0, 1]);
-  const taglineY        = useTransform(scrollYProgress, [0.70, 0.85],       [16, 0]);
+  // The tagline stays anchored above the scene the entire scroll — it's the
+  // narrative spine — so no time-based fade. Only the small wordmark and the
+  // trusted-by row fade in/out by phase.
+  const wordmarkOpacity = useTransform(scrollYProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
   const trustedOpacity  = useTransform(scrollYProgress, [0.86, 0.97],       [0, 1]);
   const trustedY        = useTransform(scrollYProgress, [0.86, 0.97],       [12, 0]);
 
@@ -41,43 +42,41 @@ export default function ScrollBuildingHero() {
       // 350vh of scroll runway — three viewport-heights to play through the
       // full extrusion sequence without feeling rushed or interminable.
       className="relative w-full"
-      style={{ height: "350vh", background: "#F2EAD7" }}
+      style={{ height: "350vh", background: "#FFFFFF" }}
       aria-label="Up2Code: from blueprint to building"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* 3D scene fills the viewport */}
         <BuildingScene progress={scrollYProgress} />
 
-        {/* Up2Code wordmark — visible during the parchment/blueprint phase */}
+        {/* Up2Code wordmark — small mark, visible during the parchment phase */}
         <motion.div
-          style={{ opacity: headerOpacity }}
-          className="pointer-events-none absolute top-8 left-0 right-0 flex justify-center"
+          style={{ opacity: wordmarkOpacity }}
+          className="pointer-events-none absolute top-6 left-0 right-0 flex justify-center"
         >
           <div className="flex items-center gap-1.5">
             <span
-              className="text-[28px] font-semibold tracking-[-0.02em]"
+              className="text-[22px] font-semibold tracking-[-0.02em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
-              up2code
+              Up2Code
             </span>
             <ArrowUpRight
-              className="w-4 h-4"
+              className="w-3.5 h-3.5"
               strokeWidth={2.5}
               style={{ color: "#0B1220" }}
             />
           </div>
         </motion.div>
 
-        {/* Tagline — fades in once the building has solidified. Sits at 42%
-            vertical so it lands in the upper third of the building silhouette
-            instead of crashing into the green roofs. */}
-        <motion.div
-          style={{ opacity: taglineOpacity, y: taglineY }}
-          className="pointer-events-none absolute inset-0 px-6"
-        >
-          <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 max-w-3xl w-full text-center">
+        {/* Tagline — pinned high above the scene throughout the scroll. It's
+            the narrative spine: visible while the plan is on screen, while it
+            extrudes, and while the city rises around the finished building.
+            Anchored to the top so it never collides with the 3D composition. */}
+        <div className="pointer-events-none absolute top-16 sm:top-20 left-0 right-0 px-6">
+          <div className="max-w-3xl mx-auto text-center">
             <h2
-              className="text-[28px] sm:text-[40px] lg:text-[52px] font-light leading-[1.1] tracking-[-0.02em]"
+              className="text-[22px] sm:text-[30px] lg:text-[38px] font-light leading-[1.15] tracking-[-0.02em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
               The single platform for modern planning,
@@ -85,7 +84,7 @@ export default function ScrollBuildingHero() {
               <span style={{ fontWeight: 600 }}>Up2Code</span>.
             </h2>
           </div>
-        </motion.div>
+        </div>
 
         {/* Trusted by — anchored to bottom */}
         <motion.div
@@ -113,9 +112,9 @@ export default function ScrollBuildingHero() {
           </div>
         </motion.div>
 
-        {/* Scroll cue — tiny chevron at first frame, fades with header */}
+        {/* Scroll cue — tiny chevron at first frame, fades with wordmark */}
         <motion.div
-          style={{ opacity: headerOpacity }}
+          style={{ opacity: wordmarkOpacity }}
           className="pointer-events-none absolute bottom-10 left-0 right-0 flex justify-center"
         >
           <div className="flex flex-col items-center gap-2">

@@ -5,7 +5,7 @@ import {
   AnimatePresence,
   useReducedMotion,
 } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 const SCENE_MS = 5200;
@@ -24,15 +24,41 @@ export default function AutoplayReel() {
   const reduce = useReducedMotion();
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  // The reel auto-advances only after it has scrolled into view. Before that,
+  // it stays parked on chapter 0 so a visitor arriving at the top of the page
+  // doesn't burn through the entire narrative before they ever see it.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
 
   useEffect(() => {
-    if (reduce || paused) return;
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setInView(true);
+            obs.disconnect(); // one-shot — once started, keep cycling
+            return;
+          }
+        }
+      },
+      // Fire when ~25% of the reel is on screen — enough to read the heading.
+      { threshold: 0.25 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (reduce || paused || !inView) return;
     const t = setTimeout(() => setIdx(i => (i + 1) % CHAPTERS.length), SCENE_MS);
     return () => clearTimeout(t);
-  }, [idx, paused, reduce]);
+  }, [idx, paused, reduce, inView]);
 
   return (
     <section
+      ref={sectionRef}
       className="relative px-6 py-20 lg:py-28 overflow-hidden"
       style={{ background: "var(--bg)" }}
     >
@@ -84,7 +110,7 @@ export default function AutoplayReel() {
                       className="relative w-8 h-px shrink-0 overflow-hidden"
                       style={{ background: "var(--border-bright)" }}
                     >
-                      {active && !reduce && !paused && (
+                      {active && inView && !reduce && !paused && (
                         <motion.div
                           key={`prog-${i}-${idx}`}
                           initial={{ scaleX: 0 }}
@@ -94,7 +120,7 @@ export default function AutoplayReel() {
                           style={{ background: "var(--accent-bright)" }}
                         />
                       )}
-                      {active && (reduce || paused) && (
+                      {active && (reduce || paused || !inView) && (
                         <div
                           className="absolute inset-0"
                           style={{ background: "var(--accent-bright)" }}
@@ -268,10 +294,10 @@ function ScenePain() {
             className="text-[56px] md:text-[68px] font-bold tracking-tight leading-none"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            58 days.
+            438 days.
           </div>
           <div className="mt-3 text-[13px]" style={{ color: "var(--text-secondary)" }}>
-            Still not approved.
+            Across 5 submittal attempts.
           </div>
         </motion.div>
       </div>

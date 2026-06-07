@@ -28,19 +28,39 @@ const smoothstep = (e0: number, e1: number, x: number) => {
 };
 
 // ────────────────── Building footprint (single source of truth) ───────────────
-// Each block is a stacked Box. World units are meters (informally).
+// A multi-use mixed-tower highrise: a wide podium, a main residential tower with
+// a stepped setback at mid-height, a secondary office tower, and a mechanical
+// crown. Each block is a stacked Box. World units are meters (informally).
 type Block = {
   x: number; z: number;
   w: number; d: number; h: number;
   greenRoof?: boolean;
+  // Optional vertical offset (in world units) — used to stack blocks above
+  // the podium without re-baselining them to ground level.
+  baseY?: number;
+  // Tint override so the tower body and crown can read differently.
+  color?: string;
 };
 const BLOCKS: Block[] = [
-  { x:  0,   z:  0,   w: 4,   d: 3,   h: 5.0 },                  // main tower
-  { x: -3,   z:  0,   w: 2.5, d: 3,   h: 3.0, greenRoof: true }, // side wing
-  { x:  2.5, z:  0.5, w: 2,   d: 2.5, h: 2.2, greenRoof: true }, // annex
+  // Podium (mixed-use retail + lobby base — wide footprint, low height)
+  { x:  0,   z:  0,   w: 9,   d: 6.5, h: 2.5, greenRoof: true                                          },
+  // Main residential tower — sits on the podium, runs tall
+  { x: -1.2, z:  0,   w: 4.6, d: 4.2, h: 13.5, baseY: 2.5, color: "#E8F1FF"                            },
+  // Setback at mid-height (visual interest, smaller floorplate above)
+  { x: -1.2, z:  0,   w: 3.6, d: 3.4, h: 4.5,  baseY: 16.0, color: "#DAE8FA"                           },
+  // Mechanical crown / penthouse cap
+  { x: -1.2, z:  0,   w: 2.8, d: 2.6, h: 1.6,  baseY: 20.5, color: "#C9D8EE", greenRoof: true          },
+  // Secondary office tower (shorter, offset to one side of the podium)
+  { x:  3.0, z:  0.6, w: 2.8, d: 3.2, h: 9.5,  baseY: 2.5, color: "#E1ECFB"                            },
+  // Cap on secondary tower
+  { x:  3.0, z:  0.6, w: 2.0, d: 2.4, h: 1.2,  baseY: 12.0, color: "#C9D8EE", greenRoof: true          },
 ];
 
 // ────────────────── Blueprint texture (procedural canvas) ────────────────────
+
+// Returns only the ground-level (baseY undefined or 0) blocks — the ones that
+// appear in plan view and originate beams from the ground footprint.
+const GROUND_BLOCKS = BLOCKS.filter((b) => !b.baseY);
 
 function createBlueprintTexture(): THREE.CanvasTexture {
   const W = 1024, H = 768;
@@ -48,35 +68,27 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Parchment fill
-  ctx.fillStyle = "#F2EAD7";
+  // Sheet — pure white, no vignette
+  ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle warm vignette
-  const grad = ctx.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 700);
-  grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(1, "rgba(120, 90, 40, 0.10)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-
-  // Double border
-  ctx.strokeStyle = "#1B3A8C";
+  // Double border — solid black
+  ctx.strokeStyle = "#000000";
   ctx.lineWidth = 2;
   ctx.strokeRect(40, 40, W - 80, H - 80);
   ctx.lineWidth = 1;
   ctx.strokeRect(52, 52, W - 104, H - 104);
 
-  // Title block
-  ctx.fillStyle = "#1B3A8C";
-  ctx.font = 'bold 26px "Inter", system-ui, sans-serif';
+  // Title block — black
+  ctx.fillStyle = "#000000";
+  ctx.font = 'bold 24px "Inter", system-ui, sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText("MULTI-USE MODERN BUILDING", W / 2, 96);
-  ctx.font = '12px "DM Mono", monospace';
-  ctx.fillStyle = "#2F5BFF";
-  ctx.fillText("SHEET: PLAN-1   ·   SCALE 1:100   ·   UP2CODE PLAN REVIEW", W / 2, 116);
+  ctx.fillText("MIXED-USE HIGHRISE — TYPICAL FLOOR PLAN", W / 2, 92);
+  ctx.font = '11px "DM Mono", monospace';
+  ctx.fillText("SHEET: A2.01   ·   SCALE 1:200   ·   23-STORY TOWER   ·   UP2CODE PLAN REVIEW", W / 2, 112);
 
-  // Subtle grid
-  ctx.strokeStyle = "rgba(47, 91, 255, 0.10)";
+  // Subtle grid — light grey
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
   ctx.lineWidth = 0.5;
   for (let x = 64; x < W - 64; x += 32) {
     ctx.beginPath(); ctx.moveTo(x, 140); ctx.lineTo(x, H - 60); ctx.stroke();
@@ -85,52 +97,81 @@ function createBlueprintTexture(): THREE.CanvasTexture {
     ctx.beginPath(); ctx.moveTo(64, y); ctx.lineTo(W - 64, y); ctx.stroke();
   }
 
-  // World → canvas mapping. Plane is 8u × 6u, centered. Scale = 128 px/u.
-  const SC = 128;
+  // World → canvas mapping. Plane is 14u × 10u, centered. Scale = 64 px/u so
+  // the larger highrise footprint still fits inside the parchment.
+  const SC = 64;
   const CX = W / 2, CY = H / 2;
   const wx = (x: number) => CX + x * SC;
   const wz = (z: number) => CY + z * SC;
 
-  // Heavy block outlines
-  ctx.strokeStyle = "#1B3A8C";
+  // ── Heavy outer outlines for every ground-level block (podium edge + the
+  //    tower core footprints projected onto the plan). Black ink.
+  ctx.strokeStyle = "#000000";
   ctx.lineWidth = 2.5;
-  BLOCKS.forEach(b => {
+  GROUND_BLOCKS.forEach(b => {
     ctx.strokeRect(wx(b.x - b.w / 2), wz(b.z - b.d / 2), b.w * SC, b.d * SC);
   });
 
-  // Interior grid lines (rooms, corridor)
-  ctx.strokeStyle = "rgba(47, 91, 255, 0.55)";
+  // Tower-core footprints (dashed) — show the columns rising above
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.lineWidth = 1.2;
+  // Main residential tower outline (x:-1.2, w:4.6, d:4.2)
+  ctx.strokeRect(wx(-1.2 - 2.3), wz(-2.1), 4.6 * SC, 4.2 * SC);
+  // Secondary office tower outline (x:3.0, z:0.6, w:2.8, d:3.2)
+  ctx.strokeRect(wx(3.0 - 1.4), wz(0.6 - 1.6), 2.8 * SC, 3.2 * SC);
+  ctx.restore();
+
+  // ── Interior partitions / corridor / structural columns ─────────────────
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  // Main tower partitions
-  ctx.moveTo(wx(-2), wz(-1.5)); ctx.lineTo(wx(-2), wz(1.5));
-  ctx.moveTo(wx( 0), wz(-1.5)); ctx.lineTo(wx( 0), wz(1.5));
-  ctx.moveTo(wx( 2), wz(-1.5)); ctx.lineTo(wx( 2), wz(1.5));
-  // Corridor running through wing+tower
-  ctx.moveTo(wx(-4.25), wz(0)); ctx.lineTo(wx(2.0), wz(0));
+  // Main tower — unit partitions (4 quadrants + central core)
+  ctx.moveTo(wx(-1.2), wz(-2.1)); ctx.lineTo(wx(-1.2), wz(2.1));
+  ctx.moveTo(wx(-3.5), wz(0));    ctx.lineTo(wx(1.1),  wz(0));
+  // Elevator + stair core (inner box in main tower)
+  ctx.strokeRect(wx(-1.9), wz(-0.65), 1.4 * SC, 1.3 * SC);
+  // Secondary tower partitions
+  ctx.moveTo(wx(3.0), wz(-1.0)); ctx.lineTo(wx(3.0), wz(2.2));
+  ctx.moveTo(wx(1.6), wz(0.6));  ctx.lineTo(wx(4.4), wz(0.6));
+  // Podium corridor / lobby spine running between the towers
+  ctx.moveTo(wx(-4.5), wz(2.6)); ctx.lineTo(wx(4.5), wz(2.6));
+  ctx.moveTo(wx(-4.5), wz(-2.6)); ctx.lineTo(wx(4.5), wz(-2.6));
   ctx.stroke();
 
-  // Dimension line — top
-  ctx.strokeStyle = "#1B3A8C";
+  // Column grid (filled dots on a regular pitch) — black
+  ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+  for (let cx = -4; cx <= 4; cx += 2) {
+    for (let cz = -3; cz <= 3; cz += 2) {
+      ctx.beginPath();
+      ctx.arc(wx(cx), wz(cz), 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ── Dimension line — top ─────────────────────────────────────────────
+  ctx.strokeStyle = "#000000";
   ctx.lineWidth = 1;
   ctx.font = '11px "DM Mono", monospace';
-  ctx.fillStyle = "#1B3A8C";
-  const dyTop = 200;
+  ctx.fillStyle = "#000000";
+  const dyTop = 180;
   ctx.beginPath();
-  ctx.moveTo(wx(-4.25), dyTop); ctx.lineTo(wx(3.75), dyTop);
-  [-4.25, -1.75, 2.0, 3.75].forEach(x => {
+  ctx.moveTo(wx(-4.5), dyTop); ctx.lineTo(wx(4.5), dyTop);
+  [-4.5, -1.2, 1.6, 4.5].forEach(x => {
     ctx.moveTo(wx(x), dyTop - 5); ctx.lineTo(wx(x), dyTop + 5);
   });
   ctx.stroke();
-  ctx.fillText('32\'-0"', wx(-3),    dyTop - 8);
-  ctx.fillText('48\'-0"', wx( 0.125), dyTop - 8);
-  ctx.fillText('22\'-6"', wx( 2.875), dyTop - 8);
+  ctx.textAlign = "center";
+  ctx.fillText('66\'-0"',  wx(-2.85), dyTop - 8);
+  ctx.fillText('56\'-0"',  wx( 0.2),  dyTop - 8);
+  ctx.fillText('58\'-0"',  wx( 3.05), dyTop - 8);
 
   // Dimension line — left
-  const dxLeft = 200;
+  const dxLeft = 180;
   ctx.beginPath();
-  ctx.moveTo(dxLeft, wz(-1.75)); ctx.lineTo(dxLeft, wz(1.75));
-  [-1.75, 0, 1.75].forEach(z => {
+  ctx.moveTo(dxLeft, wz(-3.25)); ctx.lineTo(dxLeft, wz(3.25));
+  [-3.25, 0, 3.25].forEach(z => {
     ctx.moveTo(dxLeft - 5, wz(z)); ctx.lineTo(dxLeft + 5, wz(z));
   });
   ctx.stroke();
@@ -138,35 +179,40 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.translate(dxLeft - 16, wz(0));
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = "center";
-  ctx.fillText('36\'-0"', 0, 0);
+  ctx.fillText('130\'-0"', 0, 0);
   ctx.restore();
 
-  // Room labels
-  ctx.fillStyle = "rgba(27, 58, 140, 0.7)";
+  // ── Room labels ─────────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
   ctx.font = '10px "DM Mono", monospace';
   ctx.textAlign = "center";
-  ctx.fillText("OFFICE TOWER", wx(0),    wz(-0.7));
-  ctx.fillText("LOBBY",        wx(0),    wz( 0.7));
-  ctx.fillText("WING",         wx(-3),   wz( 0));
-  ctx.fillText("ANNEX",        wx( 2.5), wz( 0.5));
+  ctx.fillText("RESIDENTIAL TOWER CORE", wx(-1.2), wz(-1.4));
+  ctx.fillText("CORE / EGRESS",          wx(-1.2), wz( 0.05));
+  ctx.fillText("AMENITY",                wx(-1.2), wz( 1.4));
+  ctx.fillText("OFFICE TOWER",           wx( 3.0), wz(-0.4));
+  ctx.fillText("OFFICE FLOOR",           wx( 3.0), wz( 1.4));
+  ctx.font = '9px "DM Mono", monospace';
+  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.fillText("PODIUM — RETAIL / LOBBY / PARKING",  wx(0), wz(-2.95));
+  ctx.fillText("LOADING & SERVICE CORRIDOR",         wx(0), wz( 2.95));
 
   // North arrow (bottom right)
   ctx.save();
   ctx.translate(W - 110, H - 110);
-  ctx.strokeStyle = "#1B3A8C";
+  ctx.strokeStyle = "#000000";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, -22); ctx.lineTo(-9, 9); ctx.lineTo(0, 3); ctx.lineTo(9, 9);
   ctx.closePath();
   ctx.stroke();
-  ctx.fillStyle = "#1B3A8C";
+  ctx.fillStyle = "#000000";
   ctx.font = 'bold 11px "DM Mono", monospace';
   ctx.textAlign = "center";
   ctx.fillText("N", 0, -28);
   ctx.restore();
 
   // Footer stamp
-  ctx.fillStyle = "rgba(27, 58, 140, 0.6)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.font = '10px "DM Mono", monospace';
   ctx.textAlign = "left";
   ctx.fillText("DRAWN: UP2CODE AI   ·   REV 01   ·   2026-06-06", 70, H - 64);
@@ -222,13 +268,30 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const blueprintRef = useRef<THREE.Mesh>(null);
   const blueprintMat = useRef<THREE.MeshStandardMaterial>(null);
 
-  // ─── Beams (one per corner per block) ───
+  // ─── Beams (one per corner per ground-level block) ───
+  // Beams shoot up from the plan footprint, so only the ground-baseline blocks
+  // produce them — and each beam runs to the total stacked height at that
+  // tower's footprint, not just to its own block's roof.
   const beamPositions = useMemo(() => {
+    // Total stack height per (x, z) tower footprint
+    const stackHeight = (b: Block) => {
+      let top = (b.baseY ?? 0) + b.h;
+      BLOCKS.forEach((other) => {
+        if (other === b) return;
+        // any block whose footprint overlaps significantly with `b`
+        const overlap =
+          Math.abs(other.x - b.x) < (b.w + other.w) / 2 - 0.1 &&
+          Math.abs(other.z - b.z) < (b.d + other.d) / 2 - 0.1;
+        if (overlap) top = Math.max(top, (other.baseY ?? 0) + other.h);
+      });
+      return top;
+    };
     const out: { x: number; z: number; h: number; key: string }[] = [];
-    BLOCKS.forEach((b, i) => {
+    GROUND_BLOCKS.forEach((b, i) => {
       const hx = b.w / 2, hz = b.d / 2;
+      const fullH = stackHeight(b);
       [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz], j) => {
-        out.push({ x: b.x + sx * hx, z: b.z + sz * hz, h: b.h, key: `${i}-${j}` });
+        out.push({ x: b.x + sx * hx, z: b.z + sz * hz, h: fullH, key: `${i}-${j}` });
       });
     });
     return out;
@@ -249,11 +312,11 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   useEffect(() => () => groundTex.dispose(), [groundTex]);
 
   // ─── Scene fog/background (animated) ───
-  // Start: bright white. End: soft sky-blue mist to match website palette.
-  const fog = useMemo(() => new THREE.Fog("#E8EEF5", 28, 55), []);
+  // Pure white → faint warm-grey mist. Keeps the whole composition black & white.
+  const fog = useMemo(() => new THREE.Fog("#F2F2F2", 28, 55), []);
   useEffect(() => {
     scene.fog = fog;
-    scene.background = new THREE.Color("#FFFFFF"); // start white, matches website
+    scene.background = new THREE.Color("#FFFFFF");
     return () => { scene.fog = null; };
   }, [scene, fog]);
 
@@ -265,22 +328,24 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
     const p = progress.get();
 
     // ─── Camera path: high-angle drafting view → 3/4 view ───
-    // Start at (0, 13, 4) — ~17° tilt from straight down. Reads as top-down
-    // but has a well-defined up-vector (no gimbal lock). End at (9, 6, 11)
-    // for the architectural 3/4 view of the finished building.
+    // Start pulled WAY back and looking at a point ahead of the plan so the
+    // sheet sits in the LOWER half of the viewport — leaves the top half for
+    // the tagline. End farther back / higher so the 22u tall highrise reads.
     const camT = smoothstep(0.05, 0.55, p);
-    camera.position.x = lerp(0,  9,  camT);
-    camera.position.y = lerp(13, 6,  camT);
-    camera.position.z = lerp(4,  11, camT);
-    camera.lookAt(0, lerp(0, 2.0, camT), 0);
+    camera.position.x = lerp(0,  15, camT);
+    camera.position.y = lerp(26, 12, camT);
+    camera.position.z = lerp(6,  18, camT);
+    // Looking at a point ahead of the plan (negative Z = toward the back of
+    // the world) shifts the sheet visually downward in the frame.
+    camera.lookAt(0, lerp(0, 8.0, camT), lerp(-3.5, 0, camT));
 
-    // ─── Background + fog crossfade (white → sky-blue mist) ───
+    // ─── Background + fog crossfade (pure white → soft warm-grey mist) ───
     const sceneT = smoothstep(0.55, 0.85, p);
     const WHITE = new THREE.Color("#FFFFFF");
-    const SKYBLUE = new THREE.Color("#E8EEF5");
-    bgColor.current.copy(WHITE).lerp(SKYBLUE, sceneT);
+    const GREY  = new THREE.Color("#F2F2F2");
+    bgColor.current.copy(WHITE).lerp(GREY, sceneT);
     if (scene.background instanceof THREE.Color) scene.background.copy(bgColor.current);
-    fogColor.current.copy(WHITE).lerp(SKYBLUE, sceneT);
+    fogColor.current.copy(WHITE).lerp(GREY, sceneT);
     fog.color.copy(fogColor.current);
     fog.near = lerp(40, 22, sceneT);
     fog.far  = lerp(90, 58, sceneT);
@@ -305,19 +370,33 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
     });
 
     // ─── Building blocks: extrude + glass-to-solid ───
-    const buildT = smoothstep(0.35, 0.68, p);
+    // Stacked blocks rise in tiers — a block at baseY=N only starts extruding
+    // once the blocks below have largely formed. This gives the highrise a
+    // real bottom-up construction feel instead of every floor materializing
+    // simultaneously.
     const solidT = smoothstep(0.68, 0.92, p);
+    // Tier boundaries based on how high each block sits. Tallest stack is ~22u.
+    const STACK_MAX = 22;
     blockRefs.current.forEach((m, i) => {
       if (!m) return;
-      const h = BLOCKS[i].h;
-      const sy = Math.max(0.0001, buildT);
+      const b = BLOCKS[i];
+      const baseY = b.baseY ?? 0;
+      // Per-tier delay: ground blocks fade in first, crown last.
+      const tierFrac = baseY / STACK_MAX;          // 0..1
+      const start = 0.35 + tierFrac * 0.30;        // ground=0.35, crown≈0.65
+      const tierT = smoothstep(start, start + 0.16, p);
+      const sy = Math.max(0.0001, tierT);
       m.scale.y = sy;
-      m.position.y = (h * sy) / 2;
+      m.position.y = baseY + (b.h * sy) / 2;
+      // Hide block entirely until its tier begins extruding — otherwise the
+      // flattened glass slab reads as a stray white panel on the blueprint.
+      m.visible = tierT > 0.001;
       const mat = blockMats.current[i];
       if (mat) {
-        // Glass: high transmission early, drops to a more solid facade later
+        // Glass: high transmission early, drops to a more solid facade later.
+        // Multiply by tierT so the block's opacity ramps with its extrusion.
         mat.transmission = lerp(0.85, 0.25, solidT);
-        mat.opacity = lerp(0.35, 0.95, solidT);
+        mat.opacity = lerp(0.35, 0.95, solidT) * tierT;
         mat.roughness = lerp(0.08, 0.22, solidT);
       }
     });
@@ -325,10 +404,15 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       if (!m) return;
       const b = BLOCKS[i];
       if (!b.greenRoof) return;
-      const sy = Math.max(0.0001, buildT);
-      m.position.y = b.h * sy + 0.06;
+      const baseY = b.baseY ?? 0;
+      const tierFrac = baseY / STACK_MAX;
+      const start = 0.35 + tierFrac * 0.30;
+      const tierT = smoothstep(start, start + 0.16, p);
+      const sy = Math.max(0.0001, tierT);
+      m.position.y = baseY + b.h * sy + 0.06;
+      m.visible = tierT > 0.001;
       const mat = m.material as THREE.MeshStandardMaterial;
-      mat.opacity = solidT;
+      mat.opacity = solidT * tierT;
       mat.transparent = true;
     });
 
@@ -411,14 +495,15 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         shadow-bias={-0.0005}
       />
 
-      {/* Blueprint plane — sits flat on the ground */}
+      {/* Blueprint plane — sits flat on the ground. Sized to frame the larger
+          highrise footprint with parchment border around it. */}
       <mesh
         ref={blueprintRef}
         rotation-x={-Math.PI / 2}
         position={[0, 0.01, 0]}
         receiveShadow
       >
-        <planeGeometry args={[8, 6]} />
+        <planeGeometry args={[14, 10]} />
         <meshStandardMaterial
           ref={blueprintMat}
           map={blueprintTex}
@@ -448,51 +533,54 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         </mesh>
       ))}
 
-      {/* Building blocks */}
-      {BLOCKS.map((b, i) => (
-        <group key={i}>
-          <mesh
-            ref={(el) => { blockRefs.current[i] = el; }}
-            position={[b.x, b.h / 2, b.z]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[b.w, b.h, b.d]} />
-            <meshPhysicalMaterial
-              ref={(el) => { blockMats.current[i] = el; }}
-              color="#E8F1FF"
-              transmission={0.85}
-              thickness={0.6}
-              roughness={0.08}
-              metalness={0.0}
-              ior={1.45}
-              transparent
-              opacity={0}
-              attenuationColor="#BFD4F2"
-              attenuationDistance={4}
-              clearcoat={1}
-              clearcoatRoughness={0.06}
-            />
-            <Edges threshold={15} color="#2F5BFF" />
-          </mesh>
-          {b.greenRoof && (
+      {/* Building blocks — stacked tiers honor baseY for podium → tower → crown */}
+      {BLOCKS.map((b, i) => {
+        const baseY = b.baseY ?? 0;
+        return (
+          <group key={i}>
             <mesh
-              ref={(el) => { roofRefs.current[i] = el; }}
-              position={[b.x, b.h + 0.06, b.z]}
+              ref={(el) => { blockRefs.current[i] = el; }}
+              position={[b.x, baseY + b.h / 2, b.z]}
               castShadow
+              receiveShadow
             >
-              <boxGeometry args={[b.w * 0.96, 0.12, b.d * 0.96]} />
-              <meshStandardMaterial
-                color="#5E7C4F"
-                roughness={0.9}
-                metalness={0}
+              <boxGeometry args={[b.w, b.h, b.d]} />
+              <meshPhysicalMaterial
+                ref={(el) => { blockMats.current[i] = el; }}
+                color={b.color ?? "#E8F1FF"}
+                transmission={0.85}
+                thickness={0.6}
+                roughness={0.08}
+                metalness={0.0}
+                ior={1.45}
                 transparent
                 opacity={0}
+                attenuationColor="#BFD4F2"
+                attenuationDistance={4}
+                clearcoat={1}
+                clearcoatRoughness={0.06}
               />
+              <Edges threshold={15} color="#2F5BFF" />
             </mesh>
-          )}
-        </group>
-      ))}
+            {b.greenRoof && (
+              <mesh
+                ref={(el) => { roofRefs.current[i] = el; }}
+                position={[b.x, baseY + b.h + 0.06, b.z]}
+                castShadow
+              >
+                <boxGeometry args={[b.w * 0.96, 0.12, b.d * 0.96]} />
+                <meshStandardMaterial
+                  color="#5E7C4F"
+                  roughness={0.9}
+                  metalness={0}
+                  transparent
+                  opacity={0}
+                />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
 
       {/* Ground — concrete plane with a tileable street grid */}
       <mesh

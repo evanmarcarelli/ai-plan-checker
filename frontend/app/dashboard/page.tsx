@@ -272,23 +272,24 @@ export default function Dashboard() {
         }}
       >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Logo — clicks back to the marketing home page */}
+          {/* Logo — matches the marketing nav exactly (blue rounded square with a
+              white "U", Up2Code wordmark in display font). Clicks back to /. */}
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-3 flex-shrink-0 rounded-lg transition-opacity hover:opacity-80"
+            className="flex items-center gap-2.5 flex-shrink-0 rounded-lg transition-opacity hover:opacity-80"
             aria-label="Go to home page"
           >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "var(--btn-primary-bg)" }}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
+              style={{ background: "var(--accent)", boxShadow: "0 2px 8px rgba(47,91,255,0.25)" }}
             >
-              <Building2 className="w-4.5 h-4.5 text-white" />
+              <span className="text-white text-[14px] font-bold leading-none tracking-tight">U</span>
             </div>
             <span
-              className="font-bold text-sm tracking-wide"
+              className="font-semibold text-[15px] tracking-[-0.01em]"
               style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
             >
-              Up2Code AI
+              Up2Code
             </span>
           </button>
 
