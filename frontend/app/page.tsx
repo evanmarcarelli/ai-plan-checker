@@ -20,6 +20,7 @@ import { createPackCheckoutSession, type PackSize } from "@/lib/api";
 import InteractiveDemo from "@/components/demo/InteractiveDemo";
 import Reveal from "@/components/Reveal";
 import AutoplayReel from "@/components/marketing/AutoplayReel";
+import ScrollBuildingHero from "@/components/marketing/ScrollBuildingHero";
 
 // ────────────────────────────────────────────────────────────────────
 // Pricing model. Pay-per-use. Single source of truth — change here only.
@@ -56,6 +57,7 @@ export default function MarketingHome() {
   return (
     <div style={{ background: "var(--bg)" }}>
       <Nav isAuthed={isAuthed} />
+      <ScrollBuildingHero />
       <Hero />
       <AutoplayReel />
       <CredibilityBar />

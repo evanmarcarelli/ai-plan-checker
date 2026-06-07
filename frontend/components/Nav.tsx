@@ -23,8 +23,19 @@ export default function Nav() {
 
   return (
     <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-      <Link href="/dashboard" className="font-bold text-slate-900">
-        Up2Code AI
+      <Link href="/dashboard" className="flex items-center gap-2.5">
+        <div
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
+          style={{ background: "var(--accent)", boxShadow: "0 2px 8px rgba(47,91,255,0.25)" }}
+        >
+          <span className="text-white text-[14px] font-bold leading-none tracking-tight">U</span>
+        </div>
+        <span
+          className="font-semibold text-[15px] tracking-tight"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Up2Code
+        </span>
       </Link>
       <div className="flex items-center gap-4 text-sm">
         {profile && (
