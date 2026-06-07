@@ -1,0 +1,139 @@
+"use client";
+
+// Adaline-style scrolling hero. A tall outer container creates scroll runway;
+// inside, a sticky viewport pins the 3D canvas + HTML overlays while the user
+// scrolls. Scroll progress is a framer-motion MotionValue passed straight into
+// the R3F scene — overlays react via useTransform without React re-renders.
+//
+// Sits ABOVE the existing <Hero/> on the marketing page.
+import { useRef } from "react";
+import dynamic from "next/dynamic";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+
+// R3F touches `window` and `WebGLRenderingContext` — disable SSR.
+const BuildingScene = dynamic(() => import("./BuildingScene"), {
+  ssr: false,
+  loading: () => <div style={{ position: "absolute", inset: 0, background: "#F2EAD7" }} />,
+});
+
+const TRUSTED_BY = ["SKANSKA", "AECOM", "PROCORE", "AUTODESK", "GENSLER", "JACOBS"];
+
+export default function ScrollBuildingHero() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Progress is 0 at top of container, 1 when its bottom hits viewport bottom.
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+
+  // Overlay opacity curves — keep them in sync with BuildingScene's phase ranges.
+  const headerOpacity   = useTransform(scrollYProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
+  const taglineOpacity  = useTransform(scrollYProgress, [0.70, 0.85],       [0, 1]);
+  const taglineY        = useTransform(scrollYProgress, [0.70, 0.85],       [16, 0]);
+  const trustedOpacity  = useTransform(scrollYProgress, [0.86, 0.97],       [0, 1]);
+  const trustedY        = useTransform(scrollYProgress, [0.86, 0.97],       [12, 0]);
+
+  return (
+    <section
+      ref={containerRef}
+      // 350vh of scroll runway — three viewport-heights to play through the
+      // full extrusion sequence without feeling rushed or interminable.
+      className="relative w-full"
+      style={{ height: "350vh", background: "#F2EAD7" }}
+      aria-label="Up2Code: from blueprint to building"
+    >
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* 3D scene fills the viewport */}
+        <BuildingScene progress={scrollYProgress} />
+
+        {/* Up2Code wordmark — visible during the parchment/blueprint phase */}
+        <motion.div
+          style={{ opacity: headerOpacity }}
+          className="pointer-events-none absolute top-8 left-0 right-0 flex justify-center"
+        >
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-[28px] font-semibold tracking-[-0.02em]"
+              style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
+            >
+              up2code
+            </span>
+            <ArrowUpRight
+              className="w-4 h-4"
+              strokeWidth={2.5}
+              style={{ color: "#0B1220" }}
+            />
+          </div>
+        </motion.div>
+
+        {/* Tagline — fades in once the building has solidified. Sits at 42%
+            vertical so it lands in the upper third of the building silhouette
+            instead of crashing into the green roofs. */}
+        <motion.div
+          style={{ opacity: taglineOpacity, y: taglineY }}
+          className="pointer-events-none absolute inset-0 px-6"
+        >
+          <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 max-w-3xl w-full text-center">
+            <h2
+              className="text-[28px] sm:text-[40px] lg:text-[52px] font-light leading-[1.1] tracking-[-0.02em]"
+              style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
+            >
+              The single platform for modern planning,
+              <br className="hidden sm:block" /> construction, and certification,{" "}
+              <span style={{ fontWeight: 600 }}>Up2Code</span>.
+            </h2>
+          </div>
+        </motion.div>
+
+        {/* Trusted by — anchored to bottom */}
+        <motion.div
+          style={{ opacity: trustedOpacity, y: trustedY }}
+          className="pointer-events-none absolute bottom-12 left-0 right-0 px-6"
+        >
+          <div className="max-w-4xl mx-auto text-center">
+            <div
+              className="text-[10px] font-semibold tracking-[0.32em] mb-4"
+              style={{ color: "rgba(11, 18, 32, 0.55)" }}
+            >
+              TRUSTED BY
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+              {TRUSTED_BY.map((name) => (
+                <span
+                  key={name}
+                  className="text-[13px] font-semibold tracking-[0.18em]"
+                  style={{ color: "rgba(11, 18, 32, 0.62)" }}
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Scroll cue — tiny chevron at first frame, fades with header */}
+        <motion.div
+          style={{ opacity: headerOpacity }}
+          className="pointer-events-none absolute bottom-10 left-0 right-0 flex justify-center"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <span
+              className="text-[10px] font-semibold tracking-[0.3em]"
+              style={{ color: "rgba(11, 18, 32, 0.45)" }}
+            >
+              SCROLL
+            </span>
+            <motion.div
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              className="w-px h-6"
+              style={{ background: "rgba(11, 18, 32, 0.35)" }}
+            />
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
