@@ -111,6 +111,16 @@ _TI_CUES = re.compile(
     re.IGNORECASE,
 )
 _HILLSIDE_ZONING_CODE = re.compile(r"H$|HILLSIDE|\bBMO\b|\bBHO\b", re.IGNORECASE)
+# A plan that declares a detached single-family dwelling. R-3 occupancy and
+# Type V-B construction are the default for these, so this cue lets us classify
+# an obvious SFR even when the title sheet never spells out "R-3"/"V-B" in
+# selectable text (common on residential sets).
+_SFR_TEXT_CUE = re.compile(
+    r"\bsingle[\s-]*family\s+(dwelling|residence|home|house)\b|"
+    r"\bone[\s-]*family\s+dwelling\b|\bSFD\b|\bSFR\b|"
+    r"\b(new|proposed|\(n\))\s+single[\s-]*family\b",
+    re.IGNORECASE,
+)
 
 
 # =====================================================================
@@ -270,6 +280,32 @@ def classify_archetype(
                 pilot_archetypes,
             )
         reasoning.append("Single-family R-3 / Type V-B with modest area and <= 3 stories")
+        return _finalize(
+            ARCHETYPE_LA_SFR_TYP_VB_MINISTERIAL, excluded, reasoning, pilot_archetypes
+        )
+
+    # Robust SFR fallback: a detached single-family dwelling is R-3 / Type V-B
+    # by default. Many residential title sheets never put the literal "R-3" /
+    # "V-B" strings in selectable text (and vision can't read a code-data box
+    # that isn't on the sheet), so requiring them rejects obviously in-scope
+    # homes. When the plan text declares a single-family dwelling, there's no
+    # TI / multifamily / mixed-occupancy signal, and it's low-rise + modest
+    # area, treat it as the in-scope SFR archetype. The overlay rejects
+    # (hillside, HPOZ, coastal, fire-zone, high/mid-rise) already ran above, so
+    # we can't mislabel one of those as a plain SFR here.
+    sfr_by_text = bool(_SFR_TEXT_CUE.search(plan_text or ""))
+    bigger_use = mixed_occupancy or "R-1" in occupancy or "R-2" in occupancy
+    if sfr_by_text and not has_ti_cue and not bigger_use and modest_area and low_rise:
+        note = (
+            " (occupancy/construction not explicit in the plan text — inferred "
+            "the R-3 / Type V-B default for a detached dwelling)"
+        )
+        if is_ventura:
+            reasoning.append("Ventura County single-family dwelling declared in plan text" + note)
+            return _finalize(
+                ARCHETYPE_VENTURA_SFR_TYP_VB_MINISTERIAL, excluded, reasoning, pilot_archetypes
+            )
+        reasoning.append("Single-family dwelling declared in plan text" + note)
         return _finalize(
             ARCHETYPE_LA_SFR_TYP_VB_MINISTERIAL, excluded, reasoning, pilot_archetypes
         )

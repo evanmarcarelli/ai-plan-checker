@@ -31,10 +31,21 @@ logger = get_logger(__name__)
 # Keywords that suggest a page is the title sheet / code data summary.
 # Hits per page are summed; pages with the most hits are sent to vision first.
 TITLE_SHEET_KEYWORDS = [
-    "code data", "code summary", "project data", "project info",
-    "applicable codes", "design codes", "occupancy", "construction type",
-    "sheet index", "scope of work",
+    "code data", "code summary", "code analysis", "project data", "project info",
+    "applicable codes", "design codes", "building code", "occupancy",
+    "occupancy group", "construction type", "type of construction",
+    "sheet index", "scope of work", "title sheet", "cover sheet",
+    "general notes", "zoning", "deferred submittal",
 ]
+
+# Sheet-number patterns that conventionally label a title / cover / code sheet
+# (T-1.0, T1, G-0.0, G0, CS-1, A0.0, A-0). Used to boost a page's title-sheet
+# score even when its body text is sparse (vector-drawn sheets extract little
+# selectable text).
+_TITLE_SHEET_NUMBER = re.compile(
+    r"\b(?:T|G|CS|A)[\s-]?0*1?\.?0\b|\btitle\s+sheet\b|\bcover\s+sheet\b",
+    re.IGNORECASE,
+)
 
 
 VISION_SYSTEM = """You are an expert architectural plan reviewer. You are looking at one
@@ -83,7 +94,7 @@ class VisionTitleSheetExtractor:
     # 150 DPI keeps title-block text legible on a 24x18 sheet (~2700x2000 px)
     # while staying well under the 5 MB per-image limit at JPEG q=80.
     RENDER_DPI = 150
-    MAX_CANDIDATE_PAGES = 3   # cost cap: each vision call is ~$0.01-0.03
+    MAX_CANDIDATE_PAGES = 4   # cost cap: each vision call is ~$0.01-0.03
     PER_CALL_TIMEOUT = 90     # vision calls run ~2x longer than text-only
 
     def __init__(self):
@@ -104,6 +115,10 @@ class VisionTitleSheetExtractor:
         for pg, text in raw_pages.items():
             low = (text or "").lower()
             hits = sum(1 for kw in TITLE_SHEET_KEYWORDS if kw in low)
+            # A title/cover/code sheet-number (T-1.0, G-0, CS-1, A0.0) is a
+            # strong signal even on a sheet whose body text barely extracts.
+            if _TITLE_SHEET_NUMBER.search(text or ""):
+                hits += 3
             if hits > 0:
                 scored.append((hits, pg))
         scored.sort(reverse=True)

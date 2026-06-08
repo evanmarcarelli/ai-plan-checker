@@ -7,7 +7,7 @@ from app.agents.librarian import LibrarianAgent
 from app.agents.departments import ALL_DEPARTMENTS, DepartmentReviewer
 from app.agents.archetype import classify_archetype, render_archetype_banner
 from app.agents.critic import critique_finding, apply_critique
-from app.config.pilot import PIPELINE_GATES
+from app.config.pilot import PIPELINE_GATES, ARCHETYPE_UNCLASSIFIED
 from app.models.schemas import (
     ProcessingJob, AgentLog, ComplianceReport, ComplianceFinding,
     ComplianceSummary, ComplianceStatus, DepartmentReview, CodeRequirement,
@@ -360,26 +360,50 @@ class PlanCheckerWorkflow:
                 if archetype_result.excluded_overlays
                 else (archetype_result.reasoning[-1] if archetype_result.reasoning else "out of pilot scope")
             )
+            # Two different verdicts, two different findings:
+            #  - "unclassified" means we couldn't auto-determine the archetype
+            #    (e.g. the title sheet never stated occupancy/construction). The
+            #    plan may well be in scope — flag it for manual review, don't
+            #    stamp it "out of scope" with a critical finding.
+            #  - any other out-of-pilot archetype (hillside, coastal, high-rise,
+            #    multifamily, …) is a positive identification that it's outside
+            #    pilot scope — keep the loud critical signal.
+            undetermined = archetype_result.archetype == ARCHETYPE_UNCLASSIFIED
+            if undetermined:
+                gate_desc = (
+                    f"ARCHETYPE UNDETERMINED. {why}. The plan's occupancy/"
+                    f"construction couldn't be read automatically, so it could "
+                    f"not be auto-classified — a reviewer should confirm scope. "
+                    f"AI findings below still ran and are advisory."
+                )
+                gate_reco = "Manual review recommended — confirm building archetype/scope."
+                gate_sev = "medium"
+                gate_code_desc = "Submittal archetype could not be auto-determined."
+            else:
+                gate_desc = (
+                    f"OUT OF PILOT SCOPE ({archetype_result.archetype}). "
+                    f"Reason: {why}. AI findings below are advisory only — "
+                    f"this submittal needs manual reviewer attention."
+                )
+                gate_reco = "Send to manual review — outside current AI pilot scope."
+                gate_sev = "critical"
+                gate_code_desc = "Submittal archetype is outside the current AI pilot scope."
             all_findings.insert(0, ComplianceFinding(
                 finding_id=str(uuid.uuid4()),
                 code_requirement=CodeRequirement(
                     code_id=f"PILOT-SCOPE-{archetype_result.archetype}",
                     code_name="Pilot scope gate",
                     section=archetype_result.archetype,
-                    description="Submittal archetype is outside the current AI pilot scope.",
+                    description=gate_code_desc,
                     category="intake",
                     source="archetype_gate",
                 ),
                 status=ComplianceStatus.NEEDS_REVIEW,
                 plan_value=archetype_result.archetype,
                 required_value="in-pilot archetype",
-                description=(
-                    f"OUT OF PILOT SCOPE ({archetype_result.archetype}). "
-                    f"Reason: {why}. AI findings below are advisory only — "
-                    f"this submittal needs manual reviewer attention."
-                ),
-                recommendation="Send to manual review — outside current AI pilot scope.",
-                severity="critical",
+                description=gate_desc,
+                recommendation=gate_reco,
+                severity=gate_sev,
                 confidence=1.0,
                 verified=True,
                 source_text="docs/PILOT_BRIEF.md — out-of-pilot archetypes",
