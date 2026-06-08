@@ -1,7 +1,8 @@
+import re
 from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.api.routes import router, limiter
@@ -46,12 +47,46 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS origin policy — single source of truth used by both the middleware
+# AND the exception handlers below. App-level exception handlers in
+# Starlette bypass middleware, so any 500 (or rate-limited 429) returns
+# WITHOUT CORS headers unless we attach them manually. That bypass is what
+# surfaces as "blocked by CORS policy: No 'Access-Control-Allow-Origin'
+# header is present" in the browser — the real cause is the unhandled
+# error, but the user sees CORS.
+_ALLOWED_ORIGIN_REGEX = re.compile(
+    r"https://ai-plan-checker(-[a-z0-9-]+)?\.vercel\.app"
+)
+
+
+def _allowed_origin(origin: str | None) -> str | None:
+    """Return the origin if it's allowed by either the explicit list or
+    the Vercel regex; otherwise None. Used to echo Origin back on error
+    responses so the browser doesn't mistake a 500 for a CORS rejection."""
+    if not origin:
+        return None
+    if origin in settings.allowed_origins:
+        return origin
+    if _ALLOWED_ORIGIN_REGEX.fullmatch(origin):
+        return origin
+    return None
+
+
+def _attach_cors(request: Request, response: Response) -> Response:
+    origin = _allowed_origin(request.headers.get("origin"))
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Vary"] = "Origin"
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     # Allow every Vercel deployment of this project: production canonical
     # + every preview/branch/PR URL Vercel auto-generates.
-    allow_origin_regex=r"https://ai-plan-checker(-[a-z0-9-]+)?\.vercel\.app",
+    allow_origin_regex=_ALLOWED_ORIGIN_REGEX.pattern,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,7 +94,18 @@ app.add_middleware(
 
 # Wire rate limiter
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Rate-limit responses are produced by slowapi's handler, which sits
+# outside the CORS middleware. Wrap it so 429s carry CORS headers too —
+# otherwise an over-eager user sees "blocked by CORS" instead of a clean
+# rate-limit error.
+async def _rate_limit_handler_with_cors(request: Request, exc: RateLimitExceeded):
+    response = _rate_limit_exceeded_handler(request, exc)
+    return _attach_cors(request, response)
+
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler_with_cors)
 
 app.include_router(router, prefix="/api/v1", tags=["Plan Checking"])
 app.include_router(ws_router, prefix="/api/v1", tags=["WebSocket"])
@@ -72,10 +118,15 @@ app.include_router(feedback_router, prefix="/api/v1", tags=["Feedback"])
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={"error": "internal_server_error", "message": str(exc)},
     )
+    # App-level exception handlers in Starlette bypass middleware, so
+    # CORS headers are not added automatically. Without these the browser
+    # reports every 500 as "blocked by CORS policy" and hides the real
+    # error from the developer console.
+    return _attach_cors(request, response)
 
 
 @app.get("/")

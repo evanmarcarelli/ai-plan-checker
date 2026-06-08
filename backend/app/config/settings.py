@@ -19,7 +19,14 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
     frontend_url: str = "http://localhost:3000"
-    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    # Production Vercel URL is included by default so CORS works even if
+    # the regex below (in main.py) ever changes shape. Preview / branch
+    # deploys are still covered by the regex.
+    allowed_origins: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://ai-plan-checker.vercel.app",
+    ]
 
     # Anthropic
     anthropic_api_key: str = ""
@@ -110,6 +117,16 @@ class Settings(BaseSettings):
     # gets OCR'd, full plan set covered). Set to a positive integer to bound
     # spend per plan if a particular workflow needs it.
     textract_max_pages: int = 0
+
+    # Playwright fallback for Cloudflare-blocked publishers
+    # (amlegal, municode, qcode, ecode360). Off by default — turning this on
+    # is an operational decision the operator owns. Renders the page in a
+    # real Chromium with light stealth patches so the CF interstitial can
+    # auto-solve. Per-host throttle keeps the fetch polite.
+    playwright_enabled: bool = False
+    playwright_user_agent: str = ""    # blank = use the module default UA
+    playwright_delay_sec: float = 2.0  # min seconds between fetches per host
+    playwright_timeout_sec: int = 60   # per-fetch hard cap (sec)
 
     # Logging
     log_level: str = "INFO"
