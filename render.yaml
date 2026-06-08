@@ -7,7 +7,12 @@ services:
   - type: web
     name: up2code-backend
     env: docker
-    plan: starter            # $7/mo, always-on. Use "free" for the free tier.
+    plan: standard           # 2GB RAM / 1 CPU. The plan-checking pipeline
+                             # (PDF render + vision + 10 LLM contexts + code
+                             # corpus) OOM-kills a 512MB "starter" on large
+                             # plan sets, which returns 503s and trips the
+                             # /health check. Drop back to "starter" only if
+                             # you cap upload size and page count.
     region: oregon
     rootDir: backend
     dockerfilePath: ./Dockerfile

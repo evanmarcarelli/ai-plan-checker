@@ -259,6 +259,12 @@ async def _fetch_and_process(job_id: str, storage_path: str, user_id: str, charg
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
 
+    # Release the in-memory PDF (up to MAX_UPLOAD_SIZE_MB) the moment it's on
+    # disk. The pipeline reads from `file_path` from here on, so holding these
+    # bytes through compression + the 12-agent run is pure peak-memory waste —
+    # the single biggest avoidable spike on a memory-constrained instance.
+    del content
+
     # 4. Lossless compression (best-effort)
     try:
         _, before_b, after_b = compress_pdf(file_path)
