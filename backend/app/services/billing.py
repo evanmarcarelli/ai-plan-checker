@@ -197,6 +197,18 @@ def handle_event(event: stripe.Event) -> None:
                 _grant_monthly_credits(user_id, sub, invoice_id, amount_paid, currency)
 
 
+def _purchase_exists(column: str, value: str) -> bool:
+    """True if a credit_purchases row already carries this idempotency key.
+    Used to tell a benign duplicate webhook (the UNIQUE constraint fired on
+    insert) apart from a genuine DB failure, so the former logs as info
+    instead of a misleading error on the payments path."""
+    try:
+        res = db.admin().table("credit_purchases").select("id").eq(column, value).limit(1).execute()
+        return bool(res.data)
+    except Exception:
+        return False
+
+
 def _apply_pack_payment(user_id: Optional[str], session: Dict) -> None:
     """Grant credits on a one-time pack payment. Idempotent: writes a
     `credit_purchases` row keyed on Stripe session_id, so a re-fired
@@ -246,7 +258,13 @@ def _apply_pack_payment(user_id: Optional[str], session: Dict) -> None:
             "currency": (session.get("currency") or "usd").lower(),
         }).execute()
     except Exception as e:
-        logger.error(f"[pack] failed to log purchase {session_id}: {e}")
+        # A concurrent webhook delivery may have inserted first; the UNIQUE
+        # constraint on stripe_session_id then rejects this one. That's the
+        # idempotency guard working — not a failure.
+        if _purchase_exists("stripe_session_id", session_id):
+            logger.info(f"[pack] session {session_id} already credited (concurrent webhook); skipping")
+        else:
+            logger.error(f"[pack] failed to log purchase {session_id}: {e}")
         return
 
     new_balance = db.add_credits(user_id, credits)
@@ -326,7 +344,12 @@ def _grant_monthly_credits(
             "currency": currency,
         }).execute()
     except Exception as e:
-        logger.error(f"[invoice {invoice_id}] failed to log purchase: {e}")
+        # Concurrent delivery already inserted — UNIQUE(stripe_invoice_id)
+        # rejected this one. Idempotency guard working, not a failure.
+        if _purchase_exists("stripe_invoice_id", invoice_id):
+            logger.info(f"[invoice {invoice_id}] already credited (concurrent webhook); skipping")
+        else:
+            logger.error(f"[invoice {invoice_id}] failed to log purchase: {e}")
         return
 
     db.admin().table("profiles").update({

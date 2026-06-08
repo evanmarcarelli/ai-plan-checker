@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { uploadPlan, getJobStatus, createWebSocket, getExportUrl, getMe } from "@/lib/api";
-import type { AgentLog, UserProfile } from "@/lib/api";
+import type { AgentLog, UserProfile, JobStatus } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
@@ -14,7 +14,7 @@ import {
   Building2, Cpu, FileCheck, ChevronRight,
   Activity, CheckCircle2, AlertCircle, Clock, RotateCcw,
   Search, BookOpen, Landmark, Flame, Zap, Droplets, Wind,
-  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, ArrowUpRight,
+  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, ArrowUpRight, X,
 } from "lucide-react";
 
 // ─── Department roster ────────────────────────────────────────────
@@ -120,9 +120,14 @@ export default function Dashboard() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  // True once the job reaches completed/failed — gates the WS→polling
+  // fallback so a clean completion-close doesn't kick off needless polling.
+  const terminalRef = useRef(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>("");
+  // Surfaced inline (not via alert) for upload failures and lost-connection.
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
@@ -153,12 +158,25 @@ export default function Dashboard() {
     };
   }, []);
 
+  const markTerminal = (status: JobStatus) => {
+    terminalRef.current = true;
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (status.status === "completed") setActiveTab("report");
+  };
+
+  // WebSocket is the primary, real-time channel. Polling is a FALLBACK,
+  // started only if the socket never opens or drops before the job
+  // finishes — so we don't fire duplicate requests when WS is healthy.
   const connectWebSocket = (id: string) => {
+    let opened = false;
     try {
       const ws = createWebSocket(id);
       wsRef.current = ws;
-      ws.onopen = () => setWsConnected(true);
-      ws.onclose = () => setWsConnected(false);
+      ws.onopen = () => { opened = true; setWsConnected(true); };
+      ws.onclose = () => {
+        setWsConnected(false);
+        if (!terminalRef.current) startPolling(id); // dropped mid-review → fall back
+      };
       ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
@@ -167,31 +185,45 @@ export default function Dashboard() {
             setJobStatus((prev) => prev ? { ...prev, ...msg.data } : msg.data);
           }
           if (msg.type === "completed" || msg.type === "failed") {
+            // Mark terminal synchronously so the imminent socket close
+            // doesn't trip the onclose→polling fallback before the async
+            // getJobStatus below resolves.
+            terminalRef.current = true;
             getJobStatus(id).then((status) => {
               setJobStatus(status);
               setLogs(status.logs);
-              if (status.status === "completed") setActiveTab("report");
-            });
+              markTerminal(status);
+            }).catch(() => {});
           }
         } catch {}
       };
+      // If the socket never opens (a proxy/firewall blocks WS), fall back.
+      setTimeout(() => { if (!opened && !terminalRef.current) startPolling(id); }, 3000);
     } catch {
       startPolling(id);
     }
   };
 
   const startPolling = (id: string) => {
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current || terminalRef.current) return; // already polling / done
+    let consecutiveFailures = 0;
     pollRef.current = setInterval(async () => {
       try {
         const status = await getJobStatus(id);
+        consecutiveFailures = 0;
+        setErrorBanner(null);
         setJobStatus(status);
         setLogs(status.logs);
         if (status.status === "completed" || status.status === "failed") {
-          clearInterval(pollRef.current!);
-          if (status.status === "completed") setActiveTab("report");
+          markTerminal(status);
         }
-      } catch {}
+      } catch {
+        // Surface a persistent outage instead of silently spinning forever.
+        if (++consecutiveFailures >= 5) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          setErrorBanner("Lost connection to the server while tracking your review. It may still be running — refresh to check its status.");
+        }
+      }
     }, 1000);
   };
 
@@ -204,6 +236,8 @@ export default function Dashboard() {
     setIsUploading(true);
     setUploadProgress(0);
     setUploadStatus("");
+    setErrorBanner(null);
+    terminalRef.current = false;
     try {
       const result = await uploadPlan(
         file,
@@ -216,10 +250,9 @@ export default function Dashboard() {
       setActiveTab("processing");
       const status = await getJobStatus(result.job_id);
       setJobStatus(status);
-      connectWebSocket(result.job_id);
-      startPolling(result.job_id);
+      connectWebSocket(result.job_id); // starts polling itself only if WS fails
     } catch (err) {
-      alert(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
+      setErrorBanner(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -228,7 +261,9 @@ export default function Dashboard() {
 
   const handleReset = () => {
     wsRef.current?.close();
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    terminalRef.current = false;
+    setErrorBanner(null);
     setUploadedFile(null);
     reset();
   };
@@ -341,6 +376,29 @@ export default function Dashboard() {
 
       {/* ── Content ── */}
       <main className="max-w-7xl mx-auto px-6 pt-10 pb-32">
+
+        {/* Inline error banner — replaces the old blocking alert() for upload
+            failures and lost-connection during a review. */}
+        {errorBanner && (
+          <div
+            className="mb-6 flex items-start gap-3 px-4 py-3 rounded-xl text-[13px]"
+            style={{
+              background: "var(--non-compliant-bg)",
+              border: "1px solid rgba(185, 28, 28, 0.25)",
+              color: "var(--non-compliant)",
+            }}
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span className="flex-1">{errorBanner}</span>
+            <button
+              onClick={() => setErrorBanner(null)}
+              className="p-0.5 rounded-md hover:bg-black/[0.06] transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* ── UPLOAD TAB ── */}
         {(activeTab === "upload" || !jobId) && (

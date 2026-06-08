@@ -199,6 +199,10 @@ async def start_review(
 
     # Credit check (admin allowlist bypasses; see _maybe_decrement_credits above).
     _maybe_decrement_credits(user)
+    # Whether this upload actually consumed a credit. Admins and the
+    # no-auth dev mode are not charged, so the failure/timeout paths must
+    # NOT refund them — otherwise each failed admin run mints a credit.
+    charged = settings.require_auth and not _is_admin_user(user)
 
     # Create DB row (instant)
     job_id = db.create_job(
@@ -209,7 +213,7 @@ async def start_review(
     )
 
     logger.info(f"Job {job_id} queued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
-    background_tasks.add_task(_fetch_and_process, job_id, body.storage_path, user["id"])
+    background_tasks.add_task(_fetch_and_process, job_id, body.storage_path, user["id"], charged)
 
     return UploadResponse(
         job_id=job_id,
@@ -219,7 +223,19 @@ async def start_review(
     )
 
 
-async def _fetch_and_process(job_id: str, storage_path: str, user_id: str):
+def _refund_credit(job_id: str, user_id: str, charged: bool) -> None:
+    """Refund the one credit a failed/timed-out job consumed — but only if
+    the user was actually charged (admins and dev-mode are not). Logs loudly
+    on failure so a silently-lost credit can't slip through unnoticed."""
+    if not charged:
+        return
+    try:
+        db.add_credits(user_id, 1)
+    except Exception as e:
+        logger.error(f"Job {job_id}: REFUND FAILED for user {user_id}: {e}")
+
+
+async def _fetch_and_process(job_id: str, storage_path: str, user_id: str, charged: bool = True):
     """Background: download from Storage, validate, compress, then run pipeline."""
     file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
 
@@ -229,14 +245,14 @@ async def _fetch_and_process(job_id: str, storage_path: str, user_id: str):
     except Exception as e:
         logger.error(f"Job {job_id}: storage download failed: {e}")
         db.update_job(job_id, {"status": "failed", "error": "Uploaded file not found in storage."})
-        db.add_credits(user_id, 1)  # refund
+        _refund_credit(job_id, user_id, charged)
         return
 
     # 2. Validate magic bytes
     if len(content) < 5 or content[:4] != b"%PDF":
         logger.error(f"Job {job_id}: not a valid PDF")
         db.update_job(job_id, {"status": "failed", "error": "File is not a valid PDF."})
-        db.add_credits(user_id, 1)  # refund
+        _refund_credit(job_id, user_id, charged)
         return
 
     # 3. Write to local disk
@@ -252,11 +268,11 @@ async def _fetch_and_process(job_id: str, storage_path: str, user_id: str):
     except Exception as e:
         logger.warning(f"Job {job_id}: compression skipped ({e})")
 
-    # 5. Run the 12-agent pipeline (and final cleanup) in the existing handler
-    await _process_job(job_id, file_path, storage_path)
+    # 5. Run the multi-agent pipeline (and final cleanup) in the existing handler
+    await _process_job(job_id, file_path, storage_path, charged)
 
 
-async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] = None):
+async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] = None, charged: bool = True):
     """Background task: run the workflow and persist results to DB."""
     db.update_job(job_id, {"status": "processing", "progress": 0})
 
@@ -383,20 +399,12 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
         )
         logger.error(f"Job {job_id} timed out: {msg}")
         db.update_job(job_id, {"status": "failed", "error": msg})
-        # Refund the credit on timeout
-        try:
-            db.add_credits(row["user_id"], 1)
-        except Exception:
-            pass
+        _refund_credit(job_id, row["user_id"], charged)
 
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}", exc_info=True)
         db.update_job(job_id, {"status": "failed", "error": str(e)})
-        # Refund the credit on failure
-        try:
-            db.add_credits(row["user_id"], 1)
-        except Exception:
-            pass
+        _refund_credit(job_id, row["user_id"], charged)
     finally:
         try:
             if os.path.exists(file_path):
@@ -468,7 +476,11 @@ async def delete_job(
 # ============================================================
 
 @router.get("/_diag/llm")
-async def diag_llm():
+# Auth-free for browser debugging, but this makes a real (billable)
+# Anthropic call — throttle hard so a discovered URL can't be looped to
+# run up the API bill.
+@limiter.limit("5/hour")
+async def diag_llm(request: Request):
     """Diagnostic: tells you whether the Anthropic key on Render is set,
     whether it authenticates, and surfaces the actual error if it doesn't.
 
@@ -513,7 +525,10 @@ async def diag_llm():
 
 
 @router.get("/_diag/textract")
-async def diag_textract():
+# Auth-free for browser debugging, but this makes a real (billable) AWS
+# Textract call — throttle so the URL can't be looped to run up the bill.
+@limiter.limit("5/hour")
+async def diag_textract(request: Request):
     """Diagnostic: confirm AWS Textract is configured and the IAM user has
     the right permission. Public on purpose (mirrors `/diag/llm`) so the
     founder can debug from a browser without auth fight. Returns only

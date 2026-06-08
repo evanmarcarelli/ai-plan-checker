@@ -109,6 +109,12 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
     try:
         billing.handle_event(event)
     except Exception as e:
-        logger.error(f"Webhook handler error: {e}")
-        # Return 200 so Stripe doesn't retry indefinitely on our bugs
+        # Return 500 so Stripe retries (it backs off and gives up after
+        # ~3 days). Credit grants are idempotent — keyed on the Stripe
+        # session/invoice id with a UNIQUE constraint — so a retry that
+        # re-runs a partially-applied handler is safe and won't double-grant.
+        # Without the retry, a transient DB blip would mean a paid-for credit
+        # is silently lost forever.
+        logger.error(f"Webhook handler error (returning 500 for Stripe retry): {e}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
     return {"received": True}

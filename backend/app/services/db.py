@@ -136,26 +136,58 @@ def get_profile(user_id: str) -> Optional[Dict[str, Any]]:
     return res.data[0] if res.data else None
 
 
+def _rpc_scalar(fn: str, params: Dict[str, Any]):
+    """Call a Postgres function that returns a single integer and unwrap it.
+    Returns the int, or None when the function returned no row / isn't
+    deployed yet. Never raises — callers fall back to the read-modify-write
+    path on None so deploying code ahead of migration 006 stays safe."""
+    try:
+        res = admin().rpc(fn, params).execute()
+    except Exception:
+        return None
+    data = res.data
+    if data is None:
+        return None
+    # PostgREST returns either the scalar directly or a single-element list.
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data
+
+
 def decrement_credits(user_id: str, amount: int = 1) -> int:
-    """Atomically decrement credits. Returns the new balance, or -1 if insufficient."""
+    """Atomically decrement credits. Returns the new balance, or -1 if
+    insufficient. Uses the DB-side decrement_credits_atomic() (migration
+    006) so two concurrent uploads can't both pass a stale balance check.
+    Falls back to a read-modify-write only if the RPC isn't deployed."""
+    new_balance = _rpc_scalar("decrement_credits_atomic", {"p_user_id": user_id, "p_amount": amount})
+    if new_balance is not None:
+        return int(new_balance)
+    # Fallback: RPC missing (migration 006 not yet run). Non-atomic, but
+    # preserves the pre-migration behavior rather than failing the upload.
     profile = get_profile(user_id)
     if not profile:
         return -1
     current = profile.get("credits_remaining", 0) or 0
     if current < amount:
         return -1
-    new_balance = current - amount
-    admin().table("profiles").update({"credits_remaining": new_balance}).eq("id", user_id).execute()
-    return new_balance
+    updated = current - amount
+    admin().table("profiles").update({"credits_remaining": updated}).eq("id", user_id).execute()
+    return updated
 
 
 def add_credits(user_id: str, amount: int) -> int:
+    """Atomically add credits (refunds + pack grants). Returns the new
+    balance, or -1 if the profile is missing. Uses add_credits_atomic()
+    (migration 006); falls back to read-modify-write if not deployed."""
+    new_balance = _rpc_scalar("add_credits_atomic", {"p_user_id": user_id, "p_amount": amount})
+    if new_balance is not None:
+        return int(new_balance)
     profile = get_profile(user_id)
     if not profile:
         return -1
-    new_balance = (profile.get("credits_remaining", 0) or 0) + amount
-    admin().table("profiles").update({"credits_remaining": new_balance}).eq("id", user_id).execute()
-    return new_balance
+    updated = (profile.get("credits_remaining", 0) or 0) + amount
+    admin().table("profiles").update({"credits_remaining": updated}).eq("id", user_id).execute()
+    return updated
 
 
 # ============================================================
