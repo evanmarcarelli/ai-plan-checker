@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import {
   Building2, Sparkles, Zap, ShieldCheck, FileCheck, Flame, Bolt,
   Wrench, Accessibility, Leaf, MapPin, Users, BookOpen, CheckCircle2,
-  AlertTriangle, ArrowRight,
+  AlertTriangle, ArrowRight, ArrowUpRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { createPackCheckoutSession, type PackSize } from "@/lib/api";
@@ -80,19 +80,18 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
       style={{ background: "rgba(247, 248, 250, 0.85)", borderColor: "var(--border)" }}
     >
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div
-            className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
-            style={{ background: "var(--accent)", boxShadow: "0 2px 8px rgba(47,91,255,0.25)" }}
-          >
-            <span className="text-white text-[14px] font-bold leading-none tracking-tight">U</span>
-          </div>
+        <Link href="/" className="flex items-center gap-1" aria-label="Up2Code home">
           <span
-            className="font-semibold text-[15px] tracking-tight"
-            style={{ color: "var(--text-primary)" }}
+            className="font-semibold text-[18px] tracking-[-0.025em]"
+            style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
           >
             Up2Code
           </span>
+          <ArrowUpRight
+            className="w-3.5 h-3.5"
+            strokeWidth={2.5}
+            style={{ color: "var(--text-primary)" }}
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 text-[14px]" style={{ color: "var(--text-secondary)" }}>
@@ -154,7 +153,7 @@ function Hero() {
               className="text-[44px] sm:text-[60px] lg:text-[80px] font-semibold leading-[1.02] tracking-[-0.03em]"
               style={{ color: "var(--text-primary)" }}
             >
-              Plan review, reimagined.
+              Find the corrections before the city does.
             </h1>
           </div>
 
@@ -200,7 +199,7 @@ function Hero() {
 
 function CredibilityBar() {
   const stats = [
-    { value: "12",  label: "specialist AI agents" },
+    { value: "AI",  label: "multi-agent system" },
     { value: "90s", label: "average review time" },
     { value: "100%",label: "citation-verified" },
   ];
@@ -271,8 +270,8 @@ function HowItWorks() {
   const steps = [
     { n: 1, title: "Upload your plan set",
       body: "Drag in a PDF. Anything from a 5-sheet ADU set to a full commercial submittal." },
-    { n: 2, title: "12 agents review in parallel",
-      body: "Surveyor identifies jurisdiction. 10 department reviewers run in parallel, each grounded in verbatim code text. ~90 seconds." },
+    { n: 2, title: "An army of agents reviews in parallel",
+      body: "A surveyor identifies jurisdiction. A multi-agent system of department reviewers runs in parallel, each grounded in verbatim code text. ~90 seconds." },
     { n: 3, title: "Get a structured report",
       body: "Compliant, Non-compliant, or Needs review for every finding. Cited section. Concrete recommendation. Sharable with your team or inspector, free for them." },
   ];
@@ -287,7 +286,7 @@ function HowItWorks() {
             className="text-3xl sm:text-4xl font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            Three steps. Cancel anytime.
+            Three steps. One report.
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-5">
@@ -327,13 +326,13 @@ function AgentGrid() {
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "var(--accent)" }}>
-            Every department a real plan check runs
+            Each department has its own agents working in tandem
           </p>
           <h2
             className="text-3xl font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            10 specialist reviewers. One report.
+            A specialist reviewer for every discipline. One report.
           </h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -392,7 +391,7 @@ function Pricing() {
             Monthly plans. Credits roll over.
           </h2>
           <p className="text-base max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            One credit = one full plan review. Unused credits carry to next month. Cancel anytime.
+            One credit = one full plan review. Unused credits carry to next month.
           </p>
         </div>
 

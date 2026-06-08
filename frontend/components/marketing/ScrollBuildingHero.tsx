@@ -36,6 +36,11 @@ export default function ScrollBuildingHero() {
   const trustedOpacity  = useTransform(scrollYProgress, [0.86, 0.97],       [0, 1]);
   const trustedY        = useTransform(scrollYProgress, [0.86, 0.97],       [12, 0]);
 
+  // Tagline vertical position: starts higher (above the plan set in the
+  // lower half of the frame), then eases down once the plan fades and the
+  // building rises so the line sits closer to the city skyline.
+  const taglineTop = useTransform(scrollYProgress, [0.0, 0.45, 1.0], ["22vh", "32vh", "32vh"]);
+
   return (
     <section
       ref={containerRef}
@@ -49,31 +54,36 @@ export default function ScrollBuildingHero() {
         {/* 3D scene fills the viewport */}
         <BuildingScene progress={scrollYProgress} />
 
-        {/* Up2Code wordmark — small mark, visible during the parchment phase */}
+        {/* Up2Code wordmark — the site's primary logo treatment. Sits above
+            the tagline through the parchment phase, then fades as the scene
+            transitions to the building extrude. Mirrors the Nav logo. */}
         <motion.div
-          style={{ opacity: wordmarkOpacity }}
-          className="pointer-events-none absolute top-6 left-0 right-0 flex justify-center"
+          style={{ opacity: wordmarkOpacity, top: "calc(22vh - 56px)" }}
+          className="pointer-events-none absolute left-0 right-0 flex justify-center"
         >
           <div className="flex items-center gap-1.5">
             <span
-              className="text-[22px] font-semibold tracking-[-0.02em]"
+              className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.025em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
               Up2Code
             </span>
             <ArrowUpRight
-              className="w-3.5 h-3.5"
+              className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
               strokeWidth={2.5}
               style={{ color: "#0B1220" }}
             />
           </div>
         </motion.div>
 
-        {/* Tagline — pinned high above the scene throughout the scroll. It's
-            the narrative spine: visible while the plan is on screen, while it
-            extrudes, and while the city rises around the finished building.
-            Anchored to the top so it never collides with the 3D composition. */}
-        <div className="pointer-events-none absolute top-16 sm:top-20 left-0 right-0 px-6">
+        {/* Tagline — anchored below the wordmark logo. Sits in the upper
+            third while the plan set occupies the lower half of the frame,
+            then eases down as the building rises so the line lives closer
+            to the skyline at the end of the scroll. */}
+        <motion.div
+          style={{ top: taglineTop }}
+          className="pointer-events-none absolute left-0 right-0 px-6"
+        >
           <div className="max-w-3xl mx-auto text-center">
             <h2
               className="text-[22px] sm:text-[30px] lg:text-[38px] font-light leading-[1.15] tracking-[-0.02em]"
@@ -84,7 +94,7 @@ export default function ScrollBuildingHero() {
               <span style={{ fontWeight: 600 }}>Up2Code</span>.
             </h2>
           </div>
-        </div>
+        </motion.div>
 
         {/* Trusted by — anchored to bottom */}
         <motion.div

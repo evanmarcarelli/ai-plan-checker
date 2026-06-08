@@ -14,7 +14,7 @@ const CHAPTERS = [
   { id: "pain",    title: "The submittal loop"   },
   { id: "intro",   title: "Meet Up2Code"         },
   { id: "upload",  title: "Drop the plan set"    },
-  { id: "process", title: "12-agent review"      },
+  { id: "process", title: "Multi-agent review"   },
   { id: "findings",title: "Findings, cited"      },
   { id: "teams",   title: "From AEC teams"       },
 ] as const;
@@ -472,7 +472,7 @@ function SceneUpload() {
   );
 }
 
-/* ─── SCENE 4 — 12-agent review ─────────────────────────────────────── */
+/* ─── SCENE 4 — Multi-agent review ──────────────────────────────────── */
 const AGENTS = [
   { name: "Ingest",        detail: "PDF parse · sheet split"      },
   { name: "Geometry",      detail: "Walls, doors, dimensions"     },
@@ -508,7 +508,7 @@ function SceneProcess() {
             className="text-[24px] md:text-[30px] font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            12 agents go to work.
+            An army of agents goes to work.
           </div>
         </motion.div>
         <div className="grid grid-cols-3 gap-2">

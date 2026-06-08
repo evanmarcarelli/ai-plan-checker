@@ -489,8 +489,8 @@ export default function Dashboard() {
                 <span style={{ color: "var(--text-primary)" }}>Plan Compliance</span>
               </h1>
               <p className="text-base" style={{ color: "var(--text-secondary)" }}>
-                Upload a PDF plan set. <strong style={{ color: "var(--text-primary)" }}>12 specialist AI agents</strong> identify
-                your jurisdiction and audit it against every code chapter a real city plan check runs.
+                Upload a PDF plan set. An <strong style={{ color: "var(--text-primary)" }}>army of specialist AI agents</strong> identifies
+                your jurisdiction and audits it against every code chapter a real city plan check runs.
               </p>
             </div>
 
@@ -882,8 +882,8 @@ function ExampleReview() {
 
         <p className="text-xs mt-5 text-center"
            style={{ color: "var(--text-muted)" }}>
-          Every real review checks ~68 code requirements across all 12 agents and returns full
-          recommendations on each finding.
+          Every real review checks ~68 code requirements across the full multi-agent system and
+          returns recommendations on each finding.
         </p>
       </div>
     </div>
