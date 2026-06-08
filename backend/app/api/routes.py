@@ -315,6 +315,23 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
     # that a hung dyno surfaces fast.
     JOB_TIMEOUT_SEC = 12 * 60
 
+    # Liveness heartbeat: bump updated_at every HEARTBEAT_SEC so an alive job
+    # stays "fresh" even through a long silent step (the Surveyor's PDF
+    # extraction emits no progress for up to a minute+). The staleness guard
+    # (db.fail_if_orphaned) keys off updated_at, so without this a slow-but-
+    # healthy job could be wrongly failed. Cancelled in the finally below.
+    HEARTBEAT_SEC = 20
+
+    async def _heartbeat() -> None:
+        while True:
+            await asyncio.sleep(HEARTBEAT_SEC)
+            try:
+                await asyncio.to_thread(db.update_job, job_id, {})
+            except Exception:
+                pass
+
+    heartbeat_task = asyncio.create_task(_heartbeat())
+
     try:
         report = await asyncio.wait_for(
             workflow.run(job_shell, file_path, log_callback=on_log),
@@ -412,6 +429,7 @@ async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] 
         db.update_job(job_id, {"status": "failed", "error": str(e)})
         _refund_credit(job_id, row["user_id"], charged)
     finally:
+        heartbeat_task.cancel()
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -434,6 +452,9 @@ async def get_job_status(
     row = db.get_job_for_user(job_id, user["id"])
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
+    # If the job's worker died (OOM/restart), it's frozen at "processing" with a
+    # stale heartbeat — surface it as failed instead of polling it forever.
+    row = db.fail_if_orphaned(row)
     payload = _job_row_to_response(row)
     payload["logs"] = [
         {

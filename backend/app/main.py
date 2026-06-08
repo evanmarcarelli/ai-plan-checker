@@ -36,6 +36,16 @@ if settings.sentry_dsn:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
+    # A restart (deploy or OOM kill) destroys any in-flight background job, but
+    # its DB row stays "processing" forever. Fail orphaned jobs now so users see
+    # a clear error + retry instead of an eternal spinner.
+    try:
+        from app.services import db
+        swept = db.mark_stale_jobs_failed()
+        if swept:
+            logger.warning(f"Startup: failed {swept} orphaned job(s) from a previous run")
+    except Exception as e:
+        logger.warning(f"Startup orphan sweep failed: {e}")
     yield
     logger.info("Shutting down...")
 

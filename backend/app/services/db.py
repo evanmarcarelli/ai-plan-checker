@@ -1,7 +1,7 @@
 """Supabase database client and helpers."""
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from supabase import create_client, Client
 from app.config import settings
 from app.utils.logger import get_logger
@@ -59,6 +59,53 @@ def update_job(job_id: str, fields: Dict[str, Any]) -> None:
     if "updated_at" not in fields:
         fields["updated_at"] = datetime.utcnow().isoformat()
     admin().table("jobs").update(fields).eq("id", job_id).execute()
+
+
+# A pending/processing job whose updated_at is older than this has lost its
+# worker: the in-process pipeline runs as a background task, so an OOM kill or
+# a redeploy leaves the row frozen at "processing" with no one to fail it. The
+# live pipeline heartbeats every ~20s (see _process_job), so 90s of silence
+# means several missed beats — the process is gone.
+STALE_JOB_SEC = 90
+
+_ORPHAN_ERROR = (
+    "Processing was interrupted (the server restarted or ran out of memory). "
+    "Please run the check again."
+)
+
+
+def mark_stale_jobs_failed(older_than_sec: int = STALE_JOB_SEC) -> int:
+    """Bulk-fail orphaned jobs. Called on startup so a restart that killed
+    in-flight jobs surfaces them as failed instead of an eternal spinner."""
+    cutoff = (datetime.utcnow() - timedelta(seconds=older_than_sec)).isoformat()
+    res = (
+        admin().table("jobs")
+        .update({"status": "failed", "error": _ORPHAN_ERROR,
+                 "updated_at": datetime.utcnow().isoformat()})
+        .in_("status", ["pending", "processing"])
+        .lt("updated_at", cutoff)
+        .execute()
+    )
+    return len(res.data or [])
+
+
+def fail_if_orphaned(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Read-time guard: if this job is non-terminal but hasn't heartbeated in
+    STALE_JOB_SEC, its process is dead — flip it to failed and return the
+    updated row. Keeps the dashboard from polling a frozen job forever."""
+    if not row or row.get("status") not in ("pending", "processing"):
+        return row
+    ts = row.get("updated_at") or row.get("created_at")
+    if not ts:
+        return row
+    try:
+        last = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return row
+    if datetime.utcnow() - last < timedelta(seconds=STALE_JOB_SEC):
+        return row
+    update_job(row["id"], {"status": "failed", "error": _ORPHAN_ERROR})
+    return {**row, "status": "failed", "error": _ORPHAN_ERROR}
 
 
 def get_job(job_id: str) -> Optional[Dict[str, Any]]:
