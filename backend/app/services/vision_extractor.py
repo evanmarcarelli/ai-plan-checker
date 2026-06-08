@@ -136,7 +136,7 @@ class VisionTitleSheetExtractor:
             return {}
 
         try:
-            doc = fitz.open(file_path)
+            doc = await asyncio.to_thread(fitz.open, file_path)
         except Exception as e:
             self.last_error = f"open failed: {e}"
             logger.warning(f"[vision] {self.last_error}")
@@ -148,7 +148,9 @@ class VisionTitleSheetExtractor:
         merged: Dict[str, Any] = {}
         try:
             for pg in candidates:
-                b64 = self._render_page_to_jpeg_b64(doc, pg)
+                # Rasterizing a page at 150 DPI is blocking CPU work; keep it
+                # off the event loop so the loop can serve progress/health.
+                b64 = await asyncio.to_thread(self._render_page_to_jpeg_b64, doc, pg)
                 if not b64:
                     continue
                 result = await self._call_vision(b64, pg)

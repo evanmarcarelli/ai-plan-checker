@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from typing import Dict, Any, Optional
@@ -116,8 +117,12 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         # fills in any pages whose text layer is too thin (gated by the
         # AWS_TEXTRACT_ENABLED flag). The pdf_processor handles all that
         # behind the call; we just consume what it returns.
-        raw_data = pdf_processor.extract(file_path)
-        plan_data = pdf_processor.parse_plan_data(raw_data)
+        # Run the synchronous PyMuPDF/Textract extraction in a worker thread.
+        # On a single uvicorn worker, calling this directly blocks the event
+        # loop for the whole 50-page parse — which freezes the live progress
+        # poll and can starve the /health check. to_thread keeps the loop free.
+        raw_data = await asyncio.to_thread(pdf_processor.extract, file_path)
+        plan_data = await asyncio.to_thread(pdf_processor.parse_plan_data, raw_data)
 
         # Surface Textract's canonical KV pairs (when present) onto plan_data
         # before vision runs. This means the surveyor's LLM context starts
