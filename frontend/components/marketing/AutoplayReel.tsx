@@ -91,7 +91,7 @@ export default function AutoplayReel() {
             className="text-[17px] leading-relaxed max-w-md mb-10"
             style={{ color: "var(--text-secondary)" }}
           >
-            Drop in a plan set, watch twelve specialist agents resolve your
+            Drop in a plan set, watch an army of specialist agents resolve your
             jurisdiction, audit every code chapter, and return a structured
             triage report. All in 90 seconds.
           </p>
@@ -511,7 +511,7 @@ function SceneProcess() {
             An army of agents goes to work.
           </div>
         </motion.div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {AGENTS.map((a, i) => {
             const enter = 0.35 + i * 0.18;
             const done = enter + 1.4;

@@ -11,26 +11,15 @@ interface Props {
   currentAgent?: string | null;
 }
 
-const AGENT_COLORS: Record<string, { dot: string; label: string; bg: string }> = {
-  Surveyor: { dot: "#60a5fa", label: "text-amber-300", bg: "rgba(96,165,250,0.08)" },
-  Librarian: { dot: "#C5A880", label: "text-amber-200", bg: "rgba(197,168,128,0.08)" },
-  Coordinator: { dot: "#94a3b8", label: "text-slate-400", bg: "rgba(148,163,184,0.06)" },
-  "Building & Safety": { dot: "#f59e0b", label: "text-amber-400", bg: "rgba(245,158,11,0.08)" },
-  "Fire Department": { dot: "#ef4444", label: "text-red-400", bg: "rgba(239,68,68,0.08)" },
-  "Electrical Inspector": { dot: "#facc15", label: "text-yellow-400", bg: "rgba(250,204,21,0.08)" },
-  "Plumbing Inspector": { dot: "#22d3ee", label: "text-cyan-400", bg: "rgba(34,211,238,0.08)" },
-  "Mechanical Inspector": { dot: "#94a3b8", label: "text-slate-400", bg: "rgba(148,163,184,0.06)" },
-  "Accessibility (ADA / CBC 11B)": { dot: "#3b82f6", label: "text-amber-400", bg: "rgba(59,130,246,0.08)" },
-  "Energy & Green Building": { dot: "#10b981", label: "text-emerald-500", bg: "rgba(16,185,129,0.08)" },
-  "Planning & Zoning": { dot: "#a855f7", label: "text-purple-400", bg: "rgba(168,85,247,0.08)" },
-  "Public Works": { dot: "#64748b", label: "text-slate-500", bg: "rgba(100,116,139,0.08)" },
-  "Environmental": { dot: "#84cc16", label: "text-lime-400", bg: "rgba(132,204,22,0.08)" },
-  System: { dot: "#94a3b8", label: "text-slate-400", bg: "rgba(148,163,184,0.06)" },
-};
+// Unified subdued palette — every agent shares the same chip styling so the
+// log reads as one quiet stream of events rather than a confetti of colors.
+// Severity is conveyed by the *level* (error/warning), not the agent name.
+const AGENT_CHIP_BG = "var(--bg-elevated)";
+const AGENT_CHIP_FG = "var(--text-secondary)";
 
 const LEVEL_STYLES: Record<string, string> = {
-  error: "text-red-400",
-  warning: "text-amber-400",
+  error: "text-[var(--non-compliant)]",
+  warning: "text-[var(--needs-review)]",
   info: "text-[var(--text-secondary)]",
 };
 
@@ -47,7 +36,7 @@ export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col"
+      className="rounded-xl overflow-hidden flex flex-col"
       style={{
         background: "var(--bg-card)",
         border: "1px solid var(--border)",
@@ -55,76 +44,72 @@ export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
         minHeight: "480px",
       }}
     >
-      {/* Header */}
+      {/* Header — editorial label, not a heavy chrome bar */}
       <div
-        className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}
+        className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4" style={{ color: "var(--accent)" }} />
-          <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
-            Agent Logs
+          <span
+            className="text-[11px] font-semibold tracking-[0.18em] uppercase"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Agent logs
           </span>
           {isProcessing && (
             <span
-              className="text-[10px] px-2 py-0.5 rounded-full animate-pulse"
-              style={{ background: "rgba(79, 126, 255, 0.15)", color: "var(--accent-bright)", border: "1px solid rgba(79,126,255,0.25)" }}
+              className="text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded-md"
+              style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
             >
               LIVE
             </span>
           )}
         </div>
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
           {logs.length} events
         </span>
       </div>
 
-      {/* Log entries */}
+      {/* Log entries — light surface, monospace stream */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto p-3 space-y-0.5 font-mono text-xs"
-        style={{ background: "rgba(0,0,0,0.2)" }}
+        className="flex-1 overflow-y-auto p-3 space-y-0.5 font-mono text-[12px]"
+        style={{ background: "var(--bg-elevated)" }}
       >
         {logs.length === 0 && (
           <div className="flex items-center justify-center h-full flex-col gap-3">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
             >
               <Terminal className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
             </div>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
               Waiting for agents…
             </p>
           </div>
         )}
 
         {logs.map((log, idx) => {
-          const agentStyle = AGENT_COLORS[log.agent] || AGENT_COLORS.System;
           const levelStyle = LEVEL_STYLES[log.level] || LEVEL_STYLES.info;
-
           return (
             <div
               key={idx}
-              className="log-entry flex gap-3 px-2 py-1.5 rounded-lg group hover:bg-white/[0.02] transition-colors"
+              className="log-entry flex gap-3 px-2 py-1.5 rounded-md group hover:bg-black/[0.02] transition-colors"
             >
-              {/* Timestamp */}
               <span
                 className="flex-shrink-0 w-20 text-right select-none"
                 style={{ color: "var(--text-muted)" }}
               >
                 {formatTimestamp(log.timestamp)}
               </span>
-
-              {/* Agent badge */}
               <span
-                className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide w-20 text-center ${agentStyle.label}`}
-                style={{ background: agentStyle.bg }}
+                className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider w-24 text-center truncate"
+                style={{ background: AGENT_CHIP_BG, color: AGENT_CHIP_FG }}
               >
                 {log.agent}
               </span>
-
-              {/* Message */}
               <span className={`flex-1 leading-relaxed ${levelStyle}`}>
                 {log.message}
               </span>
@@ -132,13 +117,16 @@ export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
           );
         })}
 
-        {/* Blinking cursor when active */}
+        {/* Blinking cursor when active — uses brand accent */}
         {isProcessing && (
           <div className="flex gap-3 px-2 py-1.5">
             <span className="w-20" />
-            <span className="w-20" />
-            <span className="text-amber-300">
-              <span className="inline-block w-2 h-3.5 bg-amber-300 animate-pulse ml-1" />
+            <span className="w-24" />
+            <span>
+              <span
+                className="inline-block w-2 h-3.5 animate-pulse ml-1"
+                style={{ background: "var(--accent)" }}
+              />
             </span>
           </div>
         )}

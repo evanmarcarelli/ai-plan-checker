@@ -84,13 +84,14 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Active agent indicator — quiet opacity blink, no glow halo */
-@keyframes agent-pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+/* Active agent indicator — Stripe/Linear-style soft glow ring. A box-shadow
+   pulse in the brand accent that lifts the active row without flashing it. */
+@keyframes agent-glow-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 91, 255, 0.00), 0 0 0 1px rgba(47, 91, 255, 0.18); }
+  50%      { box-shadow: 0 0 0 6px rgba(47, 91, 255, 0.10), 0 0 0 1px rgba(47, 91, 255, 0.35); }
 }
 
-.agent-active { animation: agent-pulse-subtle 1.8s ease-in-out infinite; }
+.agent-active { animation: agent-glow-ring 2.2s ease-in-out infinite; border-radius: 12px; }
 
 /* Score ring animation */
 @keyframes score-fill {
@@ -118,16 +119,17 @@ body {
   box-shadow: 0 1px 2px rgba(11, 14, 20, 0.04), 0 4px 12px rgba(11, 14, 20, 0.04);
 }
 
-/* Upload zone — soft cream fill, light dashed border */
+/* Upload zone — neutral white fill, dashed border. Hover/drag tints the
+   border + a faint accent wash; no warm-amber, in line with the rest of
+   the dashboard's quieter palette. */
 .upload-zone {
-  background: #F7F8FA;
+  background: #FFFFFF;
   border: 1.5px dashed var(--border-bright);
-  border-radius: 12px;
   transition: border-color 0.25s ease, background 0.25s ease;
 }
 .upload-zone:hover, .upload-zone.drag-over {
   border-color: var(--accent);
-  background: #FFFBEB;
+  background: var(--accent-soft);
 }
 
 /* Progress bar — gold */
