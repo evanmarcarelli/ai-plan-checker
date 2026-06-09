@@ -60,6 +60,42 @@ def parent_section(section: str) -> Optional[str]:
     return s.rsplit(".", 1)[0] if "." in s else None
 
 
+def ancestor_paths(path: str) -> List[str]:
+    """Every prefix of an ltree path, root -> full.
+
+        'c10.s1004.s1004_1' -> ['c10', 'c10.s1004', 'c10.s1004.s1004_1']
+    Used to materialize the provision tree's interior nodes from leaf chunks."""
+    labels = [l for l in (path or "").split(".") if l]
+    return [".".join(labels[: i + 1]) for i in range(len(labels))]
+
+
+def path_label_to_number(label: str) -> str:
+    """Decode one ltree label back to a human section/chapter number.
+
+        'c10'        -> '10'        (chapter)
+        's1004_1'    -> '1004.1'
+        'sr302_1'    -> 'r302.1'
+    Inverse of the encoding in section_to_ltree (lossy only for the original
+    punctuation, which code numbering doesn't use beyond '.')."""
+    if not label:
+        return ""
+    if label[0] == "c" and label[1:].isdigit():
+        return label[1:]
+    body = label[1:] if label[0] == "s" else label
+    return body.replace("_", ".")
+
+
+def provision_kind(label: str, depth: int, is_leaf: bool) -> str:
+    """Classify a tree node: chapter (cN), top section, or subsection.
+
+    depth is 0-based position in the path. 'exception' isn't inferable from a
+    number alone, so deep leaves are 'subsection' (a structured source can
+    refine later)."""
+    if label[:1] == "c" and label[1:].isdigit():
+        return "chapter"
+    return "section" if depth <= 1 else "subsection"
+
+
 def normalize_adoption_id(jurisdiction_tag: str) -> Optional[str]:
     """Normalize a corpus jurisdiction tag into an adoption id.
 
