@@ -98,6 +98,11 @@ class Settings(BaseSettings):
     upload_folder: str = "./uploads"
     export_folder: str = "./exports"
 
+    # Code corpus source: "disk" (legacy JSONL + BM25, default) or "postgres"
+    # (structured code_chunks from migration 008). "postgres" falls back to disk
+    # if the table is empty/missing, so flipping this on is safe.
+    code_store: str = "disk"
+
     # AWS Textract (OCR fallback for image-only or scan-heavy plan sheets).
     # Off by default — only kicks in when set. When `aws_textract_enabled` is
     # true and a page yields too little text from the PyMuPDF text layer, the
