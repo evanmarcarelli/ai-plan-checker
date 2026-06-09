@@ -96,6 +96,51 @@ def search(
         return []
 
 
+def fetch_provision(edition_id: str, path: str) -> Optional[Dict[str, Any]]:
+    """One provision node (base tree). None if missing/unavailable."""
+    client = _admin()
+    if client is None:
+        return None
+    try:
+        res = (client.table("provisions").select("*")
+               .eq("edition_id", edition_id).eq("path", path).limit(1).execute())
+        return (res.data or [None])[0]
+    except Exception as e:
+        logger.warning(f"[code_store] fetch_provision failed: {e}")
+        return None
+
+
+def fetch_amendments(adoption_id: Optional[str], target_path: str) -> List[Dict[str, Any]]:
+    """Amendments an adoption makes to a specific provision path. [] if none."""
+    client = _admin()
+    if client is None or not adoption_id:
+        return []
+    try:
+        res = (client.table("amendments")
+               .select("op, new_text, ordinance_cite, effective_date, needs_review")
+               .eq("adoption_id", adoption_id).eq("target_path", target_path).execute())
+        return res.data or []
+    except Exception as e:
+        logger.warning(f"[code_store] fetch_amendments failed: {e}")
+        return []
+
+
+def provision_ancestors(edition_id: str, path: str) -> List[Dict[str, Any]]:
+    """Provision node + all ancestors (root->leaf) from the structured tree —
+    the breadcrumb for context assembly. [] if the RPC/migration is absent."""
+    client = _admin()
+    if client is None:
+        return []
+    try:
+        res = client.rpc("get_provision_ancestors", {
+            "p_edition_id": edition_id, "p_path": path,
+        }).execute()
+        return res.data or []
+    except Exception as e:
+        logger.warning(f"[code_store] provision_ancestors RPC failed: {e}")
+        return []
+
+
 def fetch_table_cells(table_id: str, adoption_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Return the cells of one reference table. Prefers rows scoped to
     adoption_id (a jurisdiction that amended a cell); falls back to the base

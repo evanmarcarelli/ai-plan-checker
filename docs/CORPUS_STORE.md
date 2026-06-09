@@ -10,15 +10,46 @@ system.** This is additive and feature-flagged: nothing changes until you set
 | Problem (from the teardown) | Addressed here | How |
 |---|---|---|
 | Corpus not in the DB | ✅ | `code_chunks` table + backfill script |
-| No hierarchy / inheritance | ✅ (schema) | `ltree path` on every chunk + `get_chunk_ancestors` |
-| Amendments → base & local both match | ✅ (capability) | `adoption_id` scope + retriever `adoption_id` filter |
+| No hierarchy / inheritance | ✅ **done** | `provisions` tree built from corpus + `get_provision_ancestors` |
+| Amendments → base & local both match | ✅ **done** | resolver `corpus_layer_keys` scoping + `amendments` resolution engine |
 | Tables as hardcoded dicts | ✅ **done** | `code_table_cells` + `table_store` provider (DB-first, dict fallback) |
 | No provenance / license tracking | ✅ | `source_tier` + `license_status` on every chunk/edition |
 | BM25-only, no semantic recall | ✅ (schema) | nullable `embedding halfvec` + `search_code_chunks` RRF |
 
-**Deferred on purpose** (next steps): generating embeddings, populating the
-normalized `provisions`/`amendments` tree from structured sources, and flipping
-department agents to query by `adoption_id`. The schema + seams are in place.
+**Deferred on purpose** (one item left): generating embeddings to activate the
+semantic half of `search_code_chunks` — needs an embedding vendor/key (Voyage,
+OpenAI; Anthropic has no embeddings endpoint). The schema + RRF seam are ready.
+
+## Jurisdiction scoping (done — #3)
+
+Retrieval is scoped via the adoption resolver's `corpus_layer_keys`
+(`CA/Los Angeles → ['*','CA','CA:Los Angeles']`), the same source that drives
+code versions — so reviewers can't pull another jurisdiction's rules. See
+`CorpusCodeSource._layers` + `CodeRetriever(..., layer_keys=...)`.
+
+## Provision tree + amendments (done — #2)
+
+`scripts/ingest/build_provisions.py` derives the structural tree (chapter →
+section → subsection, ~312 nodes from the current corpus) from each leaf's
+`ltree` path, so `get_provision_ancestors` (migration 009) returns a real
+breadcrumb for context assembly. *Honest limit:* interior nodes we have no
+chunk for carry the number + a generic heading and **no verbatim text** (we
+don't have licensed full chapter text) — the structure is real, the prose for
+un-sourced ancestors is not.
+
+`app/code_library/amendments.py` resolves `base ⊕ local deltas`:
+`apply_amendments()` is a pure strike/replace/add/delete engine, gated so an
+amendment only applies when `needs_review=False` (the human gate) and is
+effective on/before the permit date. Real LA ordinance rows are the human-
+reviewed feed that populates the `amendments` table; the engine + tests are in
+place to consume them safely.
+
+Seed both:
+```bash
+cd backend
+python -m scripts.ingest.build_provisions --dry-run   # show tree shape
+python -m scripts.ingest.build_provisions             # upsert provisions
+```
 
 ## Code reference tables (done)
 
