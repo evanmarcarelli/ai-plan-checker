@@ -46,7 +46,7 @@ function LoginForm() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-            Up2Code AI
+            PhiCodes AI
           </h1>
           <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>
             Sign in to your account

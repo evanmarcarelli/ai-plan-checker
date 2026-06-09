@@ -44,7 +44,7 @@ logger = get_logger(__name__)
 
 MUNICODE_BASE = "https://library.municode.com"
 USER_AGENT = (
-    "Up2CodeAI-Ingester/1.0 "
+    "PhiCodesAI-Ingester/1.0 "
     "(+contact: esmith.marc@gmail.com - fetching public municipal code text)"
 )
 DEFAULT_DELAY_SEC = 1.0

@@ -1,4 +1,4 @@
-"""Up2Code AI accuracy benchmark harness.
+"""PhiCodes AI accuracy benchmark harness.
 
 Two modes:
 

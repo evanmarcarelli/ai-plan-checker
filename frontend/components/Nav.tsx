@@ -28,13 +28,13 @@ export default function Nav() {
           className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
           style={{ background: "var(--accent)", boxShadow: "0 2px 8px rgba(47,91,255,0.25)" }}
         >
-          <span className="text-white text-[14px] font-bold leading-none tracking-tight">U</span>
+          <span className="text-white text-[15px] font-bold leading-none tracking-tight">&#934;</span>
         </div>
         <span
           className="font-semibold text-[15px] tracking-tight"
           style={{ color: "var(--text-primary)" }}
         >
-          Up2Code
+          Codes
         </span>
       </Link>
       <div className="flex items-center gap-4 text-sm">

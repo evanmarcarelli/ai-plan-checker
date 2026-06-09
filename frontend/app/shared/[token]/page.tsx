@@ -69,7 +69,7 @@ export default function SharedReportPage() {
             className="inline-block px-4 py-2 rounded-lg font-medium"
             style={{ background: "#0B0E14", color: "#fff" }}
           >
-            Try Up2Code AI free
+            Try PhiCodes AI free
           </Link>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function SharedReportPage() {
           </div>
           <div>
             <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Up2Code AI
+              PhiCodes AI
             </div>
             <div className="text-xs" style={{ color: "var(--text-muted)" }}>
               Shared compliance review · {share.role}
@@ -180,7 +180,7 @@ export default function SharedReportPage() {
       <footer className="px-6 py-6 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         Powered by{" "}
         <Link href="/" className="font-medium" style={{ color: "var(--accent-bright)" }}>
-          Up2Code AI
+          PhiCodes AI
         </Link>
         . Reports are AI-generated for preliminary review only and must be verified by a licensed professional and the AHJ.
       </footer>

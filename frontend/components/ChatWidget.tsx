@@ -73,7 +73,7 @@ export function ChatWidget({
           role: "assistant",
           content: res.reply,
           citations: res.citations,
-          author_display: "Up2Code AI",
+          author_display: "PhiCodes AI",
           created_at: new Date().toISOString(),
         },
       ]);
@@ -121,7 +121,7 @@ export function ChatWidget({
           </div>
           <div>
             <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Up2Code Assistant
+              PhiCodes Assistant
             </div>
             <div className="text-xs" style={{ color: "var(--text-muted)" }}>
               Code clarifications · grounded in cited sections
@@ -166,7 +166,7 @@ export function ChatWidget({
 
         {busy && (
           <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Up2Code AI is thinking…
+            PhiCodes AI is thinking…
           </div>
         )}
         {error && (
@@ -239,7 +239,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       >
         {!isUser && (
           <div className="text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
-            {message.author_display || "Up2Code AI"}
+            {message.author_display || "PhiCodes AI"}
           </div>
         )}
         <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>

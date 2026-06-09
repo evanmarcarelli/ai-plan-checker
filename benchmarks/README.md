@@ -1,4 +1,4 @@
-# Up2Code AI Benchmark Harness
+# PhiCodes AI Benchmark Harness
 
 This is where we measure whether the AI is actually good enough to ship.
 

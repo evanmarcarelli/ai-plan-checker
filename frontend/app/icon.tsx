@@ -3,6 +3,16 @@ import { ImageResponse } from "next/og";
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
+// PhiCodes favicon — the Fibonacci golden spiral (quarter-circle arcs through
+// squares 1,1,2,3,5,8). Phi (Φ) is the golden ratio, so the spiral is the
+// brand's "Fibonacci in alignment" mark. Blue stroke on a near-black tile.
+const SPIRAL =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 8">' +
+  '<path d="M 13 0 A 8 8 0 0 1 5 8 A 5 5 0 0 1 0 3 A 3 3 0 0 1 3 0 ' +
+  'A 2 2 0 0 1 5 2 A 1 1 0 0 1 4 3 A 1 1 0 0 1 3 2" ' +
+  'fill="none" stroke="#2F5BFF" stroke-width="0.62" ' +
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 export default function Icon() {
   return new ImageResponse(
     (
@@ -13,15 +23,15 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#2F5BFF",
+          background: "#0B1220",
           borderRadius: 14,
-          color: "#FFFFFF",
-          fontSize: 44,
-          fontWeight: 700,
-          letterSpacing: "-0.03em",
         }}
       >
-        U
+        <img
+          width={44}
+          height={27}
+          src={`data:image/svg+xml;utf8,${encodeURIComponent(SPIRAL)}`}
+        />
       </div>
     ),
     size,
