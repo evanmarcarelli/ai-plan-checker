@@ -213,6 +213,7 @@ class PlanCheckerWorkflow:
             state=j.state_code,
             city=j.city,
             plan_type=pd.plan_type.value if pd.plan_type else "commercial",
+            county=j.county,
         )
         codes_by_category: Dict[str, List] = {}
         for c in full_codes:

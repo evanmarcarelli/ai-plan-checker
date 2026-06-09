@@ -45,6 +45,7 @@ class LibrarianAgent(BaseAgent):
             state=jurisdiction.state_code,
             city=jurisdiction.city,
             plan_type=plan_type,
+            county=jurisdiction.county,
         )
         logger.info(
             f"[Librarian] {len(codes)} applicable codes for "
