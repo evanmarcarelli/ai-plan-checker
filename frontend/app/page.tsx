@@ -60,7 +60,6 @@ export default function MarketingHome() {
       <ScrollBuildingHero />
       <Hero />
       <AutoplayReel />
-      <CredibilityBar />
       <DemoSection />
       <HowItWorks />
       <AgentGrid />
@@ -190,35 +189,6 @@ function Hero() {
             </p>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────── Credibility bar ───────────────────────
-
-function CredibilityBar() {
-  const stats = [
-    { value: "AI",  label: "multi-agent system" },
-    { value: "90s", label: "average review time" },
-    { value: "100%",label: "citation-verified" },
-  ];
-  return (
-    <section className="px-6 py-8 border-y" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
-      <div className="max-w-5xl mx-auto grid grid-cols-3 gap-6 text-center">
-        {stats.map((s, i) => (
-          <Reveal key={s.label} delay={i * 0.06}>
-            <div
-              className="text-3xl font-bold"
-              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
-            >
-              {s.value}
-            </div>
-            <div className="text-xs uppercase tracking-wide mt-1" style={{ color: "var(--text-muted)" }}>
-              {s.label}
-            </div>
-          </Reveal>
-        ))}
       </div>
     </section>
   );
