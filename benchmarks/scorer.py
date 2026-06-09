@@ -16,7 +16,6 @@ A finding "matches" an expected finding if it cites the same section number
 """
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -52,6 +51,8 @@ class CaseGroundTruth:
     source: str = ""                   # provenance of the ground truth
     input_quality: str = "synthetic"   # synthetic | vector | scanned | mixed | missing_title_sheet
     labelers: List[str] = field(default_factory=list)
+    # The Surveyor should extract these from the PDF — the extraction stage metric.
+    expected_extraction: Dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -106,40 +107,23 @@ class CaseScore:
         ]
 
 
-# ---- normalization helpers ----
+# ---- normalization helpers (kept re-exported for back-compat) ----
 
-_NORM_RE = re.compile(r"[^a-z0-9.]")
-
-def _norm(s: str) -> str:
-    """Normalize a citation for matching: drop the code-prefix word (which
-    may itself contain digits like 'T24' or 'CBC-7A'), keep the actual section
-    number. Returns e.g. '404.2.3', '210.8a', '4.106.4'."""
-    if not s:
-        return ""
-    s = s.lower().strip()
-    # Split off the prefix. Code prefixes are space- or dash-separated and
-    # always come BEFORE the section number; the section number is the last
-    # whitespace-separated token.
-    tokens = re.split(r"\s+", s)
-    tail = tokens[-1]
-    # If still hyphenated like 'ibc-1011.5.2', take the part after the dash
-    if "-" in tail and re.search(r"[a-z]", tail.split("-", 1)[0] or ""):
-        tail = tail.split("-", 1)[1]
-    return _NORM_RE.sub("", tail)
+from benchmarks.matcher import norm as _norm, family_match, match_findings  # noqa: E402
 
 
 def _matches(produced_citation: str, expected_section: str) -> bool:
-    a = _norm(produced_citation)
-    b = _norm(expected_section)
-    if not a or not b:
-        return False
-    return a == b or a.startswith(b) or b.startswith(a)
+    return family_match(_norm(produced_citation), _norm(expected_section))
 
 
 # ---- main scoring ----
 
+def _is_critical(e) -> bool:
+    return str(getattr(e, "severity", "")).lower() == "critical"
+
+
 def score_case(gt: CaseGroundTruth, findings: Sequence[Dict[str, object]]) -> CaseScore:
-    """Score one case.
+    """Score one case via the issue-level matcher (matcher.match_findings).
 
     `findings` is a list of dicts each with keys:
         code_id / source_citation : str
@@ -150,48 +134,20 @@ def score_case(gt: CaseGroundTruth, findings: Sequence[Dict[str, object]]) -> Ca
     corpus = get_corpus()
     score = CaseScore(case_id=gt.case_id, total_findings=len(findings))
 
-    # Pre-compute expected-section set & critical set
-    expected_norm = {_norm(e.section): e for e in gt.expected_findings}
-    critical_norm = {_norm(e.section) for e in gt.expected_findings if e.severity == "critical"}
-    forbidden_norm = {_norm(s) for s in gt.must_not_flag}
-
-    matched_expected: set = set()
+    # Citation validity: does each cited section exist in the real corpus?
     for f in findings:
         cite = str(f.get("source_citation") or f.get("code_id") or "")
-        # citation validity (does this section exist in the real corpus?)
         if corpus.has_section(cite):
             score.cited_in_corpus += 1
         else:
             score.cited_outside_corpus += 1
 
-        # status: only count "non_compliant" or "needs_review" as a real flag
-        status = str(f.get("status", "")).lower()
-        if status not in ("non_compliant", "needs_review"):
-            # not a flag; not scored against expected
-            continue
-
-        norm = _norm(cite)
-        if norm in forbidden_norm:
-            score.forbidden_hits += 1
-            continue
-
-        # Match to an expected finding?
-        if norm in expected_norm and norm not in matched_expected:
-            matched_expected.add(norm)
-            score.tp += 1
-            if norm in critical_norm:
-                score.critical_tp += 1
-        else:
-            # Don't count "not in expected" against precision unless we're being
-            # strict. Be strict: this is a quality bar — only count as TP what
-            # the architect explicitly cared about.
-            score.fp += 1
-
-    # Anything in expected we didn't match is a false negative
-    for norm in expected_norm:
-        if norm not in matched_expected:
-            score.fn += 1
-            if norm in critical_norm:
-                score.critical_fn += 1
-
+    # Fair, issue-level matching (acceptable_sections set + family match).
+    res = match_findings(gt.expected_findings, findings, gt.must_not_flag)
+    score.tp = len(res.tp)
+    score.fp = len(res.fp_confirmed)
+    score.fn = len(res.fn)
+    score.forbidden_hits = len(res.forbidden)
+    score.critical_tp = sum(1 for m in res.tp if _is_critical(m.expected))
+    score.critical_fn = sum(1 for e in res.fn if _is_critical(e))
     return score

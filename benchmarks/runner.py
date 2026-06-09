@@ -25,6 +25,8 @@ import yaml  # PyYAML
 
 from benchmarks.scorer import CaseGroundTruth, ExpectedFinding, score_case
 from benchmarks import manifest as manifest_mod
+from benchmarks import stats as stats_mod
+from benchmarks.extraction import score_extraction
 from tabulate import tabulate
 
 CASES_DIR = Path(__file__).parent / "cases"
@@ -53,6 +55,16 @@ def parse_ground_truth(raw: Dict, case_id: str, features: Optional[Dict] = None)
             acceptance_criteria=e.get("acceptance_criteria", ""),
             location=e.get("location", {}) or {},
         ))
+    feats = features or {}
+    # Extraction truth: explicit `expected_extraction`, else derive from the
+    # synthetic features (so a synthetic case promotes to a PDF case by just
+    # adding plan.pdf and reusing its declared facts).
+    expected_extraction = raw.get("expected_extraction") or {
+        k: feats[k] for k in
+        ("plan_type", "occupancy_type", "construction_type", "building_area",
+         "building_height", "stories")
+        if feats.get(k) is not None
+    }
     return CaseGroundTruth(
         case_id=case_id,
         description=raw.get("description", ""),
@@ -60,12 +72,13 @@ def parse_ground_truth(raw: Dict, case_id: str, features: Optional[Dict] = None)
         plan_type=raw.get("plan_type", "residential"),
         expected_findings=expected,
         must_not_flag=raw.get("must_not_flag", []) or [],
-        plan_features=features or {},
+        plan_features=feats,
         tier=str(raw.get("tier", "A")),
         split=raw.get("split", "dev"),
         source=raw.get("source", ""),
         input_quality=raw.get("input_quality", "synthetic"),
         labelers=raw.get("labelers", []) or [],
+        expected_extraction=expected_extraction,
     )
 
 
@@ -209,10 +222,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     rows = []
+    case_scores = []
     json_out = {"manifest": manifest, "cases": []}
     for gt in cases:
         findings: List[Dict]
         capture = None
+        extraction_score = None
         if args.live_pdf:
             from benchmarks import capture as capture_mod
             pdf = CASES_DIR / gt.case_id / "plan.pdf"
@@ -221,6 +236,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 continue
             capture = asyncio.run(capture_mod.run_pipeline_capture(str(pdf), gt.case_id))
             findings = capture.findings
+            # Extraction stage metric: did the Surveyor read the plan correctly?
+            if gt.expected_extraction:
+                extraction_score = score_extraction(gt.expected_extraction, capture.extraction)
             # Persist the full stage capture for the extraction metric + debugging.
             (run_dir / f"{gt.case_id}.capture.json").write_text(
                 json.dumps(capture.__dict__, indent=2, default=str), encoding="utf-8")
@@ -241,6 +259,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             findings = dry_run_findings(gt)
 
         score = score_case(gt, findings)
+        case_scores.append(score)
         rows.append([gt.tier] + score.as_row())
         json_out["cases"].append({
             "case_id": score.case_id,
@@ -254,16 +273,24 @@ def main(argv: Optional[List[str]] = None) -> int:
             "forbidden_hits": score.forbidden_hits,
             "tp": score.tp, "fp": score.fp, "fn": score.fn,
             "total_findings": score.total_findings,
-            "extraction": (capture.extraction if capture else None),
+            "extraction_accuracy": (extraction_score["accuracy"] if extraction_score else None),
+            "extraction_fields": (extraction_score["fields"] if extraction_score else None),
             "elapsed_sec": (capture.elapsed_sec if capture else None),
         })
 
+    # Aggregate with bootstrap CIs — the honest, poolable number.
+    agg = stats_mod.aggregate(case_scores) if case_scores else None
+    if agg:
+        json_out["aggregate"] = agg
     (run_dir / "metrics.json").write_text(json.dumps(json_out, indent=2), encoding="utf-8")
 
     headers = ["tier", "case", "P", "R", "F1", "Crit-R", "Cite✓", "Forbid", "TP/FP/FN", "N"]
     print()
     print(tabulate(rows, headers=headers, tablefmt="github"))
     print()
+    if agg:
+        print(stats_mod.format_aggregate(agg))
+        print()
     print(f"mode = {manifest['mode']}  ·  git {manifest['git_sha']}"
           f"{'*' if manifest['git_dirty'] else ''}  ·  corpus {manifest['corpus_sha']}  ·  "
           f"cases scored = {len(rows)}")
