@@ -87,6 +87,19 @@ class CodeChunk(BaseModel):
                     return True
         return False
 
+    def in_layers(self, layer_keys: Sequence[str]) -> bool:
+        """Return True iff this chunk belongs to one of the resolved corpus
+        layer keys (from the adoption resolver, e.g. ['*','CA','CA:Los Angeles']).
+
+        This is the authoritative jurisdiction test: the resolver decides which
+        layers apply to a jurisdiction (handling county, inheritance, address
+        geocoding), and a chunk applies iff its own tag is one of them. A base
+        chunk ('*') always applies."""
+        if "*" in self.jurisdictions:
+            return True
+        keys = set(layer_keys)
+        return any(j in keys for j in self.jurisdictions)
+
 
 # ---------- Tokenizer ----------
 
@@ -161,6 +174,7 @@ class CodeRetriever:
         category: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
+        layer_keys: Optional[Sequence[str]] = None,
         adoption_id: Optional[str] = None,
         k: int = 6,
         min_score: float = 0.5,
@@ -173,12 +187,15 @@ class CodeRetriever:
         for chunk, score in zip(self.corpus.chunks, scores):
             if category and chunk.category != category:
                 continue
-            # Hard jurisdiction scope (migration 008): when an adoption_id is
-            # given, ONLY return chunks scoped to it (or base chunks with no
-            # adoption). This is what prevents a base rule and a local
-            # amendment from both matching the same query. Falls back to the
-            # legacy applies_to() geo match when no adoption_id is set.
-            if adoption_id is not None:
+            # Jurisdiction scope, in priority order:
+            #  1. layer_keys  — authoritative set from the adoption resolver
+            #     (the production path; e.g. ['*','CA','CA:Los Angeles']).
+            #  2. adoption_id — structured Postgres scope (migration 008).
+            #  3. applies_to  — legacy fuzzy geo match (no jurisdiction given).
+            if layer_keys is not None:
+                if not chunk.in_layers(layer_keys):
+                    continue
+            elif adoption_id is not None:
                 if chunk.adoption_id not in (adoption_id, None):
                     continue
             elif not chunk.applies_to(state, city):
@@ -195,12 +212,17 @@ class CodeRetriever:
         *,
         state: Optional[str] = None,
         city: Optional[str] = None,
+        layer_keys: Optional[Sequence[str]] = None,
         limit: Optional[int] = None,
     ) -> List[CodeChunk]:
         """Return every chunk in a category, jurisdiction-filtered. Used by department
-        agents as the baseline 'must check' list (RAG augments, doesn't replace)."""
-        result = [c for c in self.corpus.chunks
-                  if c.category == category and c.applies_to(state, city)]
+        agents as the baseline 'must check' list (RAG augments, doesn't replace).
+
+        Prefers the resolver's layer_keys (authoritative); falls back to the
+        legacy applies_to() geo match when no layers are supplied."""
+        def _applies(c: CodeChunk) -> bool:
+            return c.in_layers(layer_keys) if layer_keys is not None else c.applies_to(state, city)
+        result = [c for c in self.corpus.chunks if c.category == category and _applies(c)]
         return result[:limit] if limit else result
 
 

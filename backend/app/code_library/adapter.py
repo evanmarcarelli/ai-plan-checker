@@ -37,6 +37,31 @@ class CorpusCodeSource:
         self._corpus = get_corpus()
         self._retriever = get_retriever()
 
+    # ---- jurisdiction scope (single source of truth: the adoption resolver) ----
+
+    def _layers(
+        self,
+        state: Optional[str],
+        city: Optional[str],
+        county: Optional[str] = None,
+    ) -> Optional[List[str]]:
+        """Resolve the corpus layer keys that apply to this jurisdiction via the
+        adoption resolver (e.g. CA/Los Angeles -> ['*','CA','CA:Los Angeles']).
+
+        This replaces ad-hoc chunk-level applies_to() matching with the
+        authoritative resolver output — the same source that drives code
+        versions and amendment labels — so every reviewer scopes to exactly the
+        layers in force for the AHJ. Returns None on any failure so callers fall
+        back to the legacy geo match (no regression if the map can't load)."""
+        if not state:
+            return None
+        try:
+            from app.code_library.adoption.resolver import get_resolver
+            keys = get_resolver().resolve(state, county, city).corpus_layer_keys
+            return list(keys) if keys else None
+        except Exception:
+            return None
+
     # ---- read paths ----
 
     def get_applicable_codes(
@@ -44,9 +69,12 @@ class CorpusCodeSource:
         state: Optional[str],
         city: Optional[str],
         plan_type: str = "commercial",
+        county: Optional[str] = None,
     ) -> List[CodeRequirement]:
-        return [chunk_to_requirement(c) for c in self._corpus.chunks
-                if c.applies_to(state, city)]
+        layers = self._layers(state, city, county)
+        if layers is not None:
+            return [chunk_to_requirement(c) for c in self._corpus.chunks if c.in_layers(layers)]
+        return [chunk_to_requirement(c) for c in self._corpus.chunks if c.applies_to(state, city)]
 
     def get_codes_by_category(
         self,
@@ -54,9 +82,11 @@ class CorpusCodeSource:
         state: Optional[str],
         city: Optional[str],
         plan_type: str = "commercial",
+        county: Optional[str] = None,
     ) -> List[CodeRequirement]:
+        layers = self._layers(state, city, county)
         return [chunk_to_requirement(c) for c
-                in self._retriever.all_for_category(category, state=state, city=city)]
+                in self._retriever.all_for_category(category, state=state, city=city, layer_keys=layers)]
 
     # ---- retrieval (new) ----
 
@@ -67,6 +97,7 @@ class CorpusCodeSource:
         category: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
+        county: Optional[str] = None,
         k: int = 6,
     ) -> List[CodeRequirement]:
         """BM25 search for the most relevant code chunks given a free-text query.
@@ -74,7 +105,10 @@ class CorpusCodeSource:
         Department agents call this to augment their baseline 'must-check' list
         with whatever specifically applies to the page content they're reading.
         """
-        chunks = self._retriever.search(query, category=category, state=state, city=city, k=k)
+        layers = self._layers(state, city, county)
+        chunks = self._retriever.search(
+            query, category=category, state=state, city=city, layer_keys=layers, k=k,
+        )
         return [chunk_to_requirement(c) for c in chunks]
 
     # ---- verification ----
