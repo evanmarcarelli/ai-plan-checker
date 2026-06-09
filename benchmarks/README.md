@@ -5,6 +5,25 @@ This is where we measure whether the AI is actually good enough to ship.
 Without benchmarks, "the system works" is a vibe. With them, it's a number we
 can move and defend in a sales conversation.
 
+> **The full program is in [`BENCHMARK_DESIGN.md`](./BENCHMARK_DESIGN.md)** —
+> ground-truth tiers, the fair (issue-level) matching rubric, stage
+> decomposition, statistical rigor, and the ship-decision gate. This README is
+> the harness mechanics; that doc is how to make the number real.
+
+## Modes
+
+```bash
+python -m benchmarks              # dry: schema + citation validity, no API (CI)
+python -m benchmarks --live       # real pipeline on SYNTHETIC features (skips the Surveyor)
+python -m benchmarks --live-pdf   # FULL pipeline on each case's plan.pdf — tests extraction
+python -m benchmarks --from-cache # re-score cached findings, no API
+```
+
+Every run writes a manifest (git SHA + model ids + corpus hash) and per-case
+results to `benchmarks/results/<run_id>/`, so a number is always reproducible.
+`--live-pdf` additionally captures the Surveyor's extraction for the
+extraction-accuracy metric.
+
 ## What gets measured
 
 | Metric | Why it matters |

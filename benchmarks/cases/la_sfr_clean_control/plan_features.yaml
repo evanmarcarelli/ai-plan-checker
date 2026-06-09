@@ -1,0 +1,28 @@
+# Synthetic Surveyor output for the clean negative control (used by --live).
+# Every value here is intentionally compliant.
+project_name: "Clean SFR Control — 100 Compliant Way"
+project_address: "100 Compliant Way, Los Angeles, CA 90001"
+plan_type: residential
+occupancy_type: R-3
+construction_type: V-B
+building_height: 18.0      # ft — well under the 75 ft high-rise threshold
+building_area: 2500.0      # sf — under the 7,000 sf R-3/V-B Table 506.2 limit
+stories: 1                 # within Table 504.4
+dimensions: {}
+materials:
+  - stucco siding
+  - class A roof
+raw_text_by_page:
+  1: |
+    SHEET A-0.0  TITLE SHEET   |   PROJECT: CLEAN SFR CONTROL
+    OCCUPANCY: R-3   CONSTRUCTION: V-B   STORIES: 1   HEIGHT: 18 FT
+    BUILDING AREA: 2,500 SF (within Table 506.2 R-3/V-B 7,000 SF limit)
+    APPLICABLE CODES: 2022 CBC, 2022 CRC, 2022 CMC, 2022 CPC, 2022 CEC, 2022 T24, CALGREEN 2022
+    FULLY SPRINKLERED: NFPA 13D RESIDENTIAL.  SMOKE/CO ALARMS PER NFPA 72.
+    ROOFTOP PV SYSTEM PROVIDED (TITLE 24 PART 6).  200A PANEL, EV-READY CIRCUIT RESERVED.
+    SITE IS NOT IN A VERY HIGH FIRE HAZARD SEVERITY ZONE.
+  2: |
+    SHEET A-2.1  FLOOR PLAN
+    BEDROOM EGRESS WINDOWS: 5.7 SF CLEAR OPENING, 24" H x 36" W, SILL 44" AFF (CRC R310 COMPLIANT)
+    TWO EXITS PROVIDED.  HALLWAY 44" WIDE.
+    DEFENSIBLE-SPACE LANDSCAPE PLAN INCLUDED.
