@@ -242,6 +242,46 @@ amlegal:
     jurisdictions: ["CA:Palmdale"]
     output_filename: amlegal_palmdale_ca.jsonl
 
+  # ── Statewide CA expansion (priority metros) ──
+  # Best-effort slugs + publisher; CONFIRM both before running (some may live
+  # on Municode instead). Verification workflow is in README.md.
+  - source_id: sacramento_ca           # verify
+    code_name: "Sacramento City Code"
+    code_short: SACRAMENTO-MC
+    version: "2024"
+    jurisdictions: ["CA:Sacramento"]
+    output_filename: amlegal_sacramento_ca.jsonl
+  - source_id: sandiego_ca             # verify (publisher + slug)
+    code_name: "San Diego Municipal Code"
+    code_short: SANDIEGO-MC
+    version: "2024"
+    jurisdictions: ["CA:San Diego"]
+    output_filename: amlegal_sandiego_ca.jsonl
+  - source_id: oakland_ca              # verify
+    code_name: "Oakland Municipal Code"
+    code_short: OAKLAND-MC
+    version: "2024"
+    jurisdictions: ["CA:Oakland"]
+    output_filename: amlegal_oakland_ca.jsonl
+  - source_id: fresno_ca               # verify
+    code_name: "Fresno Municipal Code"
+    code_short: FRESNO-MC
+    version: "2024"
+    jurisdictions: ["CA:Fresno"]
+    output_filename: amlegal_fresno_ca.jsonl
+  - source_id: berkeley_ca             # verify
+    code_name: "Berkeley Municipal Code"
+    code_short: BERKELEY-MC
+    version: "2024"
+    jurisdictions: ["CA:Berkeley"]
+    output_filename: amlegal_berkeley_ca.jsonl
+  - source_id: riverside_ca            # verify
+    code_name: "Riverside Municipal Code"
+    code_short: RIVERSIDE-MC
+    version: "2024"
+    jurisdictions: ["CA:Riverside"]
+    output_filename: amlegal_riverside_ca.jsonl
+
 # ─────────────────────────────────────────────────────────────────────────
 # Municode  (library.municode.com)
 # ─────────────────────────────────────────────────────────────────────────
@@ -596,6 +636,51 @@ municode:
     version: "2024"
     jurisdictions: ["CA:San Francisco"]
     output_filename: municode_sanfrancisco_ca.jsonl
+
+  # ── Statewide CA expansion (priority metros) ──
+  # Best-effort slugs; CONFIRM each in the Municode library before running.
+  - source_id: sanjose_ca              # verify
+    code_name: "San Jose Municipal Code"
+    code_short: SANJOSE-MC
+    version: "2024"
+    jurisdictions: ["CA:San Jose"]
+    output_filename: municode_sanjose_ca.jsonl
+  - source_id: anaheim_ca              # verify
+    code_name: "Anaheim Municipal Code"
+    code_short: ANAHEIM-MC
+    version: "2024"
+    jurisdictions: ["CA:Anaheim"]
+    output_filename: municode_anaheim_ca.jsonl
+  - source_id: santaana_ca             # verify
+    code_name: "Santa Ana Municipal Code"
+    code_short: SANTAANA-MC
+    version: "2024"
+    jurisdictions: ["CA:Santa Ana"]
+    output_filename: municode_santaana_ca.jsonl
+  - source_id: irvine_ca               # verify
+    code_name: "Irvine Municipal Code"
+    code_short: IRVINE-MC
+    version: "2024"
+    jurisdictions: ["CA:Irvine"]
+    output_filename: municode_irvine_ca.jsonl
+  - source_id: bakersfield_ca          # verify
+    code_name: "Bakersfield Municipal Code"
+    code_short: BAKERSFIELD-MC
+    version: "2024"
+    jurisdictions: ["CA:Bakersfield"]
+    output_filename: municode_bakersfield_ca.jsonl
+  - source_id: chulavista_ca           # verify
+    code_name: "Chula Vista Municipal Code"
+    code_short: CHULAVISTA-MC
+    version: "2024"
+    jurisdictions: ["CA:Chula Vista"]
+    output_filename: municode_chulavista_ca.jsonl
+  - source_id: fremont_ca              # verify
+    code_name: "Fremont Municipal Code"
+    code_short: FREMONT-MC
+    version: "2024"
+    jurisdictions: ["CA:Fremont"]
+    output_filename: municode_fremont_ca.jsonl
 
 # ─────────────────────────────────────────────────────────────────────────
 # Quality Code Publishing  (qcode.us)

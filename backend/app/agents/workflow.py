@@ -8,6 +8,8 @@ from app.agents.departments import ALL_DEPARTMENTS, DepartmentReviewer
 from app.agents.archetype import classify_archetype, render_archetype_banner
 from app.agents.critic import critique_finding, apply_critique
 from app.config.pilot import PIPELINE_GATES, ARCHETYPE_UNCLASSIFIED
+from app.code_library.checklists.checker import checklist_requirements
+from app.config import settings
 from app.models.schemas import (
     ProcessingJob, AgentLog, ComplianceReport, ComplianceFinding,
     ComplianceSummary, ComplianceStatus, DepartmentReview, CodeRequirement,
@@ -216,6 +218,25 @@ class PlanCheckerWorkflow:
         for c in full_codes:
             codes_by_category.setdefault(c.category, []).append(c)
 
+        # ----- STANDARD CORRECTION CHECKLIST -----
+        # Feed published plan-check correction-list items to each department as
+        # extra requirements, so coverage matches a real plan check (a real
+        # residential set runs many pages of corrections). They ride the same
+        # reviewer prompt + citation gate as code requirements. Toggle via
+        # settings.checklist_review_enabled (default on).
+        checklist_reqs: Dict[str, List] = {}
+        if getattr(settings, "checklist_review_enabled", True):
+            checklist_reqs = checklist_requirements(
+                pd, max_per_department=int(getattr(settings, "checklist_max_per_department", 40))
+            )
+            if checklist_reqs:
+                await emit(
+                    "Librarian",
+                    f"Loaded standard correction-list coverage: "
+                    f"{sum(len(v) for v in checklist_reqs.values())} items across "
+                    f"{len(checklist_reqs)} departments.",
+                )
+
         # ----- DETERMINISTIC ENGINE (runs BEFORE the LLM reviewers) -----
         # Compute the high-trust code-math up front so each department reviewer
         # is handed its verified findings as authoritative context — the LLM
@@ -242,7 +263,10 @@ class PlanCheckerWorkflow:
         sem = asyncio.Semaphore(DEPARTMENT_CONCURRENCY)
 
         async def run_one(dept: DepartmentReviewer) -> DepartmentReview:
-            dept_codes = codes_by_category.get(dept.category, [])
+            dept_codes = (
+                codes_by_category.get(dept.category, [])
+                + checklist_reqs.get(dept.department_code, [])
+            )
             await emit(dept.department_name, f"Starting review ({len(dept_codes)} codes)...")
             async with sem:
                 return await _do_review(dept, dept_codes)

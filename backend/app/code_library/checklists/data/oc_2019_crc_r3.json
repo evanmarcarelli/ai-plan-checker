@@ -1,0 +1,1926 @@
+{
+  "id": "oc_2019_crc_r3",
+  "source": {
+    "jurisdiction": "Orange County, CA",
+    "authority": "OC Public Works - Building & Safety",
+    "edition": "2019 CRC",
+    "occupancy": "R-3",
+    "doc_title": "2019 CRC R-3 (Single Family and Duplex) Plan Check Correction List",
+    "url": "https://pwds.oc.gov/sites/ocpwocds/files/2021-06/2019%20Residential%20Plan%20Check%20Correction%20List.pdf",
+    "retrieved": "2026-06-08"
+  },
+  "items": [
+    {
+      "item_id": "A1",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Specify on plans that the governing codes for this project are the 2019 California Residential (CRC), Electrical (CEC), Mechanical (CMC), Plumbing (CPC), Energy Standards (CESC), and Green Building Standards (CGBC) Codes with local amendments.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A2",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Change valuation on permit application to ________ in accordance with attached County of Orange Building Valuation Analysis Sheet and pay associated fees prior to resubmission of plans.",
+      "code_citation": "CRC R108.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A3",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Indicate a job address on all sheets of the plans.",
+      "code_citation": "CRC R106.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A4",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "The legal description and name and address of the owner, architect, and engineer or person who prepared the plans shall be indicated on the front sheet of the plans.",
+      "code_citation": "CRC R106.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A5",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Permit application for this project is deemed to have been expired 180 days after the date of filing. Contact City/County Building Department to obtain written 180-day extension(s).",
+      "code_citation": "CRC R105.3.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A6",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "List all deferred submittals on cover sheet.",
+      "code_citation": "CRC R106.3.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A7",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "A grid system should be provided on the plans to facilitate reference to the plans. Also, cross-referencing calculations to the grid system is encouraged to facilitate the plan review process.",
+      "code_citation": "CRC R106.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A8",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Indicate building type of construction (Type V-B, Type V-A, etc.), number of stories, area, and number of units, on the first sheet of the plans.",
+      "code_citation": "CRC R106.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A9",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Add Notes on cover sheet of plans, \"There shall be no trenches or excavations 5 feet or more in depth into which a person is required to descend, or obtain permit from State of California, Division of Occupational Safety and Health (Cal/OSHA). This permit and any other safety permit shall be obtained prior to commence of any work.\" Contact Cal/OSHA at 714-558-4451 for additional information.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A10",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Drawing Requirements : a) Label all drawings (floor & framing plans, elevations, etc.) and provide an index of drawings. b) Indicate drawing scales. c) Key in sections and details to plans. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC R106.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A11",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Provide a completely dimensioned Plot Plan showing : a) Existing grades, structures, surface features and utilities. b) Lot dimensions (bearings & distances); easements and setbacks (front, rear, & side yards). c) Adjacent buildings (within 15 feet), streets, alleys, sidewalks, parkways, curbs, etc. d) Indicate elevations of finished pad, property corners and center line of street. e) North Arrow. f) Site drainage to public way. g) Provide various spot elevations to demonstrate required drop in elevation for 5% drainage around/away from building for a minimum distance of 10 ft. alternately, swales with slope of 2% shall be located within 10 ft. of building foundation h) Finish grade elevations at lot corners, building corners, and elevation changes. i) Provisions for controlling drainage of surface water around building per Section CRC R401.3 or provide engineer's hydraulic calculations to demonstrate compliance. j) Show location of sewer line and elevation of next upstream manhole. k) Indicate invert elevation of sewer line. l) Show routing of sewer line from structure to lateral, including slopes. m) Location of sewer lateral, power poles, wire utility supply lines & meters. n) Where applicable the construction to be demolished and the location and size of the existing structures(s) and construction that is to remain.",
+      "code_citation": "CRC R106.1.1 & R106.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A12",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Final plans and calculations are to be stamped and signed by an architect or civil/structural engineer licensed by the State of California.",
+      "code_citation": "CRC R301.1.3.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A13",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Revise sheet ___to indicate a minimum set back from top of the slope of ___feet per CRC Figure R403.1.7.1] and County of Orange Grading Code",
+      "code_citation": "CRC R403.1.7.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A14",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Revise sheet ___ to indicate a minimum set back from toe of the slope of ___ feet per CRC Figure R403.1.7.1] and County of Orange Grading Code",
+      "code_citation": "CRC R403.1.7.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A15",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Revise the street fronting building elevation to show a property address to comply with section CRC R319.",
+      "code_citation": "CRC R319.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A16",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Include the attached NPDES notes on the cover sheet of the plans. Include contact name and phone number at the top 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A17",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Revise site plan to show location of all required Best Management Practices (BMP's) including location and layout of gravel bags or fiber rolls for containment around area of construction per attached specifications SE‐6 or SE‐5, and waterproof concrete washout area for concrete trucks and concrete‐coated equipment per attached WM‐8.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A18",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "If house was constructed prior to 1994 ‐ Note on cover sheet of plans that all non‐compliant plumbing fixtures shall be replaced with water‐conserving plumbing fixtures as required by Senate Bill 407. See attached requirements. The attached \"Plumbing Fixture Replacement Affidavit\" is to be signed and provided to the inspector prior to final inspection.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A19",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Owner or contractor to complete and sign the attached \"Asbestos Disclosure for Demolition Projects\". Completed form to be returned at time of recheck.A20. Complete and sign the attached OCFA Criteria form. After completed form is submitted, it will be determined if plans are to be submitted to OCFA (Orange County Fire Authority) for plancheck review.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A21",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Complete and sign the attached form for Special Inspection include on the plans. Include special inspection for bolts installed in hardened concrete , epoxy used at rebar dowels to existing slab and footing. Be sure signature is included",
+      "code_citation": "CBC Table 1705.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A22",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "Geotechnical report is required for all projects OR revise footing details and slab specifications as follows: \"Scarify top 12\" and provide compaction report (90% compaction) after trenching for the utility and or foundation. Damp proofing, base course and presaturation are required.\" Provide 5\" slab on grade reinforced with #4 at 18\" o.c. each way over 4\" sand base with 10 mil vapor retarders in direct contact with concrete. Continuous footing 12\" wide by 24\" (minimum embedment) reinforced with 2‐#5 (or 3‐#4) top and bottom, and #4 tie‐in dowels from slab to footing (24\" x 24\") at 36\" o.c. All Concrete shall be f'c = 4,500 psi (minimum) with type V cement and maximum water cement ratio of 0.45. No special inspection required if concrete truck mix ticket is provided.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "A33",
+      "discipline": "Plan Requirements",
+      "discipline_code": "plan_requirements",
+      "text": "A grading permit is required. After grading plans are approved and grading permit is issued, grading pre‐construction meeting is completed, and rough grade release is given by the grading inspector, the building permit may be issued. It will be verified that the approved grading plans match the building plans.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B1",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "New townhouses, one- and two-family dwellings shall have an automatic fire sprinkler system installed in accordance with CRC Section R313.3 or NFPA 13D. Submit 3 sets of automatic fire sprinkler plans to OCFA for approval (714) 573-6100",
+      "code_citation": "CRC R313",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B2",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Private garage shall be separated from the residence and its attic, structure(s) supporting floor/ceiling assemblies used for separation required by CRC Section R302.6, and garages located less than from a dwelling unit on the same lot shall be protected by a minimum ½ -in gypsum board applied to the garage side. Garages beneath habitable rooms shall be separated from all habitable rooms above by not less than a 5/8-in type X gypsum board.",
+      "code_citation": "CRC R302.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B3",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Doors between the garage and private residence shall be self-closing and self-latching.",
+      "code_citation": "CRC R302.5.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B4",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Provide the minimum 1-3/8 inch solid-core wood door, a solid or honeycomb core steel door not less than 1-3/8 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List inch thick, or a 20-minute fire rated door between the garage and residence unless both are protected by an automatic residential fire sprinkler system.",
+      "code_citation": "CRC R302.5.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B5",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Projections of dwelling units and accessory buildings without an automatic residential fire sprinkler protection are not permitted less than 2 feet to the property line and are required to be 1 hour fire rated on the underside with a fire separation distance between 2 feet and 5 feet.",
+      "code_citation": "CRC Table R302.1 (1)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B6",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Projections of dwelling units and accessory buildings with an automatic residential fire sprinkler protection are not permitted less than 2 feet to the property line and are required to be 1 hour fire rated on the underside with a fire separation distance between 2 feet and 3 feet.",
+      "code_citation": "CRC Table R302.1 (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B7",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Walls of dwelling units and accessory buildings without an automatic residential fire sprinkler protection with a fire separation distance less than 5 feet are required to have a full one hour rating.",
+      "code_citation": "CRC Table R302.1 (1)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B8",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Walls of dwelling units and accessory buildings with an automatic residential fire sprinkler protection with a fire separation distance less than 3 feet are required to have a full one hour rating.",
+      "code_citation": "CRC Table R302.1 (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B9",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Detached garage accessory to a dwelling located within 2 feet of a lot line shall have a roof eave projection not to exceed 4 inches.",
+      "code_citation": "CRC R302.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B10",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Openings are not permitted less than 3 feet to the property line. In dwelling units and accessory buildings without an automatic residential fire sprinkler protection openings are limited to 25 percent the wall area when fire separation distance is greater than 3’ and less than 5’.",
+      "code_citation": "CRC Table R302.1 (1)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B11",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Exterior wall penetrations less than 3’ in dwelling units and accessory buildings without and with an automatic residential fire sprinkler protection, shall comply with CRC Section R302.4.",
+      "code_citation": "CRC Table R302.1 (1) & (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B12",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Parapets shall be constructed in accordance with Section CRC R302.2.3 for townhouses as an extension of exterior walls or common walls in accordance with CRC R302.2.2.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B13",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Townhouse units shall be separated by a common 1 hour fire-resistance-rated wall assembly when a fire sprinkler system in accordance with section R313 is provided or by a common 2 hours fire-resistance- rated wall assembly when a fire sprinkler system in accordance with section R313 is not provided. The wall shall be rated for fire exposure from both sides and shall extend to and be tight against exterior walls and the underside of the roof sheathing.",
+      "code_citation": "CRC R302.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B14",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Note on plans that a townhouse common wall cavity shall not contain plumbing or mechanical equipment, ducts, and vents.",
+      "code_citation": "CRC R302.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B15",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "A townhouse common wall shall be continuous from the foundation to the underside of the roof sheathing, deck or slab and extend the full length of the wall, including wall extensions through and separating attached enclosed accessory structures.",
+      "code_citation": "CRC R302.2.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B16",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Townhouse parapets shall be constructed on exterior walls and common walls in accordance with CRC R302.2.3. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC R302.2.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B17",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Duplex units shall be separated by a one hour fire-resistance wall and/or floor assemblies (1/2 hour in a sprinklered building) and shall extend to and be tight against exterior walls and the underside of the roof sheathing.",
+      "code_citation": "CRC R302.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B18",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "The supporting construction of floor assemblies with fire resistance rated by section R302.3 shall have it’s of equal or greater fire-resistance rating than the fire-rated assembly being supported.",
+      "code_citation": "CRC R302.3.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B19",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Through penetrations of fire-resistance-rated construction shall be in accordance with CRC Section R302.4.1.1 or R302.4.1.2.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B20",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Membrane penetrations of fire-resistance-rated construction shall be in accordance with CRC Section R302.4.2.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B21",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Penetrations of electrical outlet boxes in a townhouse common wall shall be in accordance with CRC Section R302.4.",
+      "code_citation": "CRC R302.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B22",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Fireblocking is required in concealed spaces 10’ o.c. horizontal, vertically at the ceiling and floor levels, connections between horizontal and vertical spaces, concealed spaces between stair and landing, openings around vents, pipes, ducts, cables, wires, chimneys and fireplaces.",
+      "code_citation": "CRC R302.11",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B23",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Provide details of the deck/balcony and specify method of waterproofing. List ICC approval number for decking material. Show two percent minimum slope.",
+      "code_citation": "CRC R903.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B24",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Add note to window schedule: The load resistance of glass under uniform load shall be determined in accordance with ASTM E 1300.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B25",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Exterior windows and sliding doors shall be tested by an approved independent laboratory and bear a label identifying manufacturer, performance characteristics and approved inspection agency to show compliance with AAMA/WDMA/CSA 101/I.S.2/A440.",
+      "code_citation": "CRC R609.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B26",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "The minimum net area of under-floor space ventilation shall not be less than the floor area/150.",
+      "code_citation": "CRC R408.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B27",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Access shall be provided to all under-floor spaces. The floor access shall be a minimum 18” by 24” and openings through a perimeter wall shall be not less than 16” by 24”.",
+      "code_citation": "CRC R408.4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B28",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Wood joists or the bottom of a wood structural floor closer than 18” or wood girders closer than 12” to the exposed crawl space shall be pressure treated or naturally durable to decay.",
+      "code_citation": "CRC R317.1, item 1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B29",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "All wood framing members that rest on concrete or masonry exterior foundation walls and are less than 8” to the exposed ground shall be pressure treated or naturally durable to decay.",
+      "code_citation": "CRC R317.1, item 2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B30",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Sills and sleepers in direct contact with concrete or masonry that is in direct contact with the ground and girders with less than ½” clearance to masonry and concrete shall be pressure treated or naturally durable to decay.",
+      "code_citation": "CRC R317.1, item 3 & 4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "B31",
+      "discipline": "General Construction Requirements",
+      "discipline_code": "general_construction_requirements",
+      "text": "Note on plans that “Field-cutting ends, notches and drilled holes of preservative-treated wood shall be treated in the field in accordance with AWPA M4”. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC R317.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C1",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "A garage shall not be open into any room used for sleeping.",
+      "code_citation": "CRC R302.5.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C2",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Ducts penetrating the walls or ceilings separating the dwelling from the garage shall be constructed of a minimum No. 26 gage sheet steel or other approved material and shall not have openings into the garage. [R302.5.2]",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C3",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Garage floor surfaces shall be of an approved noncombustible material, and the area used to park vehicles shall be sloped to a drain or toward the main vehicle entry doorway. [R309.1]",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C4",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Sleeping rooms must have a window or exterior door for an emergency exit, sill height not more than 44 inches above the floor, 5.7 square feet of openable area, 24 inches clear opening height, 20 inches clear opening width and shall open directly into a public street, alley, yard, or exit court.. Windows ______ do not comply.",
+      "code_citation": "CRC R310.1- R310.2.1- R310.2.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C5",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Window wells are not permitted to be located within 3 feet of property line.",
+      "code_citation": "CRC Table R302.1 (1) & (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C6",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Window wells shall comply with section CRC R310.2.3",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C7",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Specify window size and type (how it opens) for both existing and new windows for bedroom(s) adjacent to new addition so that emergency egress requirements may be verified.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C8",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Minimum window area shall be 8 % of the floor area and 50 % openable at _______ room.",
+      "code_citation": "CRC R303.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C9",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Wall between _______ and _______ should be 50 % open and unobstructed and provides an opening of not less than 1/10 of the floor area of the interior room or 25 square feet whichever is greater to meet natural light and ventilation requirements in these rooms.",
+      "code_citation": "CRC R303.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C10",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Net window opening for ventilation at ________ room shall be a minimum of 4 % of the floor area.",
+      "code_citation": "CRC R303.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C11",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Specify window size and type (how it opens) for both new and existing windows at rooms adjacent to new addition so that minimum light and ventilation requirements may be verified. Minimum window area shall be 8 % of the floor area square and 50% openable.",
+      "code_citation": "CRC R303.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C12",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Where windows are not provided provide a whole-house mechanical ventilation system in accordance with the California Mechanical Code and artificial light producing 6 foot-candles (65 lux) at 30” in height.",
+      "code_citation": "CRC R303.1, Exceptions 1 & 2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C13",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Bathroom or service room minimum window areas shall not be less than 3 square feet and 50 % openable or, provide a mechanical ventilation system exhausted to the outside capable of providing 50 cubic feet per minute for intermittent ventilation 25 cubic feet per minute for continuous ventilation.",
+      "code_citation": "CRC R303.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C14",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Each bathroom containing a bathtub, shower, or tub/shower combination shall be mechanically ventilated for purposes of humidity control I accordance with the California mechanical code, Chapter 4; California Green Building Standards Code, Chapter 4, Division 4.5. Window operation is not a permissible method of providing exhaust for humidity control. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C15",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Show 30-inch clear width for water closet compartments and 24-inch clearance in front of a water closet.",
+      "code_citation": "CPC, 402.5",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C16",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Habitable rooms shall have a floor area of no less than 70sf [R304.1].",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C17",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Show a 7' minimum ceiling height for habitable rooms, hallways, and portions of basements containing these spaces.",
+      "code_citation": "CRC R305.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C18",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Bathrooms, toilet rooms, and laundry rooms shall have a ceiling height of not less than 6 feet and 8 inches.",
+      "code_citation": "CRC R305.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C19",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "For rooms with sloped ceilings, the required floor area of the room shall have a ceiling height of not less than 5 feet and not less than 50 percent of the required floor area shall have a ceiling height of not less than 7 feet.",
+      "code_citation": "CRC R305.1 Exception (1)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C20",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "The ceiling height above bathroom and toilet room fixtures shall be such that the fixture be capable of being used for its intended purpose.",
+      "code_citation": "CRC R305.1 Exception (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C21",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "A shower or tub equipped with a showerhead shall have a ceiling height of not less than 6 feet and 8 inches above an area not less than 30 inches by 30 inches at the showerhead.",
+      "code_citation": "CRC R305.1 Exception (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C22",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Show a 6'-8\" minimum ceiling height for non-habitable basements.",
+      "code_citation": "CRC 305.1.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C23",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Exterior openings that open into porches and sunrooms areas used for light and ventilation shall have 40% of the exterior walls are open and the enclosure shall comply with CRC Appendix H.",
+      "code_citation": "CRC R303.1 Exception (3)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C24",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Show location of heating equipment on the plans. Heater shall be capable of maintaining a minimum room temperature of 68°F at a point 3 feet above the floor and 2 feet from exterior walls in all habitable rooms at the design temperature. The installation of one or two potable space heaters shall not be used to achieve compliance with this section.",
+      "code_citation": "CRC R303.10",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C25",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Revise plans to show UL 217 rated smoke alarms: a) In alterations, repairs and additions smoke alarms are required in each sleeping room, outside each separate sleeping area in the immediate vicinity of the bedrooms, and at each additional floor or basement level. Smoke alarms may be battery operated and not interconnected. b) Smoke alarms shall be provided in all new construction located in each sleeping room, outside each separate sleeping area in the immediate vicinity of the bedrooms, and at each additional floor or basement level. c) In new buildings, smoke alarms shall be interconnected and hardwired.",
+      "code_citation": "CRC R314.2.2 & CRC314.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C26",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Revise plans to show UL 2034/2075 rated Carbon monoxide alarms: a) In alterations, repairs and additions of existing dwellings carbon monoxide alarms are required in the specific permitted dwellings or sleeping units that have attached garages or fuel burning appliances. The carbon monoxide alarms may be battery operated and not interconnected. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List b) Carbon monoxide alarms shall be provided in all new construction located in each sleeping room containing a fuel-burning appliance and in dwelling units that have an attached garage. c) In new buildings, carbon monoxide alarms shall be interconnected.",
+      "code_citation": "CRC R315.",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "C27",
+      "discipline": "Occupancy Requirements",
+      "discipline_code": "occupancy_requirements",
+      "text": "Newly constructed one- and two- family dwelling and town houses with attached private garages shall comply with EV infrastructure requirements in accordance with the California Building Standards Code, Chapter 4. Division 4.1. [R309.8]",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D1",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Provide specifications and details for stone and masonry veneer in compliance with CRC Section R703.8.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D2",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Submit an interior finish schedule (specify fasteners, fastener spacing, coating thickness, number of coats, etc) complying with the requirements of CRC R702.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D3",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Indicate vertical supports for anchored veneer and air spacing in accordance with CRC Section R703.8.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D4",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Provide specifications for lath, plaster and drywall to conform to the requirements of CRC Chapter 7.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D5",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Show exterior wall construction assembly. A minimum of one layer of No. 15 asphalt felt, free from holes and breaks, complying with ASTM D 226 for Type 1 felt shall be applied over studs of all exterior walls. Specify that two layers of Grade D or 60 minute Grade D paper shall be applied over all wood base sheathing.",
+      "code_citation": "CRC R703.2, R703.7.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "D6",
+      "discipline": "Finishes",
+      "discipline_code": "finishes",
+      "text": "Specify a minimum 0.019” (No. 26 galvanized sheet gage) corrosion-resistant or plastic weep screed located below foundation plate line and 4 inches above grade on all exterior stud walls or 2-inches above paved areas.",
+      "code_citation": "CRC R703.7.2.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E1",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Note on plan “Each pane of safety glazing installed in hazardous locations shall be identified (acid etched, sand blasted, ceramic fired, etc) by a manufacturer’s designation, the manufacturer or installer and the safety glazing standard which it complies. Multi-pane assemblies shall be identified per CRC R308.1.",
+      "code_citation": "CRC R308.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E2",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing in swinging, sliding, and bifold doors 9 square feet or less shall be a minimum category classification of I (CPSC 16 CFR 1201) and II (CPSC 16 CFR 1201) when more than 9 square feet or sliding. [Table R308.3.1 (1), R308.3.1]",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E3",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing within 24” of either side of the door in the plane of the door in a closed position or glazing on a wall perpendicular to the plane of the door in a closed position and within 24” of the hinge side of an in-swinging door where the vertical edge of the door is less than 5’ from the walking surface shall be safety glazed. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC R308.4.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E4",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing over 9 square feet in area with bottom edge less than 18” above the floor and exposed top edge greater than 36” above the floor shall be safety glazed.",
+      "code_citation": "CRC R308.4.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E5",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glass used in handrails and guards shall be safety glazed.",
+      "code_citation": "CRC 308.4.4 & CRC304.4.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E6",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing in door and enclosures for hot tubs, whirlpools, saunas, steam rooms, bathrooms, showers less than 5’ above the standing surface shall have a minimum category classification of II (CPSC 16 CFR 1201).",
+      "code_citation": "CRC Table R308.3.1 (1) & CRC308.4.5",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E7",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing in walls and fences enclosing indoor and outdoor swimming pools, hot tubs and spas when the bottom edge of the glazing is less than 5’ above a walking surface and it is within 5’ horizontally of the water’s edge shall have a minimum category classification of I (CPSC 16 CFR 1201) or B (ANSI Z97.1) when 9 square feet or less in area and II (CPSC 16 CFR 1201) or A (ANSI Z97.1).",
+      "code_citation": "CRC 308.4.5 & Table R308.3.1 (1) & (2)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E8",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing adjacent to stairway, landings and ramps where the bottom exposed edge of the glazing is less than 3’ above the plan of the adjacent walking surface shall be safety glazing.",
+      "code_citation": "CRC R308.4.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E9",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glazing adjacent to bottom landing of a stairway within 3’ vertically and within a 5’ horizontal arc less than 180 degrees from the bottom tread nosing shall be safety glazing.",
+      "code_citation": "CRC 308.4.7",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "E10",
+      "discipline": "Glazing",
+      "discipline_code": "glazing",
+      "text": "Glass block shall have a minimum face thickness of 3/16”, original units, polyvinyl butyral coated, and comply with R607. E.11 Louvered windows and jalousies shall be a minimum 3/16” thick, maximum 48” in length, and have smooth edges.",
+      "code_citation": "CRC R607.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F1",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "Specify manufacturer's name and ICC approval number for skylights.",
+      "code_citation": "CRC R308.6.9",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F2",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "Specify glazing material shall be fully tempered, heat-strengthened, wired, approved rigid plastic, or laminated in accordance with CRC R308.6.2.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F3",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "Screen is not required when fully tempered meeting the requirements listed in R308.6.5. [R308.6.5]",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F4",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "Provide skylight details to show flashing and 4-inch minimum mounting height.",
+      "code_citation": "CRC R308.6.8",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F5",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "Submit calculations, specifications, and construction details for skylights that are not third party approved.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "F6",
+      "discipline": "Skylights",
+      "discipline_code": "skylights",
+      "text": "For fully tempered or heat strengthened glass, a retaining screen meeting the requirements of Section R308.6.7 shall be installed be installed below the glass.",
+      "code_citation": "CRC R308.6.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G1",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Provide details of masonry firebox and chimney construction in accordance with CRC R1003 & R1001. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G2",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Provide 2 inch minimum clear air space between chimney and wood construction from the front faces and sides and 4 inch from the back face.",
+      "code_citation": "CRC R1001.11",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G3",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Provide details of the fireplace, indicate chimney ducts, reinforcing, ties to building, etc.",
+      "code_citation": "CRC R1003 & R1001",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G4",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Call out make, model and ICC, UL or third-party approval number for the prefabricated metal fireplace and chimney.",
+      "code_citation": "CRC R1004.1 & R1005.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G5",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Fireboxes that burn solid fuel shall be provided with a chimney spark arrester.",
+      "code_citation": "CRC 1003.9.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G6",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Show height of the chimney to be 2’ feet above any portion of a building within 10 feet, and not less than three feet from point where chimney passes through roof.",
+      "code_citation": "CRC R1003.9",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G7",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Provide Seismic reinforcing for section",
+      "code_citation": "CRC R1003.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "G8",
+      "discipline": "Fireplaces",
+      "discipline_code": "fireplaces",
+      "text": "Provide anchoring detail for masonry heater to foundation.",
+      "code_citation": "CRC 1002.4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H1",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Every residence and dwelling unit shall have at least one continuous and unobstructed path of vertical and horizontal egress travel from all portions of the building without requiring travel through a garage. The required egress door shall open directly into a public way or to a yard or court that opens to a public way.",
+      "code_citation": "CRC 311.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H2",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "The third floor shall have a maximum 50’ travel distance from any occupied point to an egress stairway or ramp.",
+      "code_citation": "CRC R311.4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H3",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "The minimum width of hallways shall not be less than 36”.",
+      "code_citation": "CRC R311.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H4",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Basements shall have at least one exterior emergency escape and rescue opening that shall open directly into a public street, alley, yard, or exit court. Each sleeping room at basement shall have its emergency egress and rescue opening. Escape windows with a finished sill height below adjacent ground elevation shall have a window well and ladder per CRC R310.2.3",
+      "code_citation": "CRC R310.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H5",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Specify that bars, grilles or similar devices if placed over any sleeping room door or window shall be releasable and removable from the inside without the use of a key, tool, or any special knowledge or effort.",
+      "code_citation": "CRC R310.4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H6",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Every dwelling unit shall have at least one swinging exit door, minimum clear height of 6’-6”, and minimum clear width of 32”.",
+      "code_citation": "CRC R311.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H7",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Revise plans to indicate that a landing, with a width not less than the width of door and length in the direction of travel of not less than 36 inches, will be provided on each side of doors. The elevation of landing shall not exceed 1 ½ inch difference than the threshold of the doorway (7 3/4 inch if door does not swing over the landing or steps) in each direction. Revise plans at door from ________ to show compliance.",
+      "code_citation": "CRC R311.3.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H8",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Specify that the maximum slope of any landing shall not exceed ¼ inch per foot.",
+      "code_citation": "CRC R311.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H9",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Indicate that the corridor/hall to ________ room shall be 36 inches minimum clear width. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CBC R311.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H10",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "The minimum clear width of stairways is clear 36” above the handrail. Handrails shall not project more than 4.5” on either side of the stairway and the minimum clear width of the stairway at and below the handrail height shall be 31.5” and 27” when installed on one side and both sides, respectively.",
+      "code_citation": "CRC R311.7.1 & CRC311.7.8.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H11",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide a section of stairway showing a maximum rise of 7.75 inches and a minimum run width of 10 inches for straight stairways. The maximum difference between the stair risers and treads shall not be greater than 3/8”.",
+      "code_citation": "CRC R311.7.5",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H12",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide details of the winding tread walk line 12” clear from the inside turn.",
+      "code_citation": "CRC R311.7.4",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H13",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide detail of spiral stairways that show compliance with CRC R311.7.10.1. a) Minimum clear width at and below the handrail is 26”. b) Have a minimum tread depth of 6.75” at the walkline. c) All treads are identical with a maximum rise of 9 1/2”. d) Minimum headroom of 6’-6” shall be provided. e) Walkline radius is not greater than 24.5”.",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H14",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Handrails are required on at least one side of a continuous run of treads or flight with four or more risers.",
+      "code_citation": "CRC R311.7.8",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H15",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide dimensioned details of handrail grips showing a minimum edges radius of 0.01 inch and shall have a one of the following: a) Circular cross sectional diameter shall be between 1 ¼” and 2”. Non-circular handrails shall have a perimeter dimension between 4 and 6 ¼ inches with a maximum cross section of dimension of 2 ¼ inches. b) Handrails with a perimeter dimension > 6 ¼ inches shall have a graspable finger on both sides of the profile between 1 1/4” to 2 ¾” beginning within ¾” from the top of the profile and achieve a minimum 5/16” depth within 7/8” below the widest profile point and shall continue a minimum 3/8” to a level not less than 1¾” below the tallest portion of the profile.",
+      "code_citation": "CRC R311.7.8.5 (1)",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H16",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Handrails shall be continuous except at a turn they are permitted to be interrupted by a newel post and have a minimum clear distance between the wall and handrail grip of 1 ½ inches.",
+      "code_citation": "CRC R311.7.8.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H17",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Where guards are used as handrails at the sides of stairs they shall have a height between 34-38 inches.",
+      "code_citation": "CRC R312.1.2, Exception 2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H18",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide a 42 inch high guardrail at balconies landing and decks located more than 30” vertically to the floor or grade below.",
+      "code_citation": "CRC R312.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H19",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide a detail of the guard (including a handrail on open sides of the stairway) showing that a 4” diameter sphere may not pass through the open space between intermediate rails and pickets. The open space between the riser tread and bottom rail of the guard shall not allow a 6-inch diameter sphere to pass through. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC R312.1.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H20",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Show a ½ inch gypsum board at enclosed space under the stairway.",
+      "code_citation": "CRC R302.7",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H21",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Provide a stairway cross-section showing minimum clear headroom of 6'-8\".",
+      "code_citation": "CRC R311.7.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H22",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "There shall be not more than 151” vertically between floor levels or landings.",
+      "code_citation": "CRC R311.7.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "H23",
+      "discipline": "Exiting Requirements",
+      "discipline_code": "exiting_requirements",
+      "text": "Dimension landings at top and bottom of stairs measured in the direction of travel not less than the stair width.",
+      "code_citation": "CRC R311.7.6",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I1",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Provide detail of roof construction assembly.",
+      "code_citation": "CRC 902.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I2",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Specify ICC approval number for tile and special roof coverings.",
+      "code_citation": "CRC R905.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I3",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "For roof slopes from two units vertical in 12 units horizontal up to four units vertical to 12 units horizontal, underlayment shall be two layers. [CRC 905.2.2 & CRC Table R905.1.1(2)",
+      "code_citation": null,
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I4",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "For each enclosed attic space with a maximum vertical height greater than 30 inches, provide a minimum of 22 x 30 inches attic access.",
+      "code_citation": "CRC R807.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I5",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Provide cross ventilation for attic and each enclosed rafter space as specified in CRC Section R806. The total net free ventilating area shall not be less than 1/150 or 1/300 when a Class I or II vapor barrier is installed on the warm- in-winter side of the ceiling.",
+      "code_citation": "CRC R806.2",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I7",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Provide detail at eave vents to show a minimum 1” space between the insulation and bottom of the roof sheathing.",
+      "code_citation": "CRC R806.3",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I8",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Roof and deck area drains to be designed for a ____per hour rainfall per Table D 101.1.",
+      "code_citation": "CPC 1101.12.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I9",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Provide details of roof drain and overflow. Overflow drains shall have separate independent piping and have an inlet flow line locate 2” above the low point of the roof. Overflow scuppers shall have an area 3 times the roof drain, a minimum opening height of 4”, and have an inlet flow line located 2” above the low point of the roof.",
+      "code_citation": "CRC R903.4.1",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I10",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Draftstops shall be provided in any concealed space where there is usable space both above and below the concealed space. The concealed space shall not exceed 1,000 square feet.",
+      "code_citation": "CRC R302.12",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "I11",
+      "discipline": "Roof Construction And Covering",
+      "discipline_code": "roof_construction_and_covering",
+      "text": "Exposed attic floor insulation shall have a critical radiant flux of not less than 0.12 watt per square centimeter per ASTM E 970.",
+      "code_citation": "CRC R302.10.4 & R302.10.5",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "J1",
+      "discipline": "Noise Control",
+      "discipline_code": "noise_control",
+      "text": "Detail the sound attenuation (minimum STC & IIC rating of 50) between units and public space. Attach noise installation standards to the plans. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CRC Appendix K and CBC 1207",
+      "department_code": "building_safety"
+    },
+    {
+      "item_id": "K1",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Specify design package used and method of compliance:",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K2",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The following compliance documents shall be attached to plan:",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K3",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Compliance documents shall be produced by up-to-date version of Energy Commission Approved computer programs. To obtain a list of Energy Commission approved compliance programs, call 1-800-772-3300 or visit their website at: http://www.energy.ca/gov/title24/2019standards/",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K4",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Proposed fenestration U-Factor does not conform with Defaults values from Table 110.6-A. Specify on plan NFRC rated products are required for all fenestration with Non-Default U-Factors.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K5",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The Solar Heat Gain Coefficient (SHGC) for proposed glazing does not conform with Defaults values from Table 110.6-B. Specify on plan NFRC rated products are required for all fenestration with Non-Default SHGC.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K6",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The conditioned floor area shown on CF-1R form does not match with plans submitted. Revise calculation(s) accordingly.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K7",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The window area (at______facing wall) shown on CF-1R-____form does not match with plans submitted. Revise calculation(s) accordingly.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K8",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Incorporate the fenestration SHGC and U-factors required as per CF-1R form with window schedule.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K9",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Provide construction details for all energy insulation assemblies. Show type of insulation on sections.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K10",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Prescriptive requirement for building envelope [TABLE.150.1-A]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K11",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Replacement fenestration, where all the glazing in an existing fenestration opening is replaced with a new manufactured fenestration product, shall not exceed the U factor and SHGC requirements of Package A or as determined by performance approach per sections [150.1(c)3A and 150.1(c)4].",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K12",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "HERS field verification is required. The person(s) responsible for the Certificate(s) of Compliance shall submit the Certificate(s) for registration and retention to a HERS provider data registry. The submittals to the HERS provider data registry shall be made electronically in accordance with the specifications in Reference Joint Appendix JA7. For additional information visit www.energy.ca.gov/HERS/.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K13",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "All systems, equipment and/or building components shall comply with the applicable manufacturer provisions and installation provisions of Sections 110.0 through 110.11 for newly constructed buildings.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K14",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Any appliance regulated by the Appliance Efficiency Regulations, Title 20 California Code of Regulations, Section 1601 et seq., may be installed only if the appliance fully complies with Section 1608(a) of those regulations. [110.1(a)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K15",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Service water-heating systems shall be equipped with automatic temperature controls capable of adjustment from the lowest to the highest acceptable temperature settings for the intended use as listed in Table 3, Chapter 50 of the ASHRAE Handbook, HVAC Applications Volume. [110.3(a)(1)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K16",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "On systems that have a total capacity greater than 167,000 Btu/hr, outlets that require higher than service water temperatures as listed in the ASHRAE Handbook, Applications Volume, shall have separate remote heaters, heat exchangers, or boosters to supply the outlet with the higher temperature.[110.3(c)(1)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K17",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Service hot water systems with circulating pumps or with electrical heat trace systems shall be capable of automatically turning off the system. [110.3(c)(2)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K18",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Unfired service water-heater storage tanks and backup tanks for solar water-heating systems shall have:",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K19",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Space conditioning equipment shall meet the efficiency standards specified Section 120.2.",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K20",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Pilot lights shall be prohibited for: [110.5] 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K21",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Any pool or spa heating system or equipment shall: [110.4]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K22",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Manufactured fenestration products and exterior doors shall have air infiltration rates not exceeding 0.3 cfm/ft2 of window area, 0.3 cfm/ft2 of residential door area, 0.3 cfm/ft2 of nonresidential single door area, and 1.0 cm/ft2 of nonresidential double door area. [110.6(a)(1)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K23",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Fenestration products shall be certified for overall U-values and overall SHGC, and shall have a temporary label which lists the certified U-value and SHGC, and certifies that applicable air infiltration requirements are met. [110.6(a)(2), 110.6(a)(3), 110.6(a)(5)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K24",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Field manufactured fenestration products and exterior doors, other than unframed glass doors and fire doors, shall be caulked between the fenestration products or exterior door and the building, and shall be weatherstripped. ([110.6(b)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K25",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Joints and other openings in the building envelope that are potential sources of air leakage shall be caulked, gasketed, weatherstripped, or otherwise sealed to limit infiltration and exfiltration. [110.7] 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K26",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Insulation shall be certified by Department of Consumer Affairs, Bureau of Home Furnishing and Thermal Insulation that the insulation conductive thermal performance is approved pursuant to the California Code of Regulations. ([110.8(a)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K27",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Urea formaldehyde foam insulation may only be used in exterior side walls, and requires a four-mil-thick plastic polyethylene vapor barrier between the urea formaldehyde foam insulation and the interior space. ([110.8(b)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K28",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Insulation installed on an existing space conditioning duct, it shall comply with Section 605 of the CMC. ([110.8(d)(3)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K29",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "External insulation installed on an existing unfired water storage tank or on an existing back-up tank for a solar water-heating system, it shall have an R-value of at least R-12, or the heat loss of the tank surface based on an 800 F water-air temperature difference shall be less than 6.5 Btu per hour per square foot. ([110.8(d)(2)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K30",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "All unitary heating or cooling systems not controlled by a central energy management control system shall be equipped with a setback thermostat that meet the requirements of Section 110.2(c).",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K31",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Gas or propane water heaters shall have: [150.0(n)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K32",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "All pumps and pump motors installed shall be listed in the Commission’s directory of certified equipment and shall comply with the Appliance Efficiency Regulations.[150.0(p)1.A",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K33",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The minimum installed weight per square foot of any loose-fill insulation shall conform with the insulation manufacturer’s labeled R-value. [150.0 (b)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K34",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Material used for slab edge insulation shall meet the following minimum specifications:[150.0(f)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K35",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Concrete-slab floor perimeter insulation shall be provided 16 inches deep, or the depth of the footing of the building, whichever is less. [150.1(c)(1)(D)]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K36",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "The crawl space shall be covered with a Class I or Class II vapor retarder.[150.1(c)1C]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K37",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Insulations are required for: [150.0(j)2.A] 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K38",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Unfired hot water tanks, such as storage tanks and backup storage tanks for solar water-heating systems, shall be externally wrapped with insulation having an installed thermal resistance of R-12 or greater or have internal insulation of at least R-16 and a label on the exterior of the tank showing the insulation R-value. [150.0 (j)1]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K39",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Installed luminaires shall be classified as high-efficacy in accordance with TABLE 150.0-A . [150.0(k) 1A]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K40",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Exhaust fans shall be switched separately from lighting systems. [150.0(k) 2B]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K41",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "Luminaries shall be switched with readily accessible controls that permit the luminaries to be manually switched ON and OFF. [150.0(k) 2C]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K42",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "In bathrooms, garages, laundry rooms, and utility rooms, at least one luminaires in each of these spaces shall be controlled by a vacancy sensor. [150.0(k) 2J]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K45",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "In a low-rise multifamily residential building where the total interior common area in a single building equals more than 20 percent of the floor area, permanently installed lighting in that building shall: [150.0(k) 6B]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K46",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "All recessed downlight luminaires in ceilings must be IC rated, airtight with air leakage less than 2.0CFM at 75 Pascals, and sealed. [150.0(k) 1C]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K47",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "For single family residential buildings outdoor lighting shall: [150.0(k) 3A]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "K48",
+      "discipline": "Energy",
+      "discipline_code": "energy",
+      "text": "For low-rise multifamily residential buildings outdoor lighting for private patios, entrances, balconies, and porches and outdoor lighting for residential parking lots with less than eight vehicles shall be: [150.0(k) 3B]",
+      "code_citation": null,
+      "department_code": "energy"
+    },
+    {
+      "item_id": "L1",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Provide protection from auto impact for furnace and water heater.",
+      "code_citation": "CMC 305.1.1",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L2",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Provide anchorage details for FAU units.",
+      "code_citation": "CMC 303.4",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L3",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Provide combustion air for a water heater and/or an FAU located within 12 inches of top and bottom of the compartment.",
+      "code_citation": "CMC 701.5 & 701.6",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L4",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Listed central heating boilers and furnaces shall be installed with clearances in accordance with the terms of their listings. Unlisted central heating furnaces shall be installed from combustible material not less than those specified in Table 904.2.",
+      "code_citation": "CMC 904.2",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L5",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Enclosures housing an FAU or water heater cannot be located in bedrooms or bathrooms unless the enclosure complies with Section 904.1(1) of CMC.",
+      "code_citation": "CMC 904.1",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L6",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "For an FAU located in the attic provide a minimum access of 22 x 30 inches, a 24-inch wide walkway, a 30-inch deep work platform, and electric light outlet adjacent to the furnace and switched by the opening.",
+      "code_citation": "CMC 904.10 & 304.4",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L7",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Show 22 x 30 inch clear access to the furnace. Provide a maximum of 20 feet from opening to furnace.",
+      "code_citation": "CMC 304.4",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L8",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Revise plans to indicate how separate combustion air is provided for FAU located in attic.",
+      "code_citation": "CMC 701.4",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L9",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Show exhaust hood and exhaust vent above cooking appliances at the kitchen.",
+      "code_citation": "CMC 504.3",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L10",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "Show how the dryer will be vented to the outside air.",
+      "code_citation": "CMC 504.4",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L11",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "The maximum length of a dryer vent is 14 feet with two bends. Two feet shall be decreased for each bend more than two, unless approved by the Building Official.",
+      "code_citation": "CMC 504.4.2.1",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "L12",
+      "discipline": "Mechanical",
+      "discipline_code": "mechanical",
+      "text": "A dryer compartment shall be provided with a minimum opening of 100 square inches for makeup air in the door or by other approved means.",
+      "code_citation": "CMC 504.4.1",
+      "department_code": "mechanical"
+    },
+    {
+      "item_id": "M1",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Minimum slope of sewer line and drainage piping is 2% 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CPC 708",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M2",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Provide complete routing plans for sewer drainage piping from the furthest most fixtures to sewer lateral. Revise plan to indicate slopes and cleanouts.",
+      "code_citation": null,
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M3",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Note on the plans: \"An approved backwater valve is required for drainage piping serving fixtures located below the elevation of the next upstream manhole cover. Fixtures above such elevation shall not discharge through the backwater valve. Clean outs for drains that pass through a back water valve shall be clearly identified with a permanent label stating “backwater valve downstream”.\"",
+      "code_citation": "CPC 710.1",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M4",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "The finished floor is below the invert elevation of the public sewer. Provide complete plans and calculations for the sewer ejector system to show compliance with CPC 710.3.",
+      "code_citation": null,
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M5",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Basements and floors below the street flow line are required to have a drainage sump, pumps, and backwater valve.",
+      "code_citation": "CPC 1101.7 & 1101.6.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M6",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Bathtub and shower floors and walls above bathtubs with installed shower head and in shower compartments shall be finished with a nonabsorbent surface. Such wall surface shall extend to a height of not less than 6’ above the floor.",
+      "code_citation": "CRC R307.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M7",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Show minimum shower area of 1024 square inches finished dimension and ability to encompass a 30-inch diameter circle.",
+      "code_citation": "CPC 408.6",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M8",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "All hose bibs must be protected by an anti siphon device.",
+      "code_citation": "CPC 603 & CPC Table 603.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M9",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Provide a minimum of 18 inches high platform for water heater and FAU or other gas appliance located in the garage.",
+      "code_citation": "CMC 305.1",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M10",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Provide protection from auto impact for water heaters located in the garage.",
+      "code_citation": "CMC 305.1.1",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M11",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Provide water heater anchor straps within the upper and lower 1/3.",
+      "code_citation": "CPC 507.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M12",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Listed water heaters shall be installed in accordance with their listings and the manufacturer’s requirements. Unlisted water heaters shall be installed with a clearance of 12” on all sides and rear. Combustible floors under unlisted water heaters shall be protected in an approved manner.",
+      "code_citation": "CPC 504.3",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M13",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Indicate location and type of landscape irrigation system backflow prevention devices.",
+      "code_citation": "CPC 603.5.6.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M14",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Bathtubs and whirlpool baths shall be provided with a trap door or access within 20 feet of the pump.",
+      "code_citation": "CPC 409.6",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "M14-2",
+      "discipline": "Plumbing",
+      "discipline_code": "plumbing",
+      "text": "Provide maximum required BTU for tankless water heater, and indicate gas pipe material and size, location of gas meter, gas pipe distance from meter to water heater. Pipe to be sized according to CPC Tables 1216.2(1) through Table 1216.2(36). .",
+      "code_citation": "CPC 1208.4.2",
+      "department_code": "plumbing"
+    },
+    {
+      "item_id": "N1",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Specify that Ground Circuit Interrupter (GFI) outlets shall be provided in bathrooms, garages, basements, crawl spaces, outside, sinks and at all kitchen counters and islands. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CEC 210.8(A)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N2",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Provide an electrical floor plan showing location of receptacle and lighting outlets.",
+      "code_citation": "CEC 210.52(A-I) & 210.70",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N3",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Provide receptacles within 2 feet of kitchen sink and at 4 feet on-center at counters (12” or more in width) and islands.",
+      "code_citation": "CEC 210.52(C)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N4",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Provide at least one outlet for island or peninsular counter space.",
+      "code_citation": "CEC 210.52(C) 2&3",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N5",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Provide panel schedule and load calculations in accordance with CEC Article 220.",
+      "code_citation": null,
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N6",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "A minimum 100 amp service panel is required for all one-family dwellings.",
+      "code_citation": "CEC 230.79(C)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N7",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "A minimum 60 amp service panel is required for all installations other than one-family dwelling.",
+      "code_citation": "CEC 230.79(D)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N8",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Revise electrical plans to show receptacle outlets so that no point along the wall is further than 6 feet from an outlet.",
+      "code_citation": "CEC 210.52(A)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N9",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "All power and lighting outlets in dwelling unit kitchens, family rooms, dining rooms, living rooms, parlors, libraries, dens, bedrooms, sunrooms, recreation rooms, closets, hallways, laundry areas, or similar areas are to be protected by a “listed AFCI breaker” or other means as described in CEC 210.12(A). Bathrooms, and basements are exempt from this requirement.",
+      "code_citation": "CEC 210.12(A)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N10",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Bathrooms and powder rooms are required to have at least one GFI receptacle outlet within 36 inches of each lavatory.",
+      "code_citation": "CEC 210.52(D)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N11",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "At least one outlet to be installed at the front and rear of each dwelling unit. N.12 An accessible receptacle outlet is required on balconies, decks, or porches that are attached to the dwelling units. The receptacle outlet shall not located more than 6.5’ above the balcony, deck, or porch walking surface.",
+      "code_citation": "CEC 210.52(E)(1)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N13",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Hallways longer than 10 feet are required to have at least one receptacle outlet.",
+      "code_citation": "CEC 210.52(H)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N14",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Lighting outlets are required in habitable rooms, bathroom, hallways, garages, and at exterior doors. Revise plans to show compliance.",
+      "code_citation": "CEC 210.70(A)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N15",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Revise plans to show locations of light switches at both top and bottom of stairways.",
+      "code_citation": "CEC 210.70(A)(2)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N16",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Provide a wall switch-controlled lighting outlet at all exterior doors with grade level access.",
+      "code_citation": "CEC 210.70(A)(2)(b)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N17",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "All 15- and 20- ampere, 125- and 250-volt non-locking receptacles that are installed on the exterior of a dwelling unit and located in damp or wet locations, shall be listed as weather-resistant type.",
+      "code_citation": "CEC 406.9(A)&(B)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N18",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Electrical panels or other over current devices, other than supplementary overcurrent protection, shall not be located in bathrooms.",
+      "code_citation": "CEC 230.70(A) & 240.24E",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N19",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Individual dedicated circuits are required for all major appliances. The rating of an individual branch circuit shall not be less than the marked rating of the appliances or the marked rating of the appliances having combined loads as provided in 422.62. 2019 CRC – R-3 (Single Family and Duplex) Plan Check Correction List",
+      "code_citation": "CEC 210.11(C) & 422.10(A)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N20",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "There shall be a distribution panel in, and for, each apartment. Feeders for sub panels shall be enclosed in an approved raceway.",
+      "code_citation": "CEC 230.72 (C)",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N21",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "There shall be no more than six disconnecting means per service grouped in any one location without a main disconnect.",
+      "code_citation": "CEC 230.71",
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N22",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Show a concrete encased electrode (UFER ground) on the foundation plan, sized in accordance with Article 250.52A (3).",
+      "code_citation": null,
+      "department_code": "electrical"
+    },
+    {
+      "item_id": "N23",
+      "discipline": "Electrical",
+      "discipline_code": "electrical",
+      "text": "Show location of bonding wire to metal water supply system, or ground rods.",
+      "code_citation": "CEC 250.52A (1) & (5)",
+      "department_code": "electrical"
+    }
+  ]
+}

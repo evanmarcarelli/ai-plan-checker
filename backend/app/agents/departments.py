@@ -306,9 +306,11 @@ from the plan text + code provided, lower your confidence rather than asserting.
                 f"[{r.code_id}] {r.description}\n{r.full_text or '(no text available)'}"
             )
         req_block = "\n\n".join(req_block_parts)
-        # Cap context (Sonnet handles big inputs fine but we still want to be lean)
-        if len(req_block) > 12000:
-            req_block = req_block[:12000] + "\n... (truncated)"
+        # Cap context (Sonnet handles big inputs fine but we still want to be
+        # lean). Raised to fit the standard-correction-list items now injected
+        # alongside the code requirements.
+        if len(req_block) > 18000:
+            req_block = req_block[:18000] + "\n... (truncated)"
 
         # ---- STABLE prefix (cached) ----
         # The verbatim code requirements for this department + jurisdiction do
