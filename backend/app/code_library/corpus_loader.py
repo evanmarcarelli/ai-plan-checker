@@ -56,6 +56,16 @@ class CodeChunk(BaseModel):
     text: str
     tags: List[str] = []
 
+    # ── structured fields (migration 008) — all optional, so existing JSONL
+    #    loads unchanged. Populated when loading from Postgres or after the
+    #    structured ingest backfills them. ──
+    path: Optional[str] = None            # ltree path, e.g. "c10.s1004.s1004_1"
+    adoption_id: Optional[str] = None     # jurisdiction scope key (None = base)
+    parent_section: Optional[str] = None  # "1004.1" for "1004.1.1"
+    context_header: Optional[str] = None  # breadcrumb for retrieval/grounding
+    source_tier: str = "unspecified"      # provenance: official_gov|licensed|...
+    license_status: str = "review"        # edict|licensed|fair_use_review|review
+
     @property
     def citation(self) -> str:
         """Canonical citation string e.g. 'ADA 404.2.3'."""
@@ -151,6 +161,7 @@ class CodeRetriever:
         category: Optional[str] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
+        adoption_id: Optional[str] = None,
         k: int = 6,
         min_score: float = 0.5,
     ) -> List[CodeChunk]:
@@ -162,7 +173,15 @@ class CodeRetriever:
         for chunk, score in zip(self.corpus.chunks, scores):
             if category and chunk.category != category:
                 continue
-            if not chunk.applies_to(state, city):
+            # Hard jurisdiction scope (migration 008): when an adoption_id is
+            # given, ONLY return chunks scoped to it (or base chunks with no
+            # adoption). This is what prevents a base rule and a local
+            # amendment from both matching the same query. Falls back to the
+            # legacy applies_to() geo match when no adoption_id is set.
+            if adoption_id is not None:
+                if chunk.adoption_id not in (adoption_id, None):
+                    continue
+            elif not chunk.applies_to(state, city):
                 continue
             if score < min_score:
                 continue
@@ -229,6 +248,65 @@ def _load_corpus_from_disk() -> CodeCorpus:
     return corpus
 
 
+def _load_corpus_from_postgres() -> CodeCorpus:
+    """Build a CodeCorpus from the Postgres code_chunks table (migration 008).
+
+    Maps each DB row back onto the same CodeChunk shape, so the BM25 retriever
+    and every downstream caller work identically — the only change is that the
+    corpus now lives in the database (single source of truth, provenance,
+    hybrid-search ready) instead of on-disk JSONL."""
+    from app.code_library import store
+
+    corpus = CodeCorpus()
+    rows = store.fetch_all_chunks()
+    for r in rows:
+        try:
+            corpus.add(CodeChunk(
+                chunk_id=r["chunk_id"],
+                code_name=r.get("code_short", "") or "",
+                code_short=r.get("code_short", "") or "",
+                version=r.get("version", "") or "",
+                section=r.get("section", "") or "",
+                title=r.get("heading") or "",
+                category=r.get("discipline", "") or "",
+                jurisdictions=r.get("jurisdictions") or [],
+                text=r.get("body", "") or "",
+                tags=r.get("tags") or [],
+                path=r.get("path"),
+                adoption_id=r.get("adoption_id"),
+                parent_section=r.get("parent_section"),
+                context_header=r.get("context_header"),
+                source_tier=r.get("source_tier") or "unspecified",
+                license_status=r.get("license_status") or "review",
+            ))
+        except Exception as e:
+            logger.error(f"[code_library] bad PG chunk {r.get('chunk_id')}: {e}")
+    logger.info(f"[code_library] corpus ready (postgres): {len(corpus.chunks)} chunks")
+    return corpus
+
+
+def _load_corpus() -> CodeCorpus:
+    """Choose the corpus source. CODE_STORE=postgres uses the DB when it's
+    populated (migration 008 + ingest run), otherwise falls back to disk JSONL.
+    Default is disk, so this change is a no-op until explicitly switched on."""
+    try:
+        from app.config import settings
+        prefer_pg = getattr(settings, "code_store", "disk").lower() == "postgres"
+    except Exception:
+        prefer_pg = False
+
+    if prefer_pg:
+        try:
+            from app.code_library import store
+            if store.corpus_in_postgres():
+                return _load_corpus_from_postgres()
+            logger.warning("[code_library] CODE_STORE=postgres but code_chunks is "
+                           "empty/missing — falling back to disk JSONL")
+        except Exception as e:
+            logger.warning(f"[code_library] postgres corpus load failed, using disk: {e}")
+    return _load_corpus_from_disk()
+
+
 _corpus_lock = threading.RLock()
 _corpus_singleton: Optional[CodeCorpus] = None
 _retriever_singleton: Optional[CodeRetriever] = None
@@ -238,7 +316,7 @@ def get_corpus() -> CodeCorpus:
     global _corpus_singleton
     with _corpus_lock:
         if _corpus_singleton is None:
-            _corpus_singleton = _load_corpus_from_disk()
+            _corpus_singleton = _load_corpus()
         return _corpus_singleton
 
 
@@ -251,9 +329,10 @@ def get_retriever() -> CodeRetriever:
 
 
 def reload_corpus() -> CodeCorpus:
-    """Force a reload from disk — useful in tests and after ingesting new files."""
+    """Force a reload (from the configured source) — useful in tests and after
+    ingesting new data."""
     global _corpus_singleton, _retriever_singleton
     with _corpus_lock:
-        _corpus_singleton = _load_corpus_from_disk()
+        _corpus_singleton = _load_corpus()
         _retriever_singleton = CodeRetriever(_corpus_singleton)
         return _corpus_singleton
