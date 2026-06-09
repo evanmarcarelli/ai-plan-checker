@@ -349,7 +349,7 @@ def ingest_ladbs_files(paths: List[str], output_filename: str = "ladbs_bulletins
     merged: dict = {}
     if out_path.exists():
         import json
-        for line in out_path.open():
+        for line in out_path.open(encoding="utf-8"):
             line = line.strip()
             if line:
                 try:

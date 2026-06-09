@@ -221,7 +221,7 @@ def _load_corpus_from_disk() -> CodeCorpus:
     for fp in files:
         count_before = len(corpus.chunks)
         try:
-            with fp.open() as f:
+            with fp.open(encoding="utf-8") as f:
                 for lineno, line in enumerate(f, 1):
                     line = line.strip()
                     if not line or line.startswith("//"):
