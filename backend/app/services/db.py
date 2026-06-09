@@ -121,7 +121,7 @@ def get_job_for_user(job_id: str, user_id: str) -> Optional[Dict[str, Any]]:
 def list_jobs_for_user(user_id: str, limit: int = 20) -> List[Dict[str, Any]]:
     res = (
         admin().table("jobs")
-        .select("id, filename, status, progress, created_at, completed_at, summary")
+        .select("id, filename, status, progress, created_at, completed_at, summary, plan_data")
         .eq("user_id", user_id)
         .order("created_at", desc=True)
         .limit(limit)

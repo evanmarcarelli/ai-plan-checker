@@ -2,19 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { uploadPlan, getJobStatus, createWebSocket, getExportUrl, getMe } from "@/lib/api";
-import type { AgentLog, UserProfile, JobStatus } from "@/lib/api";
+import { uploadPlan, getJobStatus, createWebSocket, getExportUrl, getMe, listJobs } from "@/lib/api";
+import type { AgentLog, UserProfile, JobStatus, JobListItem } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
 import AgentLogs from "@/components/AgentLogs";
 import ComplianceReport from "@/components/ComplianceReport";
+import RecentsRail from "@/components/RecentsRail";
+import RaceTrack, { type NodeStatus } from "@/components/RaceTrack";
 import Reveal from "@/components/Reveal";
 import {
   Building2, Cpu, FileCheck, ChevronRight,
   Activity, CheckCircle2, AlertCircle, Clock, RotateCcw,
   Search, BookOpen, Landmark, Flame, Zap, Droplets, Wind,
-  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, ArrowUpRight, X,
+  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, ArrowUpRight, X, FileClock,
 } from "lucide-react";
 
 // ─── Department roster ────────────────────────────────────────────
@@ -49,6 +51,32 @@ const DEPARTMENTS = [
   { Icon: Construction,  label: "Public Works" },
   { Icon: Trees,         label: "Environmental" },
 ];
+
+// Map the report's per-department verdicts onto RaceTrack node ids. Department
+// names match the node ids 1:1 (see RACE_NODES); review_status is the backend's
+// cleared|conditional|rejected|pending, which we fold into the 4 node states.
+const REVIEW_TO_NODE: Record<string, NodeStatus> = {
+  cleared: "compliant",
+  conditional: "needs_review",
+  rejected: "non_compliant",
+  pending: "not_applicable",
+};
+function computeRaceResults(report: JobStatus["report"], status?: string): Record<string, NodeStatus> {
+  const out: Record<string, NodeStatus> = {};
+  const reviews = (report as unknown as
+    { department_reviews?: Array<{ department: string; review_status: string }> } | undefined
+  )?.department_reviews;
+  for (const d of reviews || []) {
+    const ns = REVIEW_TO_NODE[d.review_status];
+    if (ns) out[d.department] = ns;
+  }
+  // Surveyor + Librarian aren't departments; if the run finished they cleared.
+  if (status === "completed") {
+    if (!out["Surveyor"]) out["Surveyor"] = "compliant";
+    if (!out["Librarian"]) out["Librarian"] = "compliant";
+  }
+  return out;
+}
 
 // ─── Compact, chrome-free pipeline (header version) ──────────────
 function AgentPipeline({
@@ -130,6 +158,10 @@ export default function Dashboard() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [recentJobs, setRecentJobs] = useState<JobListItem[]>([]);
+  const [recentsLoading, setRecentsLoading] = useState(true);
+  const [recentsOpen, setRecentsOpen] = useState(false); // mobile drawer
+  const [logsOpen, setLogsOpen] = useState(true);
 
   useEffect(() => {
     const sb = createClient();
@@ -137,6 +169,27 @@ export default function Dashboard() {
       setIsAuthed(!!session);
     }).catch(() => setIsAuthed(false));
   }, []);
+
+  // Recent reports rail — load on auth, refresh whenever a job changes state
+  // (so a just-finished review surfaces with its verdict dot).
+  useEffect(() => {
+    if (!isAuthed) return;
+    listJobs()
+      .then((r) => setRecentJobs(r.jobs))
+      .catch(() => { /* rail is best-effort */ })
+      .finally(() => setRecentsLoading(false));
+  }, [isAuthed, jobStatus?.status, jobId]);
+
+  // Reopen a past report from the rail.
+  const openReport = (id: string) => {
+    setJobId(id);
+    getJobStatus(id)
+      .then((s) => {
+        setJobStatus(s);
+        setActiveTab(s.status === "completed" ? "report" : "processing");
+      })
+      .catch(() => { /* surfaced by the report/processing views */ });
+  };
 
   useEffect(() => {
     if (isAuthed) {
@@ -314,6 +367,14 @@ export default function Dashboard() {
                 Live
               </div>
             )}
+            <button
+              onClick={() => setRecentsOpen(true)}
+              className="lg:hidden flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg btn-secondary"
+              aria-label="Recent reports"
+            >
+              <FileClock className="w-3.5 h-3.5" />
+              Recents
+            </button>
             {jobId && (
               <button
                 onClick={handleReset}
@@ -327,7 +388,33 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Tab bar — only when an active job exists ── */}
+      <div className="flex">
+        {/* ── Recent reports rail (persistent on desktop) ── */}
+        <aside
+          className="hidden lg:flex flex-col flex-shrink-0 w-[264px] sticky top-16 self-start border-r"
+          style={{ height: "calc(100vh - 4rem)", borderColor: "var(--border)", background: "var(--bg-card)" }}
+        >
+          <RecentsRail jobs={recentJobs} activeJobId={jobId} onSelect={openReport} loading={recentsLoading} />
+        </aside>
+
+        {/* ── Recent reports drawer (mobile) ── */}
+        {recentsOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex">
+            <div className="absolute inset-0" style={{ background: "rgba(11,18,32,0.45)" }} onClick={() => setRecentsOpen(false)} />
+            <aside className="relative w-[284px] max-w-[82vw] h-full flex flex-col border-r"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <RecentsRail
+                jobs={recentJobs}
+                activeJobId={jobId}
+                onSelect={(id) => { openReport(id); setRecentsOpen(false); }}
+                loading={recentsLoading}
+              />
+            </aside>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+        {/* ── Tab bar — only when an active job exists ── */}
       {jobId && (
         <div className="border-b" style={{ borderColor: "var(--border)" }}>
           <div className="max-w-7xl mx-auto px-6 flex gap-1 overflow-x-auto">
@@ -496,116 +583,46 @@ export default function Dashboard() {
 
         {/* ── PROCESSING TAB ── */}
         {activeTab === "processing" && jobId && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3">
-              <AgentLogs logs={logs} isProcessing={isProcessing} currentAgent={jobStatus?.current_agent} />
-            </div>
-
-            <div className="lg:col-span-2 space-y-8">
-              {/* Progress — flat surface. */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3
-                    className="text-[11px] font-semibold tracking-[0.18em] uppercase"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Progress
-                  </h3>
-                  {isProcessing && (
-                    <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--accent)" }}>
-                      <Clock className="w-3 h-3" />
-                      Running
-                    </span>
-                  )}
-                  {isCompleted && (
-                    <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--compliant)" }}>
-                      <CheckCircle2 className="w-3 h-3" />
-                      Done
-                    </span>
-                  )}
-                  {isFailed && (
-                    <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--non-compliant)" }}>
-                      <AlertCircle className="w-3 h-3" />
-                      Failed
-                    </span>
-                  )}
-                </div>
-                <div
-                  className="h-1.5 rounded-md overflow-hidden mb-2"
-                  style={{ background: "var(--bg-elevated)" }}
-                >
-                  <div
-                    className={`h-full rounded-md transition-all duration-500 ${isProcessing ? "progress-bar-active" : ""}`}
-                    style={{
-                      width: `${jobStatus?.progress || 0}%`,
-                      background: isProcessing
-                        ? undefined
-                        : isCompleted
-                          ? "var(--compliant)"
-                          : isFailed
-                            ? "var(--non-compliant)"
-                            : "var(--accent)",
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  <span>{jobStatus?.progress || 0}% complete</span>
-                  {jobStatus?.current_agent && (
-                    <span style={{ color: "var(--accent)" }}>{jobStatus.current_agent} working…</span>
-                  )}
-                </div>
-              </section>
-
-              {/* Agents — flat list, no per-row card chrome. */}
-              <section>
-                <h3
-                  className="text-[11px] font-semibold tracking-[0.18em] uppercase mb-3"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Pipeline
+          <div className="space-y-6">
+            {/* Race-track pipeline — the centerpiece */}
+            <section className="p-5 sm:p-7 rounded-2xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-[11px] font-semibold tracking-[0.18em] uppercase" style={{ color: "var(--text-muted)" }}>
+                  Review pipeline
                 </h3>
-                <div className="space-y-1.5">
-                  {AGENTS.map((agent) => {
-                    const isDone = (jobStatus?.agents_completed || []).includes(agent.id);
-                    const isActive = jobStatus?.current_agent === agent.id;
-                    const fg = isDone
-                      ? "var(--compliant)"
-                      : isActive
-                      ? "var(--accent)"
-                      : "var(--text-secondary)";
-                    return (
-                      <div
-                        key={agent.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${isActive ? "agent-active" : ""}`}
-                        style={{
-                          background: isDone
-                            ? "var(--compliant-bg)"
-                            : isActive
-                            ? "var(--accent-soft)"
-                            : "transparent",
-                        }}
-                      >
-                        <agent.Icon className="w-4 h-4" style={{ color: fg }} />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium" style={{ color: fg }}>
-                            {agent.label}
-                          </div>
-                          <div className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
-                            {agent.description}
-                          </div>
-                        </div>
-                        {isDone && <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--compliant)" }} />}
-                        {isActive && (
-                          <div
-                            className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0"
-                            style={{ color: "var(--accent)" }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
+                {isProcessing && (
+                  <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--accent)" }}>
+                    <Clock className="w-3 h-3" /> Running
+                  </span>
+                )}
+                {isCompleted && (
+                  <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--compliant)" }}>
+                    <CheckCircle2 className="w-3 h-3" /> Done
+                  </span>
+                )}
+                {isFailed && (
+                  <span className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--non-compliant)" }}>
+                    <AlertCircle className="w-3 h-3" /> Failed
+                  </span>
+                )}
+              </div>
+
+              <RaceTrack
+                completed={jobStatus?.agents_completed || []}
+                current={jobStatus?.current_agent}
+                progress={jobStatus?.progress || 0}
+                status={jobStatus?.status}
+                results={computeRaceResults(jobStatus?.report, jobStatus?.status)}
+                score={jobStatus?.report?.summary?.compliance_score}
+              />
+
+              <div className="mt-3 flex justify-between text-[11px]" style={{ color: "var(--text-muted)" }}>
+                <span>{jobStatus?.progress || 0}% complete</span>
+                {isProcessing && jobStatus?.current_agent && (
+                  <span style={{ color: "var(--accent)" }}>{jobStatus.current_agent} working…</span>
+                )}
+              </div>
+            </section>
 
               {isFailed && (
                 <div
@@ -639,8 +656,27 @@ export default function Dashboard() {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
+
+              {/* Agent logs — collapsible, secondary to the race track */}
+              <section>
+                <button
+                  onClick={() => setLogsOpen((o) => !o)}
+                  className="flex items-center gap-2 mb-3 text-[11px] font-semibold tracking-[0.18em] uppercase"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform" style={{ transform: logsOpen ? "rotate(90deg)" : "none" }} />
+                  Agent logs
+                  {isProcessing && (
+                    <span className="text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded-md" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+                      LIVE
+                    </span>
+                  )}
+                </button>
+                {logsOpen && (
+                  <AgentLogs logs={logs} isProcessing={isProcessing} currentAgent={jobStatus?.current_agent} />
+                )}
+              </section>
             </div>
-          </div>
         )}
 
         {/* ── REPORT TAB ── */}
@@ -652,6 +688,8 @@ export default function Dashboard() {
           />
         )}
       </main>
+        </div>
+      </div>
 
       {/* ── Sticky bottom utility bar — secondary controls live here so the
           header can stay sparse like the marketing nav. Hidden behind the

@@ -358,7 +358,17 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
   return res.json();
 }
 
-export async function listJobs(): Promise<{ jobs: Array<{ id: string; filename: string; status: string; progress: number; created_at: string; summary?: ComplianceSummary }> }> {
+export interface JobListItem {
+  id: string;
+  filename: string;
+  status: "pending" | "processing" | "completed" | "failed" | string;
+  progress: number;
+  created_at: string;
+  summary?: ComplianceSummary;
+  plan_data?: { project_address?: string | null; project_name?: string | null } | null;
+}
+
+export async function listJobs(): Promise<{ jobs: JobListItem[] }> {
   const headers = await authHeaders();
   const res = await fetch(`${API_URL}/jobs`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch jobs: ${res.status}`);
