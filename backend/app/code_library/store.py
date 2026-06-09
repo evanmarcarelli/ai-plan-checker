@@ -96,6 +96,29 @@ def search(
         return []
 
 
+def fetch_table_cells(table_id: str, adoption_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return the cells of one reference table. Prefers rows scoped to
+    adoption_id (a jurisdiction that amended a cell); falls back to the base
+    rows (adoption_id IS NULL) when the adoption has no override. Empty list if
+    the table/migration/Supabase isn't there, so the caller uses the hardcoded
+    fallback."""
+    client = _admin()
+    if client is None:
+        return []
+    try:
+        res = (client.table("code_table_cells")
+               .select("adoption_id, row_key, col_key, value_num, value_sentinel, unit")
+               .eq("table_id", table_id)
+               .execute())
+        rows = res.data or []
+    except Exception as e:
+        logger.warning(f"[code_store] fetch_table_cells({table_id}) failed: {e}")
+        return []
+    scoped = [r for r in rows if adoption_id and r.get("adoption_id") == adoption_id]
+    base = [r for r in rows if r.get("adoption_id") is None]
+    return scoped or base
+
+
 def ancestors(adoption_id: Optional[str], path: str) -> List[Dict[str, Any]]:
     """Return a chunk and all its ancestors (root->leaf) for context assembly —
     the structural fix for 'this exception only means something inside Ch 10'."""

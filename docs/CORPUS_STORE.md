@@ -12,14 +12,32 @@ system.** This is additive and feature-flagged: nothing changes until you set
 | Corpus not in the DB | ✅ | `code_chunks` table + backfill script |
 | No hierarchy / inheritance | ✅ (schema) | `ltree path` on every chunk + `get_chunk_ancestors` |
 | Amendments → base & local both match | ✅ (capability) | `adoption_id` scope + retriever `adoption_id` filter |
-| Tables as hardcoded dicts | ✅ (schema) | `code_table_cells` (populate next) |
+| Tables as hardcoded dicts | ✅ **done** | `code_table_cells` + `table_store` provider (DB-first, dict fallback) |
 | No provenance / license tracking | ✅ | `source_tier` + `license_status` on every chunk/edition |
 | BM25-only, no semantic recall | ✅ (schema) | nullable `embedding halfvec` + `search_code_chunks` RRF |
 
-**Deferred on purpose** (next steps, not this branch): generating embeddings,
-populating the normalized `provisions`/`amendments` tree from structured
-sources, populating `code_table_cells`, and flipping department agents to query
-by `adoption_id`. The schema + seams for all of these are in place.
+**Deferred on purpose** (next steps): generating embeddings, populating the
+normalized `provisions`/`amendments` tree from structured sources, and flipping
+department agents to query by `adoption_id`. The schema + seams are in place.
+
+## Code reference tables (done)
+
+The IBC/IPC matrices (allowable area 506.2, stories 504.4, min exits 1006.3.2,
+fixture ratios 403.1, high-rise threshold) are no longer a hand-transcribed
+Python dict that compliance results turn on. `app/code_library/deterministic/
+table_store.py` serves the same shapes the checkers expect, **DB-first** from
+`code_table_cells` with `tables.py` as the fallback — so behavior is identical
+until you seed + flip `CODE_STORE=postgres`, and a jurisdiction can override a
+single cell via `adoption_id`.
+
+Seed it (idempotent):
+```bash
+cd backend
+python -m scripts.ingest.tables_to_postgres --dry-run   # show cell counts
+python -m scripts.ingest.tables_to_postgres             # upsert into code_table_cells
+```
+A test asserts the seed round-trips losslessly back to the original tables, so
+populating Postgres cannot silently change a limit.
 
 ## Efficiency choice
 
