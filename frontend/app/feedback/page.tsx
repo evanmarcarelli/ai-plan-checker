@@ -82,7 +82,7 @@ export default function FeedbackPage() {
               What should we build next?
             </h1>
             <p className="text-sm mt-2 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              Tell us what is missing or what would make Up2Code AI easier to use. Upvote
+              Tell us what is missing or what would make PhiCodes AI easier to use. Upvote
               what you care about. The top items shape the roadmap.
             </p>
           </div>
@@ -145,7 +145,7 @@ function Header() {
             className="font-bold text-base tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            Up2Code AI
+            PhiCodes AI
           </span>
         </Link>
         <nav className="flex items-center gap-5 text-sm" style={{ color: "var(--text-secondary)" }}>

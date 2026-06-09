@@ -3,7 +3,7 @@
 The goal is viral growth: any logged-in user can mint share tokens that let
 external collaborators (contractors, building inspectors) view a report and
 comment on individual findings WITHOUT signing up. Every guest sees the
-Up2Code branding, which is the organic distribution play.
+PhiCodes branding, which is the organic distribution play.
 
 Auth model:
     - Owners: standard Supabase JWT via get_current_user

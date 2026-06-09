@@ -85,7 +85,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.textAlign = "center";
   ctx.fillText("MIXED-USE HIGHRISE — TYPICAL FLOOR PLAN", W / 2, 92);
   ctx.font = '11px "DM Mono", monospace';
-  ctx.fillText("SHEET: A2.01   ·   SCALE 1:200   ·   23-STORY TOWER   ·   UP2CODE PLAN REVIEW", W / 2, 112);
+  ctx.fillText("SHEET: A2.01   ·   SCALE 1:200   ·   23-STORY TOWER   ·   PHICODES PLAN REVIEW", W / 2, 112);
 
   // Subtle grid — light grey
   ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
@@ -215,7 +215,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.font = '10px "DM Mono", monospace';
   ctx.textAlign = "left";
-  ctx.fillText("DRAWN: UP2CODE AI   ·   REV 01   ·   2026-06-06", 70, H - 64);
+  ctx.fillText("DRAWN: PHICODES AI   ·   REV 01   ·   2026-06-06", 70, H - 64);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

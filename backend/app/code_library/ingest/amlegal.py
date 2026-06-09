@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 
 AMLEGAL_BASE = "https://codelibrary.amlegal.com"
 USER_AGENT = (
-    "Up2CodeAI-Ingester/1.0 "
+    "PhiCodesAI-Ingester/1.0 "
     "(+contact: esmith.marc@gmail.com - fetching public municipal code text)"
 )
 DEFAULT_DELAY_SEC = 1.0     # one request per second; configurable per ingester

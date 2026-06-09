@@ -10,7 +10,7 @@ export default function Footer() {
         className="max-w-screen-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
         style={{ color: "var(--text-muted)" }}
       >
-        <div>© {new Date().getFullYear()} Up 2 Code Inc. · Up2Code AI</div>
+        <div>© {new Date().getFullYear()} Up 2 Code Inc. · PhiCodes AI</div>
         <nav className="flex items-center gap-5">
           <Link href="/privacy" className="hover:underline" style={{ color: "var(--text-secondary)" }}>
             Privacy

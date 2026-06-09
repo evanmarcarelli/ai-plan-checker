@@ -215,7 +215,7 @@ class ExportService:
             "<b>AI-GENERATED PRELIMINARY REVIEW.</b> This report is produced by an AI system for "
             "educational and pre-submittal feedback only. It is <b>not engineering advice</b> and does "
             "<b>not replace</b> stamped review by a licensed architect or engineer or approval by the "
-            "Authority Having Jurisdiction (AHJ). up2code makes no warranty of accuracy and is not liable "
+            "Authority Having Jurisdiction (AHJ). PhiCodes makes no warranty of accuracy and is not liable "
             "for any decision, permit outcome, construction activity, or damages arising from reliance on "
             "this output. Always verify all findings with a licensed professional and your AHJ before "
             "submitting or constructing."
@@ -248,7 +248,7 @@ class ExportService:
             # Bottom: page number + brand
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(colors.HexColor("#6b7280"))
-            canvas.drawString(0.5 * inch, 0.35 * inch, "up2code · AI Plan Checker")
+            canvas.drawString(0.5 * inch, 0.35 * inch, "PhiCodes · AI Plan Checker")
             canvas.drawRightString(
                 letter[0] - 0.5 * inch,
                 0.35 * inch,

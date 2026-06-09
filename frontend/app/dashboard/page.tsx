@@ -342,7 +342,7 @@ export default function Dashboard() {
               className="font-semibold text-[18px] tracking-[-0.025em]"
               style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
             >
-              Up2Code
+              PhiCodes
             </span>
             <ArrowUpRight
               className="w-3.5 h-3.5"
