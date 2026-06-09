@@ -103,6 +103,13 @@ class Settings(BaseSettings):
     # if the table is empty/missing, so flipping this on is safe.
     code_store: str = "disk"
 
+    # Run the job-queue worker loop inside this web process (default). The
+    # pipeline runs as a background task off the durable Postgres queue, so a
+    # single deployment serves the API and processes jobs — no second service.
+    # Set false and run `python -m app.worker` separately to scale the worker
+    # out (then this web process only enqueues).
+    run_worker_in_web: bool = True
+
     # AWS Textract (OCR fallback for image-only or scan-heavy plan sheets).
     # Off by default — only kicks in when set. When `aws_textract_enabled` is
     # true and a page yields too little text from the PyMuPDF text layer, the

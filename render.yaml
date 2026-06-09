@@ -7,14 +7,14 @@ services:
   - type: web
     name: up2code-backend
     env: docker
-    plan: starter            # 512MB. The web tier now ONLY validates + enqueues
-                             # jobs and serves status/exports. The heavy pipeline
-                             # (PDF render + vision + 10 LLM contexts + code
-                             # corpus) moved to the `up2code-worker` service
-                             # below, so the web process no longer holds a whole
-                             # plan set in memory — hence "starter" is enough.
-                             # If you add heavy synchronous work back into a
-                             # request, resize here (and reconsider the split).
+    plan: standard           # 2GB. By default (RUN_WORKER_IN_WEB=true) this one
+                             # service both serves the API AND runs the job-queue
+                             # worker loop in-process, so it needs room for the
+                             # pipeline (PDF render + vision + 10 LLM contexts +
+                             # code corpus). To split the worker onto the
+                             # dedicated `up2code-worker` service below, set
+                             # RUN_WORKER_IN_WEB=false here — then this can drop
+                             # to "starter" (it would only enqueue).
     region: oregon
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -26,6 +26,10 @@ services:
       - key: DEBUG
         value: "false"
       - key: REQUIRE_AUTH
+        value: "true"
+      # Run the worker loop inside this web service (single-service deploy).
+      # Flip to "false" only if you provision the up2code-worker service below.
+      - key: RUN_WORKER_IN_WEB
         value: "true"
       - key: MAX_UPLOAD_SIZE_MB
         value: "100"
@@ -83,22 +87,19 @@ services:
         value: us-west-2
 
   # ──────────────────────────────────────────────────────────────────────
-  # Background worker — runs the plan-check pipeline out-of-band.
+  # OPTIONAL dedicated worker — for horizontal scale only.
   #
-  # This is the half of the split that fixes the recurring "edge function"
-  # bug class: the web service only enqueues; this service claims jobs from
-  # the Postgres queue (FOR UPDATE SKIP LOCKED, migration 007) and runs them.
-  # A worker crash/redeploy can't orphan a job (lease expires → retried), and
-  # heavy work never touches the web event loop or web memory.
+  # NOT required for normal operation: by default the web service runs the
+  # worker loop in-process (RUN_WORKER_IN_WEB=true), so jobs already process
+  # on a single service. Provision THIS service only when one process can't
+  # keep up — then set RUN_WORKER_IN_WEB=false on the web service so you don't
+  # run two worker pools (harmless if you don't — SKIP LOCKED prevents double-
+  # claim — but you'd pay for both).
   #
-  # Scale throughput by raising `numInstances` — SKIP LOCKED means instances
-  # never claim the same job. Keep this at `standard` (2GB): one plan set +
-  # vision + the agent pipeline is the memory-heavy workload.
-  #
-  # IMPORTANT: a `worker` service has no inbound port and no health check.
-  # Its env vars are intentionally a copy of the web service's (Render has no
-  # per-blueprint shared group here) PLUS the WORKER_* tunables. If you change
-  # a secret/value above, change it here too.
+  # Scale throughput by raising `numInstances`. A `worker` service has no
+  # inbound port and no health check. Its env vars duplicate the web service's
+  # (Render has no per-blueprint shared group) PLUS the WORKER_* tunables —
+  # keep them in sync with the web service above.
   # ──────────────────────────────────────────────────────────────────────
   - type: worker
     name: up2code-worker
