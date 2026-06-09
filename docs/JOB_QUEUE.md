@@ -82,32 +82,44 @@ that way.
 | File | Role |
 |---|---|
 | `migrations/007_job_queue.sql` | adds lease/attempt/refund columns + `claim_next_job`, `heartbeat_job`, `refund_job_credit`, `fail_exhausted_jobs` |
-| `app/worker.py` | the worker process: claim → run → reap loop, graceful SIGTERM |
+| `app/worker.py` | `run_worker()` claim → run → reap loop; runs in-process (web lifespan) or standalone (`python -m app.worker`) |
+| `app/main.py` | lifespan starts/stops the in-process worker when `RUN_WORKER_IN_WEB=true` (default) |
 | `app/services/job_processor.py` | the pipeline runner (download → validate → compress → run → persist) |
-| `app/api/routes.py` | web tier, now **enqueue-only** |
-| `app/services/db.py` | queue RPC wrappers (all degrade safely pre-migration) |
-| `render.yaml` | adds the `up2code-worker` service; web dropped to `starter` |
+| `app/api/routes.py` | web tier, **enqueue-only** (the worker does the work, even when co-located) |
+| `app/services/db.py` | queue RPC wrappers + a conditional-claim fallback that works pre-migration |
+| `render.yaml` | web `standard` runs combined by default; optional `up2code-worker` for scale-out |
+
+## Single-service by default (no second service, no hard migration dependency)
+
+The worker loop runs **inside the web service** by default
+(`RUN_WORKER_IN_WEB=true`), as a background task started by the app lifespan.
+So a normal deploy of the existing `up2code-backend` service already processes
+jobs — there is **nothing extra to provision**.
+
+It also works **before migration 007 is applied**: `claim_next_job` falls back
+to a conditional `UPDATE pending -> processing` (atomic per row, so no double-
+claim). Applying migration 007 is an *upgrade* — it adds leases, bounded retry,
+and idempotent refunds — not a prerequisite for jobs to run.
 
 ## Deploy / runbook
 
-> Order matters. Apply the migration **before** the new code goes live so the
-> worker's RPCs exist. The code is backward-compatible (uploads keep working
-> if the migration lags), but jobs won't actually *process* until both the
-> migration and the worker service are live.
+**Default (single service):**
+1. **Deploy.** `autoDeploy: true` redeploys `up2code-backend` on push. The web
+   process serves the API *and* runs the worker loop. Confirm in the logs:
+   - `In-process job worker started (RUN_WORKER_IN_WEB=true)`
+   - `Worker <id> starting (lease=180s ...)`; on upload, `claimed job <id>`.
+2. **Apply migration 007** in the Supabase SQL editor when convenient
+   (`backend/migrations/007_job_queue.sql`, idempotent) to enable leases +
+   idempotent refunds. Jobs already process without it; this hardens recovery.
+3. **Verify** a real upload completes end-to-end on the dashboard.
 
-1. **Apply migration 007** in the Supabase SQL editor
-   (`backend/migrations/007_job_queue.sql`). It's idempotent
-   (`add column if not exists`, `create or replace function`).
-2. **Set the worker's env vars** in Render. The `up2code-worker` service needs
-   the same secrets as the web service (Supabase, Anthropic, AWS, Resend,
-   Sentry). The blueprint lists them; fill the `sync: false` ones in the
-   dashboard.
-3. **Deploy.** With `autoDeploy: true`, pushing this branch provisions the new
-   worker and redeploys the web service. Confirm in Render logs:
-   - worker: `Worker <id> starting (lease=180s ...)`
-   - on upload: worker logs `claimed job <id>`
-4. **Verify** a real upload end-to-end: the dashboard should progress and
-   complete; the web service should show flat, low memory.
+**Optional — scale the worker onto its own service** (only when one process
+can't keep up):
+1. Apply migration 007 (required for safe multi-instance claiming).
+2. Set `RUN_WORKER_IN_WEB=false` on the web service (it then only enqueues; can
+   drop to `starter`).
+3. Provision the `up2code-worker` service from the blueprint and set its
+   `sync: false` secrets. Raise `numInstances` for more throughput.
 
 ### Tunables (worker env vars)
 

@@ -1,3 +1,4 @@
+import asyncio
 import re
 from datetime import datetime
 from fastapi import FastAPI, Request
@@ -36,12 +37,34 @@ if settings.sentry_dsn:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    # Job lifecycle is owned by the worker process(es), not the web tier:
-    # the pipeline runs out-of-band (app.worker), claims are lease-based, and
-    # the worker's reaper (db.fail_exhausted_jobs) fails + refunds jobs that
-    # exhaust their retries. A web restart no longer kills in-flight jobs, so
-    # there is nothing for the web tier to sweep on startup.
+    # Job lifecycle is owned by a worker loop (claim → run → reap) backed by the
+    # durable Postgres queue. By default (RUN_WORKER_IN_WEB=true) that loop runs
+    # IN this web process as a background task, so a single deployment both
+    # serves the API and drains the queue — no second service required. Set
+    # RUN_WORKER_IN_WEB=false and run `python -m app.worker` separately to scale
+    # the worker out horizontally.
+    worker_task = None
+    worker_shutdown = None
+    if getattr(settings, "run_worker_in_web", True):
+        try:
+            from app.worker import run_worker
+            worker_shutdown = asyncio.Event()
+            worker_task = asyncio.create_task(run_worker(worker_shutdown, label="web"))
+            logger.info("In-process job worker started (RUN_WORKER_IN_WEB=true)")
+        except Exception as e:
+            logger.error(f"Failed to start in-process worker: {e}", exc_info=True)
+
     yield
+
+    if worker_task is not None:
+        logger.info("Stopping in-process job worker...")
+        worker_shutdown.set()
+        try:
+            await asyncio.wait_for(worker_task, timeout=35)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            worker_task.cancel()
+        except Exception as e:
+            logger.warning(f"Worker shutdown error: {e}")
     logger.info("Shutting down...")
 
 

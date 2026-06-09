@@ -294,21 +294,51 @@ def add_credits(user_id: str, amount: int) -> int:
 # ============================================================
 
 def claim_next_job(worker_id: str, lease_sec: int = 180) -> Optional[Dict[str, Any]]:
-    """Atomically claim the next runnable job for this worker (FOR UPDATE SKIP
-    LOCKED). Returns the claimed row, or None when the queue is empty / the
-    RPC isn't deployed yet."""
+    """Claim the next runnable job for this worker.
+
+    With migration 007 applied this is the atomic FOR UPDATE SKIP LOCKED claim
+    (lease + retry + reaper). If the RPC isn't deployed yet, it falls back to a
+    conditional `UPDATE pending -> processing` (claim_next_job_fallback), which
+    is still safe against double-claim (the WHERE status='pending' makes the
+    flip atomic per row) — so jobs process even before the migration, just
+    without leases. Returns the claimed row, or None when the queue is empty."""
     try:
         res = admin().rpc(
             "claim_next_job",
             {"p_worker_id": worker_id, "p_lease_sec": lease_sec},
         ).execute()
     except Exception as e:
-        logger.warning(f"claim_next_job RPC unavailable (apply migration 007?): {e}")
-        return None
+        logger.warning(f"claim_next_job RPC unavailable (apply migration 007 for "
+                       f"lease-based claiming); using conditional fallback: {e}")
+        return _claim_next_job_fallback()
     data = res.data
     if not data:
         return None
     return data[0] if isinstance(data, list) else data
+
+
+def _claim_next_job_fallback() -> Optional[Dict[str, Any]]:
+    """Pre-migration-007 claim: flip the oldest pending job to processing with a
+    conditional UPDATE. `eq('status','pending')` makes the claim atomic per row
+    (a racing worker's UPDATE matches nothing), so there's no double-claim even
+    across instances. No lease/attempts columns are touched (they don't exist
+    yet); orphan recovery falls back to the updated_at staleness guard."""
+    try:
+        client = admin()
+        pending = (client.table("jobs").select("id")
+                   .eq("status", "pending").order("created_at").limit(1).execute())
+        if not pending.data:
+            return None
+        job_id = pending.data[0]["id"]
+        claimed = (client.table("jobs")
+                   .update({"status": "processing", "updated_at": datetime.utcnow().isoformat()})
+                   .eq("id", job_id).eq("status", "pending").execute())
+        if not claimed.data:
+            return None  # lost the race to another worker; try again next tick
+        return get_job(job_id)
+    except Exception as e:
+        logger.warning(f"fallback claim failed: {e}")
+        return None
 
 
 def heartbeat_job(job_id: str, worker_id: str, lease_sec: int = 180) -> bool:
