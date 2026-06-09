@@ -49,7 +49,25 @@ python -m benchmarks --live --save-cache
 python -m benchmarks --from-cache
 ```
 
-## How to add a new case
+## Fastest way to add a REAL case: the intake helper
+
+Got a plan set + the city's correction letter? Don't transcribe it by hand —
+scaffold it:
+
+```bash
+python -m benchmarks.intake corrections.pdf --case-id la_sfr_042 \
+    --jurisdiction "CA:Los Angeles" --plan-type residential
+```
+
+It parses the letter (PDF or text), pulls out the numbered items + the code
+sections each cites, guesses severity/status/objectivity, flags the
+administrative noise, and writes an annotated `ground_truth.yaml` SCAFFOLD.
+Then a licensed reviewer verifies the GUESSes, fills `acceptance_criteria`,
+drops `plan.pdf` (the **as-submitted** set) in the folder, and runs
+`python -m benchmarks --live-pdf`. It is NOT ground truth until a human signs
+off — it just turns an hour of transcription into ten minutes of review.
+
+## How to add a new case (manually)
 
 Drop a folder in `benchmarks/cases/<your_case_id>/`:
 
