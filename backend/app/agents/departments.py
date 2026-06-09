@@ -322,6 +322,33 @@ from the plan text + code provided, lower your confidence rather than asserting.
             f"with its CITATION and verbatim code text:\n\n{req_block}"
         )
 
+        # Standard-correction-list items are completeness checks ("Provide X",
+        # "Show Y on plans", "Add note Z"). They are easy to over-flag: the
+        # reviewer only sees plan-text EXCERPTS, so absence of text is not proof
+        # the item is missing from the full set. Steer those items toward high
+        # precision — a clear miss fails, silence/ambiguity is needs_review, not
+        # a hard violation. This protects the 90% precision target as the
+        # injected corrections deepen coverage.
+        has_completeness = any(
+            getattr(r, "requirement_type", None) == "completeness" for r in requirements
+        )
+        completeness_guidance = (
+            "\n\nSTANDARD CORRECTION-LIST (COMPLETENESS) ITEMS: some requirements "
+            "above are plan-completeness corrections (\"Provide…\", \"Show…\", "
+            "\"Add note…\", \"Dimension…\"). For these, flag ONLY what the plan "
+            "does not show or does not satisfy:\n"
+            "- If the provided plan text clearly shows the item is addressed → "
+            "status=\"compliant\".\n"
+            "- If it clearly shows the item is missing or wrong → "
+            "status=\"non_compliant\".\n"
+            "- If the plan text is silent or ambiguous (the relevant sheet may "
+            "simply not be in the excerpt) → status=\"needs_review\" with "
+            "confidence < 0.55. Do NOT assert non_compliant from absence of text "
+            "alone.\n"
+            "- If the item cannot apply to this project → status=\"not_applicable\"."
+            if has_completeness else ""
+        )
+
         # ---- FRESH content (not cached) ----
         # The actual plan under review changes every run, so it stays uncached.
         det_block = self._deterministic_context(deterministic_findings)
@@ -337,7 +364,7 @@ LOCAL JURISDICTION AMENDMENTS:
 Using the CODE REQUIREMENTS shown above, review every requirement against this
 plan. For each, return a finding whose code_id is EXACTLY the bracketed citation
 (e.g. "IBC 1011.5.2"). Do NOT invent new section numbers. If a code is not
-applicable to this plan, use status="not_applicable". Return JSON findings array."""
+applicable to this plan, use status="not_applicable". Return JSON findings array.{completeness_guidance}"""
 
         try:
             response = await self._call_llm(fresh, max_tokens=4000, cache_prefix=code_block)

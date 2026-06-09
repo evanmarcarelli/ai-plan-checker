@@ -8,7 +8,7 @@ new review path. Each item keeps its code citation and source URL.
 """
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from app.code_library.checklists.loader import select_checklist
 from app.models.schemas import CodeRequirement, ExtractedPlanData
@@ -37,14 +37,19 @@ def _to_requirement(checklist_id: str, src_url: str, authority: str, item) -> Co
 def checklist_requirements(
     plan_data: ExtractedPlanData,
     max_per_department: int = 40,
+    city: Optional[str] = None,
+    state: Optional[str] = "CA",
 ) -> Dict[str, List[CodeRequirement]]:
     """Applicable correction-list items as requirements, keyed by department_code.
+
+    `city`/`state` steer jurisdiction selection so an LA plan gets the LADBS list
+    while others get a statewide-code list (no LA-specific zoning leakage).
 
     Returns {} when no checklist matches the plan's occupancy (e.g. commercial
     until we ingest a commercial list) — the pipeline then behaves as before.
     """
     occ = getattr(plan_data, "occupancy_type", None)
-    checklist = select_checklist(occ)
+    checklist = select_checklist(occ, state=state, city=city)
     if not checklist:
         return {}
 

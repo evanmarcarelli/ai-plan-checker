@@ -28,12 +28,28 @@ def load_checklists() -> List[Checklist]:
     return out
 
 
-def select_checklist(occupancy: Optional[str], state: Optional[str] = "CA") -> Optional[Checklist]:
-    """Pick the best correction list for an occupancy (e.g. 'R-3').
+def _local_specificity(cl: Checklist) -> int:
+    """Count of inherently-local items (zoning) — a proxy for how jurisdiction-
+    specific a list is. A statewide-code list (e.g. OC, all CRC-cited) scores 0;
+    the LADBS sheet (LA Municipal zoning section) scores high. Used to pick the
+    *least* local list when no jurisdiction matches the plan."""
+    return sum(1 for i in cl.items if i.department_code == "zoning")
 
-    Match on occupancy first, then prefer same-state. Until we ingest more
-    jurisdictions, a CA residential list is a reasonable default for any R-3 —
-    the items are state-code (CRC) based, not OC-specific.
+
+def select_checklist(
+    occupancy: Optional[str],
+    state: Optional[str] = "CA",
+    city: Optional[str] = None,
+) -> Optional[Checklist]:
+    """Pick the best correction list for an (occupancy, jurisdiction).
+
+    1. Filter to lists matching the occupancy (commercial gets None — never
+       borrow a residential list).
+    2. Prefer a list whose jurisdiction names the plan's city/county (LA plan →
+       LADBS, Orange plan → OC) so LA-specific zoning items don't leak elsewhere.
+    3. Otherwise, among same-state lists, fall back to the *least* jurisdiction-
+       specific one — its items are statewide-code based and safe to apply to any
+       plan in that state.
     """
     lists = load_checklists()
     if not lists:
@@ -43,15 +59,20 @@ def select_checklist(occupancy: Optional[str], state: Optional[str] = "CA") -> O
     if matches:
         pool = matches
     elif occ.startswith("R"):
-        # Residential without an exact list → any residential list is a safe
-        # default (items are state CRC-based, not jurisdiction-specific).
         pool = [c for c in lists if c.source.occupancy.upper().startswith("R")]
     else:
         # Commercial / unknown occupancy: no applicable list yet. Return None so
-        # the pipeline behaves exactly as before — never apply residential
-        # corrections to a commercial plan.
+        # the pipeline behaves exactly as before.
         return None
     if not pool:
         return None
+    # Exact jurisdiction (city/county) match wins outright.
+    if city:
+        cl = city.strip().lower()
+        jur = [c for c in pool if cl and cl in c.source.jurisdiction.lower()]
+        if jur:
+            return jur[0]
+    # No jurisdiction match → prefer same-state, then the least-local list.
     state_hits = [c for c in pool if state and state.upper() in c.source.jurisdiction.upper()]
-    return (state_hits or pool)[0]
+    candidates = state_hits or pool
+    return min(candidates, key=_local_specificity)

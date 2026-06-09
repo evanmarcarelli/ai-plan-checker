@@ -227,7 +227,10 @@ class PlanCheckerWorkflow:
         checklist_reqs: Dict[str, List] = {}
         if getattr(settings, "checklist_review_enabled", True):
             checklist_reqs = checklist_requirements(
-                pd, max_per_department=int(getattr(settings, "checklist_max_per_department", 40))
+                pd,
+                max_per_department=int(getattr(settings, "checklist_max_per_department", 40)),
+                city=j.city,
+                state=j.state_code,
             )
             if checklist_reqs:
                 await emit(

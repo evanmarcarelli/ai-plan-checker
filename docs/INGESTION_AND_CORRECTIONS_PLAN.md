@@ -97,14 +97,43 @@ jurisdiction per publisher). To add bases:
   Oakland, San Jose, Anaheim, …) across American Legal + Municode, marked
   `# verify`. 105 targets total.
 
+## Built (second session)
+
+- **Numbered-format parser:** `build_from_pdf.py --format numbered` handles the
+  LADBS-style two-column correction *sheets* (bare `1.`/`2.` items under
+  `A. SECTION` headers nested in `PART III: …`, citations trailing on their own
+  line, lettered sub-items folded into the parent). Column-aware reconstruction
+  (`_columned_lines`) reads each physical column top-to-bottom so items aren't
+  scrambled; cover/supplemental-sheet boilerplate is filtered and bleed tails
+  cut at the `ATTACHED:` sentinel. The item-extraction core
+  (`_parse_numbered_lines`) is a pure, unit-tested function.
+- **Ingested LADBS** SFD/Duplex Plan Check Correction Sheets (2020 LARC) →
+  **125 code-cited correction items** across building_safety / zoning /
+  public_works / fire (`data/ladbs_2020_larc_sfd.json`). Corpus is now **364
+  items across 2 checklists**.
+- **Jurisdiction-aware selection:** `select_checklist(occ, state, city)` now
+  routes an LA plan to LADBS and any other CA plan to the *least* jurisdiction-
+  specific list (OC, all statewide-CRC) — so LA-Municipal zoning items never
+  leak onto a non-LA plan. Threaded `j.city`/`j.state_code` through
+  `checklist_requirements` → workflow. Result: **LA R-3 → 90 items**,
+  **non-LA CA R-3 → 129 items** (statewide codes only).
+- **Precision guidance:** when completeness/checklist items are present the
+  department reviewer prompt now instructs "flag ONLY what the plan does not
+  show/satisfy" — clear miss → non_compliant, silence/ambiguity → needs_review
+  (confidence < 0.55), never assert a violation from absence of excerpt text.
+  This + the existing low-confidence gate protects the 90% precision target.
+- **Settings:** `checklist_review_enabled` / `checklist_max_per_department` are
+  now explicit in `settings.py` + `.env.example` (were getattr defaults).
+
+> Caveat: live precision against the 90% target still needs a real R-3 run with
+> an `ANTHROPIC_API_KEY` set (offline runs fall back to mock reviewers). The
+> injection depth + jurisdiction routing above are verified offline.
+
 ## Next (clear follow-ups)
 
-- **Multi-format parser:** LADBS-style sheets use numbered items (`1.`, `2.`)
-  under lettered headers, not `A1.`-style — add a numbered-format mode to
-  `build_from_pdf.py`, then ingest LADBS + LA County DPW + Huntington Beach.
-- **Tune precision:** the injected items currently ride the standard reviewer
-  prompt; once validated on real runs, add explicit "flag only items the plan
-  does not show/satisfy" guidance and a per-department cap that balances the
-  90% precision target against depth.
+- **Run a live R-3 plan** with an API key to measure precision and tune
+  `checklist_max_per_department` against the 90% target.
+- **Ingest more numbered-format lists** now that the mode exists: LA County DPW
+  + Huntington Beach (same two-column shape).
 - **Ingest a commercial (B/M/A) correction list** to extend depth past R-3.
 - **Verify the new `# verify` slugs/publishers**, then run capped ingests.

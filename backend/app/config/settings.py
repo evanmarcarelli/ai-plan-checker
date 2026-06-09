@@ -128,6 +128,16 @@ class Settings(BaseSettings):
     playwright_delay_sec: float = 2.0  # min seconds between fetches per host
     playwright_timeout_sec: int = 60   # per-fetch hard cap (sec)
 
+    # Standard correction checklists
+    # Inject published plan-check correction-list items as extra requirements so
+    # coverage matches a real plan check (a real residential set runs many pages
+    # of corrections). On by default. The per-department cap balances depth
+    # against the precision target and per-run token cost — raise it for more
+    # depth, lower it if false positives creep in. Commercial occupancies get
+    # nothing until a commercial list is ingested.
+    checklist_review_enabled: bool = True
+    checklist_max_per_department: int = 40
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"
