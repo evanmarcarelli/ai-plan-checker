@@ -17,7 +17,6 @@ from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
 
 from app.main import app
 
@@ -61,7 +60,7 @@ class FakeDB:
     def __init__(self):
         self._jobs = {}
 
-    def create_job(self, user_id, filename, file_size, storage_path=None):
+    def create_job(self, user_id, filename, file_size, storage_path=None, credit_charged=False):
         jid = str(_uuid.uuid4())
         self._jobs[jid] = {
             "id": jid, "user_id": user_id, "filename": filename,
@@ -70,12 +69,19 @@ class FakeDB:
             "created_at": datetime.utcnow().isoformat(), "completed_at": None,
             "current_agent": None, "agents_completed": [], "error": None,
             "summary": None, "department_reviews": None,
+            "credit_charged": credit_charged, "credit_refunded": False,
+            "attempts": 0, "max_attempts": 3, "lease_expires_at": None,
         }
         return jid
 
     def get_job_for_user(self, job_id, user_id):
         r = self._jobs.get(job_id)
         return r if r and r["user_id"] == user_id else None
+
+    def fail_if_orphaned(self, row):
+        # In tests nothing is actually running a worker; treat every job as
+        # healthy (the real lease-aware logic is covered in test_job_queue.py).
+        return row
 
     def list_jobs_for_user(self, user_id):
         return [r for r in self._jobs.values() if r["user_id"] == user_id]
@@ -98,14 +104,14 @@ class FakeDB:
 
 @pytest.fixture(autouse=True)
 def _bypass_and_mock(monkeypatch):
-    """Bypass auth, mock the db, disable the limiter, no-op the background task."""
+    """Bypass auth, mock the db, disable the limiter. The web tier only
+    enqueues now — there is no in-process background task to stub out."""
     from app.config import settings
     import app.api.routes as routes
 
     monkeypatch.setattr(settings, "require_auth", False)
     fake = FakeDB()
     monkeypatch.setattr(routes, "db", fake)
-    monkeypatch.setattr(routes, "_fetch_and_process", AsyncMock())
     # Disable rate limiting so repeated uploads in one run don't 429.
     if hasattr(routes, "limiter"):
         monkeypatch.setattr(routes.limiter, "enabled", False)

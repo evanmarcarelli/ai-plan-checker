@@ -7,12 +7,14 @@ services:
   - type: web
     name: up2code-backend
     env: docker
-    plan: standard           # 2GB RAM / 1 CPU. The plan-checking pipeline
+    plan: starter            # 512MB. The web tier now ONLY validates + enqueues
+                             # jobs and serves status/exports. The heavy pipeline
                              # (PDF render + vision + 10 LLM contexts + code
-                             # corpus) OOM-kills a 512MB "starter" on large
-                             # plan sets, which returns 503s and trips the
-                             # /health check. Drop back to "starter" only if
-                             # you cap upload size and page count.
+                             # corpus) moved to the `up2code-worker` service
+                             # below, so the web process no longer holds a whole
+                             # plan set in memory — hence "starter" is enough.
+                             # If you add heavy synchronous work back into a
+                             # request, resize here (and reconsider the split).
     region: oregon
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -71,6 +73,79 @@ services:
         value: esmith.marc@gmail.com
       # AWS Textract — leave AWS_TEXTRACT_ENABLED=false until the IAM keys
       # are pasted in below and the service is redeployed.
+      - key: AWS_TEXTRACT_ENABLED
+        value: "false"
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-west-2
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Background worker — runs the plan-check pipeline out-of-band.
+  #
+  # This is the half of the split that fixes the recurring "edge function"
+  # bug class: the web service only enqueues; this service claims jobs from
+  # the Postgres queue (FOR UPDATE SKIP LOCKED, migration 007) and runs them.
+  # A worker crash/redeploy can't orphan a job (lease expires → retried), and
+  # heavy work never touches the web event loop or web memory.
+  #
+  # Scale throughput by raising `numInstances` — SKIP LOCKED means instances
+  # never claim the same job. Keep this at `standard` (2GB): one plan set +
+  # vision + the agent pipeline is the memory-heavy workload.
+  #
+  # IMPORTANT: a `worker` service has no inbound port and no health check.
+  # Its env vars are intentionally a copy of the web service's (Render has no
+  # per-blueprint shared group here) PLUS the WORKER_* tunables. If you change
+  # a secret/value above, change it here too.
+  # ──────────────────────────────────────────────────────────────────────
+  - type: worker
+    name: up2code-worker
+    env: docker
+    plan: standard
+    region: oregon
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m app.worker
+    autoDeploy: true
+    envVars:
+      # --- worker tunables (see app/worker.py) ---
+      - key: WORKER_LEASE_SEC
+        value: "180"
+      - key: WORKER_IDLE_SLEEP_SEC
+        value: "2"
+      - key: WORKER_REAP_EVERY_SEC
+        value: "60"
+      # --- copied from the web service (keep in sync) ---
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: REQUIRE_AUTH
+        value: "true"
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "100"
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-7
+      - key: ANTHROPIC_MODEL_CHEAP
+        value: claude-sonnet-4-6
+      - key: ANTHROPIC_MAX_TOKENS
+        value: "4096"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SUPPORT_EMAIL
+        value: esmith.marc@gmail.com
       - key: AWS_TEXTRACT_ENABLED
         value: "false"
       - key: AWS_ACCESS_KEY_ID

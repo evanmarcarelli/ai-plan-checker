@@ -1,27 +1,25 @@
-"""API routes — DB-backed job storage with Supabase auth."""
-import asyncio
-import os
+"""API routes — DB-backed job storage with Supabase auth.
+
+This module is the WEB tier. It validates, authenticates, reserves credits,
+and enqueues jobs — it never runs the plan-check pipeline. The pipeline lives
+in app.worker / app.services.job_processor, in a separate process.
+"""
 import json
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, status, Request
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import aiofiles
 import jwt as _jwt
 
 from app.config import settings
 from app.models.schemas import (
-    UploadResponse, JobStatusResponse, ProcessingJob, JobStatus,
-    AgentLog, ComplianceReport,
+    UploadResponse, JobStatusResponse, ComplianceReport,
 )
-from app.agents.workflow import PlanCheckerWorkflow
 from app.services.export_service import export_service
 from app.services import db
-from app.services import email_service
-from app.services.pdf_compressor import compress as compress_pdf
 from app.services.auth import get_current_user
 from app.utils.logger import get_logger
 
@@ -170,20 +168,21 @@ class StartReviewBody(_BM):
 async def start_review(
     request: Request,
     body: StartReviewBody,
-    background_tasks: BackgroundTasks,
     user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Start a compliance review from a PDF already uploaded to Supabase Storage.
+    """Enqueue a compliance review for a PDF already uploaded to Supabase Storage.
 
     The browser uploads the PDF directly to Supabase (bypassing this backend),
-    then calls this endpoint with the storage path. We download the file
-    here using the service role, then run the agent pipeline.
+    then calls this endpoint with the storage path. This handler does ONLY
+    fast validation + credit reservation, then writes a 'pending' job row and
+    returns. A dedicated worker process (app.worker) claims the job and runs
+    the heavy pipeline (download, PDF parse, vision, 12 agents) out-of-band.
 
-    Rate limited to 10 uploads/min per user.
+    Keeping all heavy/long/stateful work out of this web request is the whole
+    point: it's why the event loop never stalls, the web tier never OOMs, and
+    a redeploy can't orphan an in-flight job.
     """
     # Fast-path validations only — return to the browser in <1 second.
-    # All heavy work (storage download, PDF magic-byte check, compression,
-    # 12-agent pipeline) happens in the background task below.
 
     if not body.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
@@ -204,16 +203,18 @@ async def start_review(
     # NOT refund them — otherwise each failed admin run mints a credit.
     charged = settings.require_auth and not _is_admin_user(user)
 
-    # Create DB row (instant)
+    # Enqueue: write a 'pending' job row (instant). The worker takes it from
+    # here. credit_charged is persisted so the worker can refund idempotently
+    # on failure without this request being in the loop.
     job_id = db.create_job(
         user_id=user["id"],
         filename=body.filename,
         file_size=body.file_size,
         storage_path=body.storage_path,
+        credit_charged=charged,
     )
 
-    logger.info(f"Job {job_id} queued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
-    background_tasks.add_task(_fetch_and_process, job_id, body.storage_path, user["id"], charged)
+    logger.info(f"Job {job_id} enqueued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
 
     return UploadResponse(
         job_id=job_id,
@@ -221,223 +222,6 @@ async def start_review(
         filename=body.filename,
         file_size=body.file_size,
     )
-
-
-def _refund_credit(job_id: str, user_id: str, charged: bool) -> None:
-    """Refund the one credit a failed/timed-out job consumed — but only if
-    the user was actually charged (admins and dev-mode are not). Logs loudly
-    on failure so a silently-lost credit can't slip through unnoticed."""
-    if not charged:
-        return
-    try:
-        db.add_credits(user_id, 1)
-    except Exception as e:
-        logger.error(f"Job {job_id}: REFUND FAILED for user {user_id}: {e}")
-
-
-async def _fetch_and_process(job_id: str, storage_path: str, user_id: str, charged: bool = True):
-    """Background: download from Storage, validate, compress, then run pipeline."""
-    file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
-
-    # 1. Download from Supabase Storage
-    try:
-        content = db.download_plan(storage_path)
-    except Exception as e:
-        logger.error(f"Job {job_id}: storage download failed: {e}")
-        db.update_job(job_id, {"status": "failed", "error": "Uploaded file not found in storage."})
-        _refund_credit(job_id, user_id, charged)
-        return
-
-    # 2. Validate magic bytes
-    if len(content) < 5 or content[:4] != b"%PDF":
-        logger.error(f"Job {job_id}: not a valid PDF")
-        db.update_job(job_id, {"status": "failed", "error": "File is not a valid PDF."})
-        _refund_credit(job_id, user_id, charged)
-        return
-
-    # 3. Write to local disk
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(content)
-
-    # Release the in-memory PDF (up to MAX_UPLOAD_SIZE_MB) the moment it's on
-    # disk. The pipeline reads from `file_path` from here on, so holding these
-    # bytes through compression + the 12-agent run is pure peak-memory waste —
-    # the single biggest avoidable spike on a memory-constrained instance.
-    del content
-
-    # 4. Lossless compression (best-effort)
-    try:
-        _, before_b, after_b = compress_pdf(file_path)
-        if after_b < before_b:
-            saved = (1 - after_b / before_b) * 100
-            logger.info(f"Job {job_id}: compressed {before_b:,} -> {after_b:,} bytes (-{saved:.1f}%)")
-    except Exception as e:
-        logger.warning(f"Job {job_id}: compression skipped ({e})")
-
-    # 5. Run the multi-agent pipeline (and final cleanup) in the existing handler
-    await _process_job(job_id, file_path, storage_path, charged)
-
-
-async def _process_job(job_id: str, file_path: str, storage_path: Optional[str] = None, charged: bool = True):
-    """Background task: run the workflow and persist results to DB."""
-    db.update_job(job_id, {"status": "processing", "progress": 0})
-
-    workflow = PlanCheckerWorkflow()
-
-    # Build a lightweight in-memory job shell for workflow state
-    row = db.get_job(job_id)
-    job_shell = ProcessingJob(
-        job_id=job_id,
-        status=JobStatus.PROCESSING,
-        filename=row.get("filename", "unknown.pdf"),
-        file_size=row.get("file_size", 0),
-        created_at=datetime.utcnow(),
-    )
-
-    last_persisted_progress = 0
-
-    async def on_log(log: AgentLog):
-        nonlocal last_persisted_progress
-        db.insert_log(job_id, log.agent, log.level, log.message, log.data or None)
-        # Only push frequent status updates if progress changed
-        if job_shell.progress != last_persisted_progress or job_shell.current_agent:
-            db.update_job(job_id, {
-                "progress": job_shell.progress,
-                "current_agent": job_shell.current_agent,
-                "agents_completed": job_shell.agents_completed,
-            })
-            last_persisted_progress = job_shell.progress
-
-    # Hard ceiling on the whole job. Without this, a Render Free hang can
-    # leave the dashboard stuck at "25% complete · Librarian working..." for
-    # 20+ minutes with no way for the user to know it died. 12 minutes is
-    # well above the typical 90–120s end-to-end runtime, but tight enough
-    # that a hung dyno surfaces fast.
-    JOB_TIMEOUT_SEC = 12 * 60
-
-    # Liveness heartbeat: bump updated_at every HEARTBEAT_SEC so an alive job
-    # stays "fresh" even through a long silent step (the Surveyor's PDF
-    # extraction emits no progress for up to a minute+). The staleness guard
-    # (db.fail_if_orphaned) keys off updated_at, so without this a slow-but-
-    # healthy job could be wrongly failed. Cancelled in the finally below.
-    HEARTBEAT_SEC = 20
-
-    async def _heartbeat() -> None:
-        while True:
-            await asyncio.sleep(HEARTBEAT_SEC)
-            try:
-                await asyncio.to_thread(db.update_job, job_id, {})
-            except Exception:
-                pass
-
-    heartbeat_task = asyncio.create_task(_heartbeat())
-
-    try:
-        report = await asyncio.wait_for(
-            workflow.run(job_shell, file_path, log_callback=on_log),
-            timeout=JOB_TIMEOUT_SEC,
-        )
-
-        # Persist final report fields. agents_completed is included so the
-        # "10 Departments" group in the AgentPipeline turns green — the
-        # workflow appends the per-department names only AFTER the last
-        # in-flight emit, so the on_log callback never gets a chance to
-        # persist them on its own.
-        db.update_job(job_id, {
-            "status": "completed",
-            "progress": 100,
-            "current_agent": None,
-            "completed_at": datetime.utcnow().isoformat(),
-            "agents_completed": job_shell.agents_completed,
-            "jurisdiction": (report.jurisdiction.model_dump() if report.jurisdiction else None),
-            "plan_data": (report.plan_data.model_dump() if report.plan_data else None),
-            "summary": report.summary.model_dump() if report.summary else None,
-            "department_reviews": [dr.model_dump() for dr in (report.department_reviews or [])],
-            "recommendations": report.recommendations,
-            "code_versions": report.code_versions,
-            "sources_used": report.sources_used,
-            "notes": report.auditor_notes,
-        })
-
-        # Persist findings rows for fast filtering
-        row = db.get_job(job_id)
-        finding_rows = []
-        for f in (report.findings or []):
-            req = f.code_requirement
-            # find department for this finding
-            dept_name = ""
-            dept_code = ""
-            for dr in report.department_reviews or []:
-                if any(ff.finding_id == f.finding_id for ff in dr.findings):
-                    dept_name = dr.department
-                    dept_code = dr.department_code
-                    break
-            finding_rows.append({
-                "job_id": job_id,
-                "user_id": row["user_id"],
-                "department": dept_name,
-                "department_code": dept_code,
-                "code_id": req.code_id,
-                "code_section": req.section,
-                "code_name": req.code_name,
-                "category": req.category,
-                "status": f.status.value if hasattr(f.status, "value") else f.status,
-                "severity": f.severity,
-                "plan_value": f.plan_value,
-                "required_value": f.required_value,
-                "description": f.description,
-                "recommendation": f.recommendation,
-                "page_references": f.page_references or [],
-            })
-        if finding_rows:
-            # insert in chunks to stay under PG row limits
-            for i in range(0, len(finding_rows), 100):
-                db.insert_findings(finding_rows[i:i+100])
-
-        logger.info(f"Job {job_id} completed: {len(finding_rows)} findings")
-
-        # Send "your review is ready" email (no-op without RESEND_API_KEY)
-        try:
-            row2 = db.get_job(job_id)
-            user_id2 = row2.get("user_id")
-            profile = db.get_profile(user_id2) or {}
-            client = db.admin()
-            auth_user = client.auth.admin.get_user_by_id(user_id2) if user_id2 else None
-            user_email = getattr(getattr(auth_user, "user", None), "email", None) if auth_user else None
-            if user_email:
-                email_service.send_report_ready(user_email, job_id, row2.get("filename", "your plan"))
-        except Exception as e:
-            logger.warning(f"send_report_ready failed for job {job_id}: {e}")
-
-    except asyncio.TimeoutError:
-        # Hit the global JOB_TIMEOUT_SEC ceiling — workflow ran too long.
-        # Almost always means Render Free's dyno is starving and one or more
-        # department LLM calls hung. Mark the job failed with a useful
-        # message so the dashboard stops claiming "Librarian working...".
-        msg = (
-            f"Plan review exceeded the {JOB_TIMEOUT_SEC // 60}-minute server "
-            f"timeout. This usually means Render Free's resource limits "
-            f"throttled the LLM calls. Please retry, or upgrade to Render "
-            f"Starter for reliable execution."
-        )
-        logger.error(f"Job {job_id} timed out: {msg}")
-        db.update_job(job_id, {"status": "failed", "error": msg})
-        _refund_credit(job_id, row["user_id"], charged)
-
-    except Exception as e:
-        logger.error(f"Job {job_id} failed: {e}", exc_info=True)
-        db.update_job(job_id, {"status": "failed", "error": str(e)})
-        _refund_credit(job_id, row["user_id"], charged)
-    finally:
-        heartbeat_task.cancel()
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception:
-            pass
-        # Delete the original from Supabase Storage too — we've already processed it.
-        if storage_path:
-            db.delete_plan(storage_path)
 
 
 # ============================================================
