@@ -38,3 +38,6 @@ backend/exports/
 backend/cache/
 backend/logs/
 *.log
+
+# Benchmark run outputs (reproducible from manifest)
+benchmarks/results/

@@ -29,6 +29,12 @@ class ExpectedFinding:
     severity: str = "medium"
     status: str = "non_compliant"      # what we expect the system to call it
     notes: str = ""                    # human description, not used for matching
+    # --- extended (BENCHMARK_DESIGN §4); optional, back-compatible ---
+    issue_id: str = ""                 # stable id; match on the issue, not the string
+    acceptable_sections: List[str] = field(default_factory=list)  # any of these = correct
+    objectivity: str = "hard"          # hard (objective) | soft (judgment) — scored apart
+    acceptance_criteria: str = ""      # what a correct AI finding must convey (for the judge)
+    location: Dict[str, str] = field(default_factory=dict)        # {sheet, note}
 
 
 @dataclass
@@ -40,6 +46,12 @@ class CaseGroundTruth:
     expected_findings: List[ExpectedFinding] = field(default_factory=list)
     must_not_flag: List[str] = field(default_factory=list)        # sections we should NOT flag
     plan_features: Dict[str, object] = field(default_factory=dict) # for live runs without a PDF
+    # --- extended (BENCHMARK_DESIGN §3/§4); optional, back-compatible ---
+    tier: str = "A"                    # A synthetic | B expert-labeled PDF | C correction letter
+    split: str = "dev"                 # dev | holdout
+    source: str = ""                   # provenance of the ground truth
+    input_quality: str = "synthetic"   # synthetic | vector | scanned | mixed | missing_title_sheet
+    labelers: List[str] = field(default_factory=list)
 
 
 @dataclass

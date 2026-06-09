@@ -1,0 +1,31 @@
+description: >
+  NEGATIVE CONTROL — a fully code-compliant single-family residence in Los
+  Angeles (R-3, V-B, within Table 506.2 area + 504.4 story limits, sprinklered,
+  compliant egress, PV + EV-ready per Title 24). A clean plan should produce
+  ~zero non_compliant findings. This case measures the FALSE-POSITIVE rate that
+  synthetic defect cases can never catch: a system that invents problems on a
+  compliant set is worse than useless. (BENCHMARK_DESIGN §3 — controls.)
+
+tier: A
+split: dev
+source: synthetic-control
+input_quality: synthetic
+
+jurisdiction:
+  state: CA
+  city: Los Angeles
+  county: Los Angeles
+
+plan_type: residential
+
+# A compliant plan: there is nothing to flag.
+expected_findings: []
+
+# Commercial / public-accommodation provisions that must NEVER fire on a private
+# single-family home. A hit here is an unambiguous false positive (regression).
+must_not_flag:
+  - "ADA 208.2"        # accessible parking count — commercial, N/A to a private SFR
+  - "ADA 404.2.3"      # commercial accessible door clear width
+  - "IBC 1006.3.2"     # commercial minimum-exits-by-occupant-load
+  - "IBC 1004.5"       # commercial occupant-load calculation
+  - "IPC 403.1"        # commercial plumbing fixture ratios
