@@ -20,7 +20,7 @@ def load_checklists() -> List[Checklist]:
     out: List[Checklist] = []
     for path in sorted(_DATA_DIR.glob("*.json")):
         try:
-            out.append(Checklist.model_validate_json(path.read_text()))
+            out.append(Checklist.model_validate_json(path.read_text(encoding="utf-8")))
         except Exception as e:  # one bad file shouldn't sink the rest
             logger.warning(f"[checklists] failed to load {path.name}: {e}")
     logger.info(f"[checklists] loaded {len(out)} checklist(s), "

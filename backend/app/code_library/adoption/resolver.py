@@ -66,7 +66,7 @@ class AdoptionResolver:
 
     @classmethod
     def load(cls, path: Path = MAP_PATH) -> "AdoptionResolver":
-        with path.open() as f:
+        with path.open(encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
         raw = cfg.get("records", [])
         records = [AdoptionRecord(**r) for r in raw]   # validate-on-load
