@@ -72,7 +72,7 @@ LA_COUNTY_CITIES = {
 
 
 def _load_targets(source: str) -> List[dict]:
-    with CONFIG_PATH.open() as f:
+    with CONFIG_PATH.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
     return cfg.get(source) or []
 
@@ -297,7 +297,7 @@ def _import_runner(module_path: str, func_name: str) -> Callable:
 
 
 def cmd_list(args: argparse.Namespace) -> int:
-    with CONFIG_PATH.open() as f:
+    with CONFIG_PATH.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
     for src, entries in cfg.items():
         la_count = sum(1 for e in entries if _entry_is_la_county(e))
