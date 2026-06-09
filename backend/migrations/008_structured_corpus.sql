@@ -134,7 +134,10 @@ create table if not exists code_table_cells (
   unit          text,                     -- 'sf' | 'stories' | 'ft'
   footnote_refs text[] not null default '{}',
   source_section text,                    -- governing section
-  unique (table_id, coalesce(adoption_id,''), row_key, col_key)
+  -- NULLS NOT DISTINCT (PG15+) so base rows (adoption_id NULL) dedupe properly
+  -- and upserts have a real column-list conflict target.
+  constraint code_table_cells_uniq
+    unique nulls not distinct (table_id, adoption_id, row_key, col_key)
 );
 create index if not exists code_table_cells_lookup_idx on code_table_cells (table_id, adoption_id);
 
