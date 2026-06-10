@@ -311,10 +311,30 @@ def _load_corpus_from_postgres() -> CodeCorpus:
     return corpus
 
 
+_corpus_source: Optional[str] = None   # "disk" | "postgres" — what actually loaded
+
+
+def get_corpus_source() -> Optional[str]:
+    """The source the live corpus was ACTUALLY loaded from ('disk' or
+    'postgres'), or None if not loaded yet. Lets the benchmark manifest record
+    what really served the findings, not just the configured intent."""
+    return _corpus_source
+
+
+def _strict_postgres() -> bool:
+    try:
+        from app.config import settings
+        return (getattr(settings, "code_store", "disk").lower() == "postgres"
+                and bool(getattr(settings, "code_store_strict", False)))
+    except Exception:
+        return False
+
+
 def _load_corpus() -> CodeCorpus:
-    """Choose the corpus source. CODE_STORE=postgres uses the DB when it's
-    populated (migration 008 + ingest run), otherwise falls back to disk JSONL.
-    Default is disk, so this change is a no-op until explicitly switched on."""
+    """Choose the corpus source. CODE_STORE=postgres uses the DB when populated,
+    else falls back to disk JSONL — UNLESS code_store_strict is set, in which
+    case a missing/empty DB corpus is fatal (loud, not silently degraded)."""
+    global _corpus_source
     try:
         from app.config import settings
         prefer_pg = getattr(settings, "code_store", "disk").lower() == "postgres"
@@ -325,11 +345,21 @@ def _load_corpus() -> CodeCorpus:
         try:
             from app.code_library import store
             if store.corpus_in_postgres():
+                _corpus_source = "postgres"
                 return _load_corpus_from_postgres()
-            logger.warning("[code_library] CODE_STORE=postgres but code_chunks is "
-                           "empty/missing — falling back to disk JSONL")
+            msg = "CODE_STORE=postgres but code_chunks is empty/missing"
+            if _strict_postgres():
+                raise RuntimeError(f"[code_library] STRICT MODE: {msg} — refusing to "
+                                   f"fall back to disk. Apply migration 008 + backfill.")
+            logger.warning(f"[code_library] {msg} — falling back to disk JSONL")
+        except RuntimeError:
+            raise
         except Exception as e:
+            if _strict_postgres():
+                raise RuntimeError(f"[code_library] STRICT MODE: postgres corpus "
+                                   f"load failed: {e}") from e
             logger.warning(f"[code_library] postgres corpus load failed, using disk: {e}")
+    _corpus_source = "disk"
     return _load_corpus_from_disk()
 
 

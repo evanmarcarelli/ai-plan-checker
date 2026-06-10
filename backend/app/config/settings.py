@@ -102,6 +102,11 @@ class Settings(BaseSettings):
     # (structured code_chunks from migration 008). "postgres" falls back to disk
     # if the table is empty/missing, so flipping this on is safe.
     code_store: str = "disk"
+    # Strict postgres: when code_store="postgres" AND this is true, a missing/
+    # empty DB corpus or table is a FATAL error instead of a silent fallback to
+    # disk/hardcoded values. Turn this on once you trust the DB path — it makes
+    # a misconfiguration loud-and-fatal rather than loud-and-degraded.
+    code_store_strict: bool = False
 
     # Run the job-queue worker loop inside this web process (default). The
     # pipeline runs as a background task off the durable Postgres queue, so a
