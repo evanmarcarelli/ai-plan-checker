@@ -14,6 +14,11 @@ from typing import Callable, Dict, List, Sequence, Tuple
 # A "case score" here is any object exposing tp/fp/fn/critical_tp/critical_fn/
 # forbidden_hits/cited_in_corpus/total_findings (i.e. scorer.CaseScore).
 
+# Below these, the confidence intervals are too wide to support ANY claim — the
+# harness must refuse to render a ship verdict (BENCHMARK_DESIGN §3/§6).
+MIN_CASES = 20
+MIN_CRITICAL_FINDINGS = 30
+
 
 def _ratio(num: int, den: int) -> float:
     return num / den if den else 0.0
@@ -72,6 +77,7 @@ def aggregate(cases: Sequence, *, seed: int = 0) -> Dict[str, object]:
         "critical_recall": bootstrap_ci(cases, pooled_critical_recall, seed=seed),
         "citation_validity": bootstrap_ci(cases, pooled_citation_validity, seed=seed),
     }
+    crit_n = sum(c.critical_tp for c in cases) + sum(c.critical_fn for c in cases)
     totals = {
         "cases": len(cases),
         "tp": sum(c.tp for c in cases),
@@ -82,19 +88,30 @@ def aggregate(cases: Sequence, *, seed: int = 0) -> Dict[str, object]:
         "forbidden_hits": sum(c.forbidden_hits for c in cases),
         "findings": sum(c.total_findings for c in cases),
     }
+    # Is there enough data to quote a number at all?
+    sufficient = len(cases) >= MIN_CASES and crit_n >= MIN_CRITICAL_FINDINGS
     return {"metrics": {k: {"point": p, "lo": lo, "hi": hi}
                         for k, (p, lo, hi) in metrics.items()},
-            "totals": totals}
+            "totals": totals,
+            "sufficient": sufficient}
 
 
 def format_aggregate(agg: Dict[str, object]) -> str:
     """One-line-per-metric human summary: 'critical_recall 0.96 (0.92–0.98)'."""
     out: List[str] = []
+    t = agg["totals"]
+    crit_n = t["critical_tp"] + t["critical_fn"]
+    if not agg.get("sufficient", False):
+        out.append(
+            f"!! INSUFFICIENT DATA — {t['cases']} cases / {crit_n} critical findings "
+            f"(need >= {MIN_CASES} / {MIN_CRITICAL_FINDINGS}). The CIs below are NOT "
+            f"meaningful; do NOT quote these numbers or make a ship decision."
+        )
+        out.append("")
     m = agg["metrics"]
     for key in ("critical_recall", "recall", "precision", "citation_validity"):
         v = m[key]
         out.append(f"{key:18} {v['point']:.2f}  (95% CI {v['lo']:.2f}-{v['hi']:.2f})")
-    t = agg["totals"]
     out.append(f"n = {t['cases']} cases, {t['findings']} findings, "
                f"{t['fn']} misses ({t['critical_fn']} critical), "
                f"{t['forbidden_hits']} forbidden")
