@@ -314,13 +314,18 @@ function SceneIntro() {
           initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, duration: 0.7, ease: EASE }}
-          className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-8"
+          className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-8 overflow-hidden"
           style={{
-            background: "var(--accent)",
+            background: "#fff",
             boxShadow: "0 0 60px -10px rgba(47,91,255,0.5)",
           }}
         >
-          <span className="text-white text-3xl font-bold leading-none tracking-tight">U</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Architechtura"
+            className="w-11 h-11 object-contain"
+          />
         </motion.div>
         <motion.h3
           initial={{ opacity: 0, y: 12 }}
