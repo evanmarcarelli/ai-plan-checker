@@ -12,7 +12,7 @@ const SCENE_MS = 5200;
 
 const CHAPTERS = [
   { id: "pain",    title: "The submittal loop"   },
-  { id: "intro",   title: "Meet PhiCodes"         },
+  { id: "intro",   title: "Meet Architechtura"         },
   { id: "upload",  title: "Drop the plan set"    },
   { id: "process", title: "Multi-agent review"   },
   { id: "findings",title: "Findings, cited"      },
@@ -85,7 +85,7 @@ export default function AutoplayReel() {
             className="text-[40px] md:text-[52px] font-bold tracking-tight leading-[1.05] mb-5"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            See PhiCodes in motion.
+            See Architechtura in motion.
           </h2>
           <p
             className="text-[17px] leading-relaxed max-w-md mb-10"
@@ -305,7 +305,7 @@ function ScenePain() {
   );
 }
 
-/* ─── SCENE 2 — Meet PhiCodes ────────────────────────────────────────── */
+/* ─── SCENE 2 — Meet Architechtura ────────────────────────────────────────── */
 function SceneIntro() {
   return (
     <SceneFrame>
@@ -329,7 +329,7 @@ function SceneIntro() {
           className="text-[56px] md:text-[80px] font-bold tracking-tight leading-none"
           style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
         >
-          PhiCodes.
+          Architechtura.
         </motion.h3>
         <motion.p
           initial={{ opacity: 0, y: 8 }}
@@ -799,7 +799,7 @@ function SceneTeams() {
             className="text-[26px] md:text-[32px] font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
-            From AEC teams using PhiCodes.
+            From AEC teams using Architechtura.
           </div>
         </motion.div>
         <div className="grid grid-cols-3 gap-3">

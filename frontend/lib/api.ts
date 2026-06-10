@@ -126,7 +126,7 @@ export async function exportMyData(): Promise<void> {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "phicodes-data-export.json";
+  a.download = "architechtura-data-export.json";
   document.body.appendChild(a);
   a.click();
   a.remove();

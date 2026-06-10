@@ -39,7 +39,7 @@ export default function TermsPage() {
 
           <H2>Agreement to our Legal Terms</H2>
           <P>
-            We are <Em>Up 2 Code Inc.</Em>, doing business as PhiCodes (&quot;Company,&quot;
+            We are <Em>Up 2 Code Inc.</Em>, doing business as Architechtura (&quot;Company,&quot;
             &quot;we,&quot; &quot;us,&quot; &quot;our&quot;), a company registered in Washington,
             United States at 4751 21st Ave NE, 105, Seattle, WA 98105.
           </P>

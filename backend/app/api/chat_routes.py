@@ -36,7 +36,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-SYSTEM_PROMPT = """You are PhiCodes's AI assistant — a building-code clarification helper.
+SYSTEM_PROMPT = """You are Architechtura's AI assistant — a building-code clarification helper.
 
 Your job is to answer clarifying questions from architects, contractors, and
 inspectors who are looking at a compliance report. You are NOT performing a
@@ -236,7 +236,7 @@ CODE EXCERPTS (use ONLY these for your answer):
         role="assistant",
         content=reply,
         citations=citations,
-        author_display="PhiCodes AI",
+        author_display="Architechtura AI",
     )
 
     return {

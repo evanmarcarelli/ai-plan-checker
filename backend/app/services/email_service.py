@@ -9,7 +9,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-FROM_ADDRESS = "PhiCodes <noreply@up2code.ai>"
+FROM_ADDRESS = "Architechtura <noreply@up2code.ai>"
 
 
 def _client():

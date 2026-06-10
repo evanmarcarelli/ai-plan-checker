@@ -79,13 +79,13 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
       style={{ background: "rgba(247, 248, 250, 0.85)", borderColor: "var(--border)" }}
     >
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1" aria-label="PhiCodes home">
+        <Link href="/" className="flex items-center gap-1" aria-label="Architechtura home">
           <span
             className="font-semibold text-[18px] tracking-[-0.025em]"
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
           >
-            {/* Greek capital phi (Φ) stands in for "Phi"; Link aria-label keeps the accessible name "PhiCodes" */}
-            &#934;Codes
+            {/* Wordmark — "Architechtura" followed by the northeast arrow */}
+            Architechtura
           </span>
           <ArrowUpRight
             className="w-3.5 h-3.5"
@@ -116,7 +116,7 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
                 className="text-[13px] font-semibold px-3.5 py-2 rounded-lg hover:opacity-90 transition-opacity duration-150"
                 style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
               >
-                Try PhiCodes
+                Try Architechtura
               </Link>
             </>
           )}
@@ -162,7 +162,7 @@ function Hero() {
               className="text-[17px] leading-[1.55] max-w-md"
               style={{ color: "var(--text-secondary)" }}
             >
-              PhiCodes dispatches a multi-agent system across your drawings,
+              Architechtura dispatches a multi-agent system across your drawings,
               extracting geometry, resolving applicable code, and returning
               structured findings with verifiable citations.
             </p>
@@ -172,7 +172,7 @@ function Hero() {
                 className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-[14px] font-semibold hover:opacity-90 transition-opacity duration-100"
                 style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
               >
-                Try PhiCodes free
+                Try Architechtura free
               </Link>
               <a
                 href="#demo"
@@ -212,7 +212,7 @@ function DemoSection() {
             Watch a triage run live.
           </h2>
           <p className="text-base max-w-2xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Pick a scenario. PhiCodes evaluates it against jurisdiction-specific code
+            Pick a scenario. Architechtura evaluates it against jurisdiction-specific code
             rules and returns a structured compliance report with findings, completeness
             score, and verified citations — in seconds.
           </p>
@@ -421,7 +421,7 @@ function Pricing() {
         )}
 
         <div className="text-center mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
-          Inviting contractors and inspectors to view a report is free. They don&apos;t need a PhiCodes account.
+          Inviting contractors and inspectors to view a report is free. They don&apos;t need an Architechtura account.
         </div>
       </div>
     </section>
@@ -467,7 +467,7 @@ function Disclaimer() {
       <div className="flex items-start justify-center gap-2 max-w-3xl mx-auto">
         <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <p>
-          PhiCodes AI reports are AI-generated for preliminary review only and are not a substitute for a licensed
+          Architechtura AI reports are AI-generated for preliminary review only and are not a substitute for a licensed
           professional or AHJ approval. Always verify findings before relying on them for permit purposes.
         </p>
       </div>

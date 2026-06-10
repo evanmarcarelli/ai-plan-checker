@@ -1,6 +1,6 @@
 """Deterministic plan-check rule engine.
 
-Ported from the PhiCodes (plan-room-ahj) TypeScript engine. The core idea:
+Ported from the Architechtura (plan-room-ahj) TypeScript engine. The core idea:
 LLM department reviewers are good at reading messy plans but silently
 miscalculate multi-step arithmetic 5-15% of the time — the fastest way to
 lose reviewer trust. So the code-math (allowable area, story limits, exit

@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 
 QCODE_BASE = "https://qcode.us"
 USER_AGENT = (
-    "PhiCodesAI-Ingester/1.0 "
+    "ArchitechturaAI-Ingester/1.0 "
     "(+contact: esmith.marc@gmail.com - fetching public municipal code text)"
 )
 DEFAULT_DELAY_SEC = 1.0

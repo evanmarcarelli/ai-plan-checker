@@ -258,7 +258,7 @@ function BlueprintBackdrop() {
       <rect x="50" y="34" width="700" height="212" fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="0.8" />
       {/* Title-block stamp */}
       <text x="400" y="60" textAnchor="middle" fontSize="12" fontFamily="Inter, system-ui, sans-serif" fontWeight="600" fill="rgba(0,0,0,0.32)">
-        TYPICAL FLOOR PLAN — PHICODES PLAN REVIEW
+        TYPICAL FLOOR PLAN — ARCHITECHTURA PLAN REVIEW
       </text>
       {/* Footprints */}
       <rect x="170" y="100" width="240" height="120" fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8" />

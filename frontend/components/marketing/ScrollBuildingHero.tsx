@@ -48,13 +48,13 @@ export default function ScrollBuildingHero() {
       // full extrusion sequence without feeling rushed or interminable.
       className="relative w-full"
       style={{ height: "350vh", background: "#FFFFFF" }}
-      aria-label="PhiCodes: from blueprint to building"
+      aria-label="Architechtura: from blueprint to building"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* 3D scene fills the viewport */}
         <BuildingScene progress={scrollYProgress} />
 
-        {/* PhiCodes wordmark — the site's primary logo treatment. Sits above
+        {/* Architechtura wordmark — the site's primary logo treatment. Sits above
             the tagline through the parchment phase, then fades as the scene
             transitions to the building extrude. Mirrors the Nav logo. */}
         <motion.div
@@ -66,8 +66,8 @@ export default function ScrollBuildingHero() {
               className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.025em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
-              {/* Greek capital phi (Φ); section aria-label carries the name "PhiCodes" */}
-              &#934;Codes
+              {/* Wordmark — "Architechtura" followed by the northeast arrow */}
+              Architechtura
             </span>
             <ArrowUpRight
               className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
@@ -92,7 +92,7 @@ export default function ScrollBuildingHero() {
             >
               The single platform for modern planning,
               <br className="hidden sm:block" /> construction, and certification,{" "}
-              <span style={{ fontWeight: 600 }}>PhiCodes</span>.
+              <span style={{ fontWeight: 600 }}>Architechtura</span>.
             </h2>
           </div>
         </motion.div>

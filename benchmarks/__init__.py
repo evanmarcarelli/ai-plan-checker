@@ -1,4 +1,4 @@
-"""PhiCodes AI accuracy benchmark harness.
+"""Architechtura AI accuracy benchmark harness.
 
 Two modes:
 

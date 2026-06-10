@@ -63,7 +63,7 @@ export default function SignupPage() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-            PhiCodes AI
+            Architechtura AI
           </h1>
           <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>
             Create your account — 1 free pre-submittal review

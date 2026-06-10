@@ -341,7 +341,7 @@ plans.
 A single command produces a versioned report that says, with confidence
 intervals, per jurisdiction and per department:
 
-> *"On 100 real, expert-labeled plans, PhiCodes catches 96% (CI 92–98%) of
+> *"On 100 real, expert-labeled plans, Architechtura catches 96% (CI 92–98%) of
 > critical findings and 81% of all findings, at 88% precision, $0.71/plan, with
 > zero forbidden flags — measured on a holdout it has never been tuned against."*
 

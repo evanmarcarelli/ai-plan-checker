@@ -33,7 +33,7 @@ force. Architect-focused work has to clear the same accuracy bar.
    gate (Part 5, shipped) are the floor — without them a wrong citation
    loses the customer permanently.
 4. **Knowledge layer is the moat.** P2 (LADBS-specific knowledge) is
-   what makes PhiCodes 10× better than UpCodes Copilot. Highest long-term
+   what makes Architechtura 10× better than UpCodes Copilot. Highest long-term
    value, longest build time.
 5. **Pivot work last.** P1 (architect-side UX flip) is the largest
    single-audience deliverable. Build it once the foundation is solid.
@@ -158,7 +158,7 @@ and receive a downloadable LADBS-styled correction-notice PDF in under
 10 minutes from landing on the marketing site, without talking to sales.
 
 **Open question:** Brand split — is the architect product called
-"PhiCodes" or something different? Architects' procurement instinct is
+"Architechtura" or something different? Architects' procurement instinct is
 different from cities'. Brand carries pricing perception.
 
 ---

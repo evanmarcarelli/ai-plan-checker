@@ -489,7 +489,7 @@ async def export_my_data(user: Dict[str, Any] = Depends(get_current_user)):
     return StreamingResponse(
         iter([body.encode("utf-8")]),
         media_type="application/json",
-        headers={"Content-Disposition": f'attachment; filename="phicodes-data-export-{user["id"][:8]}.json"'},
+        headers={"Content-Disposition": f'attachment; filename="architechtura-data-export-{user["id"][:8]}.json"'},
     )
 
 

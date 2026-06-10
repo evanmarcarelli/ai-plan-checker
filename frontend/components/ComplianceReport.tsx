@@ -296,7 +296,7 @@ export default function ComplianceReport({
           This report is produced by an AI system for educational and pre-submittal feedback only. It is
           <strong style={{ color: "var(--text-primary)" }}> not engineering advice</strong> and does
           <strong style={{ color: "var(--text-primary)" }}> not replace</strong> stamped review by a
-          licensed architect or engineer or approval by the Authority Having Jurisdiction (AHJ). PhiCodes
+          licensed architect or engineer or approval by the Authority Having Jurisdiction (AHJ). Architechtura
           makes no warranty of accuracy and is not liable for any decision, permit outcome, construction
           activity, or damages arising from reliance on this output. Always verify all findings with a
           licensed professional and your AHJ before submitting or constructing.
@@ -478,7 +478,7 @@ export default function ComplianceReport({
               Share with contractor / inspector
             </button>
             <p className="text-[11px] mt-2 leading-snug" style={{ color: "var(--text-muted)" }}>
-              Invite collaborators to view and discuss findings. They don&apos;t need a PhiCodes account — it&apos;s free for them.
+              Invite collaborators to view and discuss findings. They don&apos;t need a Architechtura account — it&apos;s free for them.
             </p>
           </div>
 

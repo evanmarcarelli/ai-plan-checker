@@ -5,7 +5,7 @@ import CookieBanner from "@/components/CookieBanner";
 import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
-  title: "PhiCodes AI — Building Code Compliance",
+  title: "Architechtura AI — Building Code Compliance",
   description: "Multi-agent AI system for automated building code compliance verification",
 };
 

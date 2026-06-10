@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           </p>
 
           <p className="mb-4">
-            This Privacy Notice for Up 2 Code Inc. (doing business as PhiCodes) (&quot;we,&quot;
+            This Privacy Notice for Up 2 Code Inc. (doing business as Architechtura) (&quot;we,&quot;
             &quot;us,&quot; or &quot;our&quot;), describes how and why we might access, collect,
             store, use, and/or share (&quot;process&quot;) your personal information when you use
             our services (&quot;Services&quot;), including when you:

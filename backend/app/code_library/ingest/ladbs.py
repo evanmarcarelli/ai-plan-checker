@@ -36,7 +36,7 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 USER_AGENT = (
-    "PhiCodesAI-Ingester/1.0 "
+    "ArchitechturaAI-Ingester/1.0 "
     "(+contact: esmith.marc@gmail.com - fetching public LADBS publications)"
 )
 DEFAULT_DELAY_SEC = 1.0

@@ -1,4 +1,4 @@
-# PhiCodes — AI Plan Checker
+# Architechtura — AI Plan Checker
 
 > Multi-agent AI system for automated building code compliance verification.
 > Upload a PDF plan set → 12 specialized agents review it in parallel against

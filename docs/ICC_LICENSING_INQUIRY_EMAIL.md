@@ -3,7 +3,7 @@
 Send to: `licensinginfo@iccsafe.org` (cc `digitalcodes@iccsafe.org` if your account manager is known)
 
 Subject options (pick one):
-- `PhiCodes — Digital Content License inquiry (IBC 2024 + I-Code suite)`
+- `Architechtura — Digital Content License inquiry (IBC 2024 + I-Code suite)`
 - `Licensing inquiry: programmatic IBC/IRC/IECC access for AI plan-check SaaS`
 
 ---
@@ -12,7 +12,7 @@ Subject options (pick one):
 
 > Hello ICC Licensing Team,
 >
-> I'm the founder of **PhiCodes**, an AI plan-checking platform that automates building-code and zoning compliance review for design teams and AHJs. We're at the stage where we need licensed, programmatic access to the 2024 I-Codes — and we'd rather build the partnership cleanly from day one than work around it.
+> I'm the founder of **Architechtura**, an AI plan-checking platform that automates building-code and zoning compliance review for design teams and AHJs. We're at the stage where we need licensed, programmatic access to the 2024 I-Codes — and we'd rather build the partnership cleanly from day one than work around it.
 >
 > **What we need access to**
 >
@@ -35,13 +35,13 @@ Subject options (pick one):
 >
 > **About us, briefly**
 >
-> PhiCodes is built in California and is currently piloting with [N] design firms across LA County and the Pacific Northwest. We treat code accuracy as a product-defining problem, which is why we're approaching licensing now rather than scraping public previews. Happy to send a short product walkthrough if useful.
+> Architechtura is built in California and is currently piloting with [N] design firms across LA County and the Pacific Northwest. We treat code accuracy as a product-defining problem, which is why we're approaching licensing now rather than scraping public previews. Happy to send a short product walkthrough if useful.
 >
 > A 20-minute intro call would be ideal. What's your preferred next step?
 >
 > Best,
 > **Evan Marcarelli**
-> Founder, PhiCodes
+> Founder, Architechtura
 > [phone]
 > [website]
 > [calendar link]

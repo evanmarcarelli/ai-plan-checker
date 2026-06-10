@@ -69,7 +69,7 @@ export default function SharedReportPage() {
             className="inline-block px-4 py-2 rounded-lg font-medium"
             style={{ background: "#0B0E14", color: "#fff" }}
           >
-            Try PhiCodes AI free
+            Try Architechtura AI free
           </Link>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function SharedReportPage() {
           </div>
           <div>
             <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              PhiCodes AI
+              Architechtura AI
             </div>
             <div className="text-xs" style={{ color: "var(--text-muted)" }}>
               Shared compliance review · {share.role}
@@ -180,7 +180,7 @@ export default function SharedReportPage() {
       <footer className="px-6 py-6 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         Powered by{" "}
         <Link href="/" className="font-medium" style={{ color: "var(--accent-bright)" }}>
-          PhiCodes AI
+          Architechtura AI
         </Link>
         . Reports are AI-generated for preliminary review only and must be verified by a licensed professional and the AHJ.
       </footer>

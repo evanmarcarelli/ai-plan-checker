@@ -107,7 +107,7 @@ export function ShareDialog({
               Share this report
             </h2>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Invite contractors or building inspectors. They don't need a PhiCodes account.
+              Invite contractors or building inspectors. They don't need a Architechtura account.
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" style={{ color: "var(--text-muted)" }}>
@@ -251,7 +251,7 @@ export function ShareDialog({
                       </button>
                       {s.invited_email && (
                         <a
-                          href={`mailto:${s.invited_email}?subject=${encodeURIComponent("PhiCodes AI compliance review")}&body=${encodeURIComponent(`I'm sharing a compliance review with you on PhiCodes AI:\n\n${s.share_url}\n\nThis link gives you ${s.role} access — no signup required.`)}`}
+                          href={`mailto:${s.invited_email}?subject=${encodeURIComponent("Architechtura AI compliance review")}&body=${encodeURIComponent(`I'm sharing a compliance review with you on Architechtura AI:\n\n${s.share_url}\n\nThis link gives you ${s.role} access — no signup required.`)}`}
                           className="p-1.5 rounded"
                           style={{ color: "var(--text-muted)" }}
                           title="Email this link"
