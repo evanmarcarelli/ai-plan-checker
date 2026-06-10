@@ -50,6 +50,14 @@ def _use_db() -> bool:
         return False
 
 
+def _strict() -> bool:
+    try:
+        from app.config import settings
+        return _use_db() and bool(getattr(settings, "code_store_strict", False))
+    except Exception:
+        return False
+
+
 def _cells(table_id: str, adoption_id: Optional[str]) -> List[dict]:
     """Fetch rows for a table from Postgres; [] if DB off/empty/unavailable.
 
@@ -63,13 +71,18 @@ def _cells(table_id: str, adoption_id: Optional[str]) -> List[dict]:
         from app.code_library import store
         rows = store.fetch_table_cells(table_id, adoption_id)
     except Exception as e:
+        if _strict():
+            raise RuntimeError(f"[table_store] STRICT MODE: fetch {table_id} failed: {e}") from e
         logger.warning(f"[table_store] fetch {table_id} failed; using hardcoded fallback: {e}")
         return []
     if not rows:
+        msg = f"CODE_STORE=postgres but {table_id} has no rows in code_table_cells"
+        if _strict():
+            raise RuntimeError(f"[table_store] STRICT MODE: {msg} — refusing the "
+                               f"hardcoded fallback. Seed: python -m scripts.ingest.tables_to_postgres")
         logger.warning(
-            "[table_store] CODE_STORE=postgres but %s has no rows in code_table_cells "
-            "— using the HARDCODED fallback (values may diverge from the DB). "
-            "Seed it: python -m scripts.ingest.tables_to_postgres", table_id,
+            "[table_store] %s — using the HARDCODED fallback (values may diverge from "
+            "the DB). Seed it: python -m scripts.ingest.tables_to_postgres", msg,
         )
     return rows
 

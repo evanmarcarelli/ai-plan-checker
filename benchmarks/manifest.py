@@ -60,6 +60,19 @@ def model_ids() -> Dict[str, str]:
         return {}
 
 
+def corpus_source() -> str:
+    """What the corpus was ACTUALLY loaded from this run ('disk'/'postgres'),
+    or the configured intent if it hasn't loaded yet. NOTE: corpus_sha hashes
+    the on-disk JSONL — in 'postgres' mode the DB is authoritative, so that hash
+    is not the served corpus."""
+    try:
+        from app.code_library.corpus_loader import get_corpus_source
+        from app.config import settings
+        return get_corpus_source() or getattr(settings, "code_store", "disk")
+    except Exception:
+        return "unknown"
+
+
 def build_manifest(mode: str, *, now: Optional[datetime] = None) -> Dict[str, Any]:
     """Assemble the run manifest. `now` is injectable for deterministic tests."""
     ts = now or datetime.utcnow()
@@ -69,7 +82,8 @@ def build_manifest(mode: str, *, now: Optional[datetime] = None) -> Dict[str, An
         "mode": mode,
         "git_sha": git_sha(),
         "git_dirty": git_dirty(),
-        "corpus_sha": corpus_sha(),
+        "corpus_sha": corpus_sha(),          # hash of the on-disk JSONL
+        "corpus_source": corpus_source(),    # what actually served the findings
         "models": model_ids(),
         "python": sys.version.split()[0],
         "platform": platform.platform(),

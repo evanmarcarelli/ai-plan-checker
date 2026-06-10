@@ -60,8 +60,10 @@ def test_table_store_warns_when_db_on_but_empty(monkeypatch):
 
     warned = []
     monkeypatch.setattr(TS, "_use_db", lambda: True)
+    monkeypatch.setattr(TS, "_strict", lambda: False)
     monkeypatch.setattr(store, "fetch_table_cells", lambda tid, aid=None: [])
-    monkeypatch.setattr(TS.logger, "warning", lambda *a, **k: warned.append(str(a[0])))
+    monkeypatch.setattr(TS.logger, "warning",
+                        lambda *a, **k: warned.append(" ".join(str(x) for x in a)))
     TS.clear_cache()
     try:
         res = TS.t506_2()
@@ -107,3 +109,46 @@ def test_aggregate_sufficient_with_enough_data():
     agg = S.aggregate(cases)                 # 25 cases, 50 critical findings
     assert agg["sufficient"] is True
     assert "INSUFFICIENT DATA" not in S.format_aggregate(agg)
+
+
+# ── 4. CODE_STORE strict mode: misconfig is FATAL, not silent ─
+
+def test_corpus_strict_mode_raises_on_empty_db(monkeypatch):
+    from app.config import settings
+    from app.code_library import corpus_loader, store
+    monkeypatch.setattr(settings, "code_store", "postgres")
+    monkeypatch.setattr(settings, "code_store_strict", True)
+    monkeypatch.setattr(store, "corpus_in_postgres", lambda: False)
+    with pytest.raises(RuntimeError, match="STRICT MODE"):
+        corpus_loader._load_corpus()
+
+
+def test_corpus_non_strict_falls_back_silently_to_disk(monkeypatch):
+    from app.config import settings
+    from app.code_library import corpus_loader, store
+    monkeypatch.setattr(settings, "code_store", "postgres")
+    monkeypatch.setattr(settings, "code_store_strict", False)
+    monkeypatch.setattr(store, "corpus_in_postgres", lambda: False)
+    corpus = corpus_loader._load_corpus()        # warns, but does NOT raise
+    assert corpus.chunks                          # loaded from disk
+    assert corpus_loader.get_corpus_source() == "disk"
+
+
+def test_table_store_strict_mode_raises_on_empty_db(monkeypatch):
+    from app.code_library.deterministic import table_store as TS
+    from app.code_library import store
+    monkeypatch.setattr(TS, "_use_db", lambda: True)
+    monkeypatch.setattr(TS, "_strict", lambda: True)
+    monkeypatch.setattr(store, "fetch_table_cells", lambda tid, aid=None: [])
+    TS.clear_cache()
+    try:
+        with pytest.raises(RuntimeError, match="STRICT MODE"):
+            TS.t506_2()
+    finally:
+        TS.clear_cache()
+
+
+def test_manifest_records_corpus_source():
+    from benchmarks import manifest as M
+    man = M.build_manifest("dry")
+    assert man["corpus_source"] in ("disk", "postgres", "unknown")
