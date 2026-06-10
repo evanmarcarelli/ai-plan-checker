@@ -9,6 +9,9 @@ from typing import List, Optional
 
 from app.code_library.corpus_loader import CodeChunk, get_corpus, get_retriever
 from app.models.schemas import CodeRequirement
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def chunk_to_requirement(chunk: CodeChunk) -> CodeRequirement:
@@ -45,22 +48,42 @@ class CorpusCodeSource:
         city: Optional[str],
         county: Optional[str] = None,
     ) -> Optional[List[str]]:
-        """Resolve the corpus layer keys that apply to this jurisdiction via the
-        adoption resolver (e.g. CA/Los Angeles -> ['*','CA','CA:Los Angeles']).
+        """Resolve the corpus layer keys for this jurisdiction via the adoption
+        resolver (e.g. CA/Los Angeles -> ['*','CA','CA:Los Angeles']).
 
-        This replaces ad-hoc chunk-level applies_to() matching with the
-        authoritative resolver output — the same source that drives code
-        versions and amendment labels — so every reviewer scopes to exactly the
-        layers in force for the AHJ. Returns None on any failure so callers fall
-        back to the legacy geo match (no regression if the map can't load)."""
+        Logs LOUDLY when the resolver fails to match a specific jurisdiction
+        (returns the baseline stack) — that's a degraded scope, and silence
+        there is exactly how a missed code slips through. Returns None on hard
+        failure so callers fall back to applies_to()."""
         if not state:
             return None
         try:
             from app.code_library.adoption.resolver import get_resolver
-            keys = get_resolver().resolve(state, county, city).corpus_layer_keys
-            return list(keys) if keys else None
-        except Exception:
+            stack = get_resolver().resolve(state, county, city)
+            keys = list(stack.corpus_layer_keys or [])
+            if stack.matched_id == "baseline" or keys in ([], ["*"]):
+                logger.warning(
+                    "[scope] adoption resolver did NOT match a specific jurisdiction "
+                    "(state=%s county=%s city=%s -> matched=%s). Scope is degraded; "
+                    "falling open to applies_to() so no codes are dropped.",
+                    state, county, city, stack.matched_id,
+                )
+            return keys or None
+        except Exception as e:
+            logger.warning("[scope] adoption resolver failed (%s) — falling open to applies_to()", e)
             return None
+
+    @staticmethod
+    def _scoped(chunk: CodeChunk, layers: Optional[List[str]],
+                state: Optional[str], city: Optional[str]) -> bool:
+        """Fall-OPEN jurisdiction test: a chunk is in scope if the resolver's
+        layers include it OR the legacy geo match would. The union guarantees we
+        never return FEWER codes than the old behavior (a missed code is a
+        liability; an extra code is recoverable) while still adding the county-
+        and resolver-aware layers the legacy match couldn't express."""
+        if layers is not None and chunk.in_layers(layers):
+            return True
+        return chunk.applies_to(state, city)
 
     # ---- read paths ----
 
@@ -72,9 +95,8 @@ class CorpusCodeSource:
         county: Optional[str] = None,
     ) -> List[CodeRequirement]:
         layers = self._layers(state, city, county)
-        if layers is not None:
-            return [chunk_to_requirement(c) for c in self._corpus.chunks if c.in_layers(layers)]
-        return [chunk_to_requirement(c) for c in self._corpus.chunks if c.applies_to(state, city)]
+        return [chunk_to_requirement(c) for c in self._corpus.chunks
+                if self._scoped(c, layers, state, city)]
 
     def get_codes_by_category(
         self,

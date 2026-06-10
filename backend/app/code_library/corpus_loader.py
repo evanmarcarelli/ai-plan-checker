@@ -188,12 +188,13 @@ class CodeRetriever:
             if category and chunk.category != category:
                 continue
             # Jurisdiction scope, in priority order:
-            #  1. layer_keys  — authoritative set from the adoption resolver
-            #     (the production path; e.g. ['*','CA','CA:Los Angeles']).
+            #  1. layer_keys  — authoritative set from the adoption resolver. FALL
+            #     OPEN: in_layers OR applies_to, so resolver hiccups / unmapped
+            #     jurisdictions never DROP a code (a missed code is the liability).
             #  2. adoption_id — structured Postgres scope (migration 008).
             #  3. applies_to  — legacy fuzzy geo match (no jurisdiction given).
             if layer_keys is not None:
-                if not chunk.in_layers(layer_keys):
+                if not (chunk.in_layers(layer_keys) or chunk.applies_to(state, city)):
                     continue
             elif adoption_id is not None:
                 if chunk.adoption_id not in (adoption_id, None):
@@ -218,10 +219,13 @@ class CodeRetriever:
         """Return every chunk in a category, jurisdiction-filtered. Used by department
         agents as the baseline 'must check' list (RAG augments, doesn't replace).
 
-        Prefers the resolver's layer_keys (authoritative); falls back to the
+        Uses the resolver's layer_keys when supplied, but FALLS OPEN (layers OR
+        applies_to) so a degraded scope never drops a code; falls back to the
         legacy applies_to() geo match when no layers are supplied."""
         def _applies(c: CodeChunk) -> bool:
-            return c.in_layers(layer_keys) if layer_keys is not None else c.applies_to(state, city)
+            if layer_keys is not None:
+                return c.in_layers(layer_keys) or c.applies_to(state, city)
+            return c.applies_to(state, city)
         result = [c for c in self.corpus.chunks if c.category == category and _applies(c)]
         return result[:limit] if limit else result
 

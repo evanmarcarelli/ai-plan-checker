@@ -51,15 +51,27 @@ def _use_db() -> bool:
 
 
 def _cells(table_id: str, adoption_id: Optional[str]) -> List[dict]:
-    """Fetch rows for a table from Postgres; [] if DB off/empty/unavailable."""
+    """Fetch rows for a table from Postgres; [] if DB off/empty/unavailable.
+
+    When CODE_STORE=postgres but the table has NO rows, warn loudly: the code
+    will silently use the hardcoded fallback, whose values can DIVERGE from the
+    DB — and these are the allowable-area / story / exit limits a pass/fail
+    turns on. Silent divergence here is the scariest table-store failure."""
     if not _use_db():
         return []
     try:
         from app.code_library import store
-        return store.fetch_table_cells(table_id, adoption_id)
+        rows = store.fetch_table_cells(table_id, adoption_id)
     except Exception as e:
-        logger.warning(f"[table_store] fetch {table_id} failed: {e}")
+        logger.warning(f"[table_store] fetch {table_id} failed; using hardcoded fallback: {e}")
         return []
+    if not rows:
+        logger.warning(
+            "[table_store] CODE_STORE=postgres but %s has no rows in code_table_cells "
+            "— using the HARDCODED fallback (values may diverge from the DB). "
+            "Seed it: python -m scripts.ingest.tables_to_postgres", table_id,
+        )
+    return rows
 
 
 def _cell_value(row: dict) -> Cell:

@@ -203,7 +203,10 @@ def render_ground_truth_yaml(items: List[CorrectionItem], meta: Dict[str, str]) 
     lines.append("#   - verify every severity / status / objectivity GUESS")
     lines.append("#   - fill acceptance_criteria (what a correct AI finding must convey)")
     lines.append("#   - add equivalent acceptable_sections (e.g. the IBC twin of a CBC cite)")
-    lines.append("#   - confirm the administrative items at the bottom are really non-code")
+    lines.append("#   - REVIEW EVERY administrative item at the bottom. If a real CODE")
+    lines.append("#     correction was mis-flagged as administrative, it silently drops")
+    lines.append("#     from expected_findings — which makes measured accuracy look")
+    lines.append("#     BETTER than reality. Mis-dropping is the dangerous direction.")
     lines.append("")
     lines.append("description: >")
     lines.append("  TODO: one-paragraph description of the plan set + submittal.")
@@ -295,6 +298,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     no_sec = sum(1 for i in items if not i.sections and not i.is_administrative)
     print(f"Parsed {len(items)} item(s): {code} code, {admin} administrative"
           + (f", {no_sec} code item(s) WITHOUT a detected section (review)" if no_sec else ""))
+    if admin:
+        print(f"!! REVIEW the {admin} administrative item(s) — a real code correction "
+              "mis-flagged as administrative silently inflates your measured accuracy.")
 
     if args.print:
         print("\n" + yaml_text)
