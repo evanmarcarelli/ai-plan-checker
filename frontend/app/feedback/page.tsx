@@ -89,7 +89,7 @@ export default function FeedbackPage() {
           <button
             onClick={() => setShowForm((v) => !v)}
             className="flex-shrink-0 inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg"
-            style={{ background: "#0B0E14", color: "#fff" }}
+            style={{ background: "var(--ink)", color: "#fff" }}
           >
             <MessageSquarePlus className="w-4 h-4" />
             New post
@@ -137,7 +137,7 @@ function Header() {
         <Link href="/" className="flex items-center gap-2">
           <div
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ background: "#0B0E14" }}
+            style={{ background: "var(--ink)" }}
           >
             <Building2 className="w-4 h-4 text-white" />
           </div>
@@ -226,7 +226,7 @@ function NewPostForm({ onCreated }: { onCreated: () => void }) {
           type="submit"
           disabled={posting || title.trim().length < 3}
           className="text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50"
-          style={{ background: "#0B0E14", color: "#fff" }}
+          style={{ background: "var(--ink)", color: "#fff" }}
         >
           {posting ? "Posting…" : "Post"}
         </button>

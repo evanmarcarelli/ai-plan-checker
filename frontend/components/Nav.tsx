@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import BrandMark from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
 import { getMe, type UserProfile } from "@/lib/api";
 
@@ -23,20 +23,19 @@ export default function Nav() {
   }
 
   return (
-    <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-      <Link href="/dashboard" className="flex items-center gap-1" aria-label="Architechtura home">
-        {/* Wordmark — "Architechtura" followed by the northeast arrow */}
+    <nav
+      className="border-b px-6 py-3 flex items-center justify-between"
+      style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
+    >
+      <Link href="/dashboard" className="flex items-center gap-2" aria-label="Architechtura home">
+        {/* Brand mark — geometric "A" with ascending arrow — then the wordmark */}
+        <BrandMark size={22} style={{ color: "var(--text-primary)" }} />
         <span
           className="font-semibold text-[15px] tracking-tight"
           style={{ color: "var(--text-primary)" }}
         >
           Architechtura
         </span>
-        <ArrowUpRight
-          className="w-3.5 h-3.5"
-          strokeWidth={2.5}
-          style={{ color: "var(--text-primary)" }}
-        />
       </Link>
       <div className="flex items-center gap-4 text-sm">
         {profile && (

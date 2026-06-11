@@ -38,6 +38,11 @@
   --btn-secondary-bg-hover: #E5E7EB;
   --btn-secondary-text: #0B1220;
 
+  /* "Ink" — the solid near-black surface used for inverted CTAs, icon chips and
+     badges that hold white content. In dark mode it shifts to brand-blue so
+     those elements stay visible (a near-black chip would vanish on dark bg). */
+  --ink: #0B0E14;
+
   /* Status colors — semantic, decoupled from brand */
   --compliant: #15803D;
   --compliant-bg: rgba(21, 128, 61, 0.08);
@@ -47,6 +52,60 @@
   --needs-review-bg: rgba(245, 158, 11, 0.10);
   --na: #6B7280;
   --na-bg: rgba(107, 114, 128, 0.08);
+
+  color-scheme: light;
+}
+
+/* ── Dark theme ───────────────────────────────────────────────────────────
+   Applied when <html data-theme="dark"> is set (by the no-flash script in the
+   root layout + the account Appearance control). Every surface in the app
+   reads these tokens, so flipping them re-themes the whole product. The "A" in
+   the brand mark uses currentColor, so it follows --text-primary automatically. */
+[data-theme="dark"] {
+  /* Surfaces — deep navy-black, cards lifted just enough to separate */
+  --bg: #0B0E14;
+  --bg-card: #141925;
+  --bg-elevated: #1C2230;
+
+  /* Borders — low-contrast cool greys */
+  --border: #232A38;
+  --border-bright: #323B4D;
+
+  /* Typography */
+  --text-primary: #F3F5F9;
+  --text-secondary: #AEB6C6;
+  --text-muted: #6E7787;
+
+  /* Accent — lifted blue so it stays vivid on dark */
+  --accent: #5B8CFF;
+  --accent-bright: #7AA0FF;
+  --accent-soft: rgba(91, 140, 255, 0.14);
+  --accent-glow: rgba(91, 140, 255, 0.16);
+
+  /* Buttons */
+  --btn-primary-bg: #4F7BFF;
+  --btn-primary-bg-hover: #6B92FF;
+  --btn-primary-text: #FFFFFF;
+
+  --btn-secondary-bg: #1C2230;
+  --btn-secondary-bg-hover: #232A38;
+  --btn-secondary-text: #F3F5F9;
+
+  /* Inverted solids (CTAs/chips/badges) become brand-blue on dark so their
+     white content stays legible instead of vanishing into the background. */
+  --ink: #4F7BFF;
+
+  /* Status colors — brightened for contrast on dark surfaces */
+  --compliant: #34D399;
+  --compliant-bg: rgba(52, 211, 153, 0.12);
+  --non-compliant: #F87171;
+  --non-compliant-bg: rgba(248, 113, 113, 0.12);
+  --needs-review: #FBBF24;
+  --needs-review-bg: rgba(251, 191, 36, 0.12);
+  --na: #9AA4B2;
+  --na-bg: rgba(154, 164, 178, 0.12);
+
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -123,7 +182,7 @@ body {
    border + a faint accent wash; no warm-amber, in line with the rest of
    the dashboard's quieter palette. */
 .upload-zone {
-  background: #FFFFFF;
+  background: var(--bg-card);
   border: 1.5px dashed var(--border-bright);
   transition: border-color 0.25s ease, background 0.25s ease;
 }

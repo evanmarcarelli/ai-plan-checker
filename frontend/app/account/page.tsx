@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Download, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Download, Trash2, Loader2, AlertTriangle, Sun, Moon, Monitor } from "lucide-react";
 import { getMe, exportMyData, deleteMyAccount, type UserProfile } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
+import { useTheme, type ThemePref } from "@/components/ThemeProvider";
+
+const THEME_OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "system", label: "System", Icon: Monitor },
+  { value: "dark", label: "Dark", Icon: Moon },
+];
 
 export default function AccountPage() {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -90,6 +98,43 @@ export default function AccountPage() {
               <dd style={{ color: "var(--text-secondary)" }}>{profile?.credits_remaining ?? 0}</dd>
             </div>
           </dl>
+        </div>
+
+        {/* Appearance */}
+        <div className="rounded-xl p-6 mb-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          <div className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+            Appearance
+          </div>
+          <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+            Choose how Architechtura looks. &ldquo;System&rdquo; follows your device&apos;s light or dark setting.
+          </p>
+          <div
+            role="radiogroup"
+            aria-label="Theme"
+            className="inline-flex rounded-lg p-1 gap-1"
+            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}
+          >
+            {THEME_OPTIONS.map(({ value, label, Icon }) => {
+              const active = theme === value;
+              return (
+                <button
+                  key={value}
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setTheme(value)}
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    background: active ? "var(--bg-card)" : "transparent",
+                    color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                    boxShadow: active ? "0 1px 2px rgba(11,14,20,0.10)" : "none",
+                  }}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Data export */}

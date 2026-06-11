@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2 } from "lucide-react";
+import BrandMark from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -41,9 +41,8 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-               style={{ background: "#0B0E14" }}>
-            <Building2 className="w-6 h-6 text-white" />
+          <div className="flex justify-center mb-4">
+            <BrandMark size={44} style={{ color: "var(--text-primary)" }} />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
             Set a new password
@@ -94,7 +93,7 @@ export default function ResetPasswordPage() {
             type="submit"
             disabled={loading}
             className="w-full font-medium py-2.5 rounded-lg transition-all disabled:opacity-60"
-            style={{ background: "#0B0E14", color: "#fff" }}
+            style={{ background: "var(--ink)", color: "#fff" }}
           >
             {loading ? "Saving…" : "Save password"}
           </button>

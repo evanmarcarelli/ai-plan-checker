@@ -130,7 +130,7 @@ function BillingInner() {
               >
                 {p.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-                       style={{ background: "#0B0E14", color: "#fff" }}>
+                       style={{ background: "var(--ink)", color: "#fff" }}>
                     Most popular
                   </div>
                 )}
@@ -158,7 +158,7 @@ function BillingInner() {
                   disabled={busyPack !== null}
                   className="w-full py-2.5 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center justify-center gap-2"
                   style={{
-                    background: p.highlight ? "#0B0E14" : "var(--bg-elevated)",
+                    background: p.highlight ? "var(--ink)" : "var(--bg-elevated)",
                     color: p.highlight ? "#fff" : "var(--text-primary)",
                     border: p.highlight ? "none" : "1px solid var(--border)",
                   }}

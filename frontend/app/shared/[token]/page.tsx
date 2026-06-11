@@ -67,7 +67,7 @@ export default function SharedReportPage() {
           <Link
             href="/"
             className="inline-block px-4 py-2 rounded-lg font-medium"
-            style={{ background: "#0B0E14", color: "#fff" }}
+            style={{ background: "var(--ink)", color: "#fff" }}
           >
             Try Architechtura AI free
           </Link>
@@ -98,7 +98,7 @@ export default function SharedReportPage() {
         <div className="flex items-center gap-2">
           <div
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ background: "#0B0E14" }}
+            style={{ background: "var(--ink)" }}
           >
             <Building2 className="w-4 h-4 text-white" />
           </div>
@@ -114,7 +114,7 @@ export default function SharedReportPage() {
         <Link
           href="/"
           className="text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5"
-          style={{ background: "#0B0E14", color: "#fff" }}
+          style={{ background: "var(--ink)", color: "#fff" }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Run your own review — free
@@ -306,7 +306,7 @@ function GuestNamePrompt({ onSave }: { onSave: (name: string) => void }) {
         <button
           type="submit"
           className="text-sm font-medium px-3 py-1.5 rounded-md"
-          style={{ background: "#0B0E14", color: "#fff" }}
+          style={{ background: "var(--ink)", color: "#fff" }}
         >
           Continue
         </button>

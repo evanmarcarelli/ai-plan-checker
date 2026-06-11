@@ -13,8 +13,9 @@ import { useRouter } from "next/navigation";
 import {
   Building2, Sparkles, Zap, ShieldCheck, FileCheck, Flame, Bolt,
   Wrench, Accessibility, Leaf, MapPin, Users, BookOpen, CheckCircle2,
-  AlertTriangle, ArrowRight, ArrowUpRight,
+  AlertTriangle, ArrowRight,
 } from "lucide-react";
+import BrandMark from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
 import { createPackCheckoutSession, type PackSize } from "@/lib/api";
 import InteractiveDemo from "@/components/demo/InteractiveDemo";
@@ -79,19 +80,15 @@ function Nav({ isAuthed }: { isAuthed: boolean | null }) {
       style={{ background: "rgba(247, 248, 250, 0.85)", borderColor: "var(--border)" }}
     >
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1" aria-label="Architechtura home">
+        <Link href="/" className="flex items-center gap-2" aria-label="Architechtura home">
+          {/* Brand mark — geometric "A" with ascending arrow — then the wordmark */}
+          <BrandMark size={26} style={{ color: "var(--text-primary)" }} />
           <span
             className="font-semibold text-[18px] tracking-[-0.025em]"
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
           >
-            {/* Wordmark — "Architechtura" followed by the northeast arrow */}
             Architechtura
           </span>
-          <ArrowUpRight
-            className="w-3.5 h-3.5"
-            strokeWidth={2.5}
-            style={{ color: "var(--text-primary)" }}
-          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 text-[14px]" style={{ color: "var(--text-secondary)" }}>

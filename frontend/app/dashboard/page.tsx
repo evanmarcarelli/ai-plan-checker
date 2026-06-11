@@ -7,6 +7,7 @@ import type { AgentLog, UserProfile, JobStatus, JobListItem } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
+import BrandMark from "@/components/BrandMark";
 import AgentLogs from "@/components/AgentLogs";
 import ComplianceReport from "@/components/ComplianceReport";
 import RecentsRail from "@/components/RecentsRail";
@@ -16,7 +17,7 @@ import {
   Building2, Cpu, FileCheck, ChevronRight,
   Activity, CheckCircle2, AlertCircle, Clock, RotateCcw,
   Search, BookOpen, Landmark, Flame, Zap, Droplets, Wind,
-  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, ArrowUpRight, X, FileClock,
+  Accessibility, Leaf, Compass, Construction, Trees, ArrowRight, X, FileClock,
 } from "lucide-react";
 
 // ─── Department roster ────────────────────────────────────────────
@@ -335,20 +336,17 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-1 flex-shrink-0 rounded-lg hover:opacity-80 transition-opacity duration-150"
+            className="flex items-center gap-2 flex-shrink-0 rounded-lg hover:opacity-80 transition-opacity duration-150"
             aria-label="Go to home page"
           >
+            {/* Brand mark — geometric "A" with ascending arrow — then the wordmark */}
+            <BrandMark size={24} style={{ color: "var(--text-primary)" }} />
             <span
               className="font-semibold text-[18px] tracking-[-0.025em]"
               style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
             >
               Architechtura
             </span>
-            <ArrowUpRight
-              className="w-3.5 h-3.5"
-              strokeWidth={2.5}
-              style={{ color: "var(--text-primary)" }}
-            />
           </button>
 
           {(isProcessing || isCompleted) && (
