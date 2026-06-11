@@ -14,6 +14,8 @@ shape the retriever loads.
 | General Code | `ecode360.py` | ecode360.com | (placeholder — verify slugs before use) |
 | LADBS publications | `ladbs.py` | dbs.lacity.gov | LA City information bulletins, correction lists, amendments |
 | **Licensed code PDFs** | `licensed_pdf.py` | local files (ICC purchase, state-published editions) | IBC / IFC / CBC / CRC / any ICC-style code the operator holds a license for |
+| **CA Legislature** | `ca_leginfo.py` | leginfo.legislature.ca.gov | Curated statutes the rules cite: Gov. Code §§51175–51189 (VHFSZ / defensible space), §§66310/66314/66333 (ADU law), PRC §4291 — official state publication, public domain, **no Cloudflare** |
+| **ADA 2010 Standards** | `ada_gov.py` | ada.gov | The complete 2010 ADA Standards for Accessible Design (~1,100 provisions) — US government work, public domain, **no Cloudflare** |
 
 > **Neighborhoods of Los Angeles** (Hollywood, Venice, Silver Lake, Echo Park,
 > Studio City, etc.) are **not separate jurisdictions** — they sit inside the
@@ -100,6 +102,25 @@ growth needs one of:**
      describes), or
   2. the **licensed 2025 CBC / Title 24 text** (ICC Digital Codes), or
   3. **hand-curated JSONL** for the specific current bulletins you care about.
+
+## Government sources (work today, no Cloudflare, public domain)
+
+```bash
+cd backend
+# Curated CA statutes (Gov Code VHFSZ/defensible space + ADU law, PRC 4291)
+python -m app.code_library.ingest ca-leginfo
+# The complete 2010 ADA Standards (~1,100 provisions in one fetch)
+python -m app.code_library.ingest ada-gov
+```
+
+Output: `ca_leginfo_gov.jsonl`, `ca_leginfo_prc.jsonl`, `ada_gov_2010.jsonl`,
+all stamped `source_tier="official_gov"` / `license_status="edict"`.
+Measured effect (2026-06-11): corpus grew ~380 → 1,527 chunks and the count
+of deterministic-rule citations the gate could not verify dropped 40 → 25;
+among `requires_citation` rules only the four CBC-7A/LAMC ones remain (those
+need the licensed-PDF path below). Note: the state ADU statutes were
+recodified in 2025 from Gov. Code §65852.2 to §§66310–66342 — the old
+numbers return an empty display page on leginfo.
 
 ## Licensed code PDFs (the compliant IBC / CBC / CRC path)
 

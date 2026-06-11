@@ -199,6 +199,26 @@ def cmd_ladbs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ca_leginfo(args: argparse.Namespace) -> int:
+    """Ingest curated California statute sections from the Legislature's own
+    site (state-published law, no bot challenge, public domain)."""
+    from app.code_library.ingest.ca_leginfo import ingest_ca_leginfo
+
+    written = ingest_ca_leginfo(max_sections=args.max)
+    logger.info(f"[ca-leginfo] wrote {written} chunks")
+    return 0 if written else 4
+
+
+def cmd_ada_gov(args: argparse.Namespace) -> int:
+    """Ingest the complete 2010 ADA Standards from ada.gov (US government
+    work — public domain)."""
+    from app.code_library.ingest.ada_gov import ingest_ada_2010
+
+    written = ingest_ada_2010(max_sections=args.max)
+    logger.info(f"[ada-gov] wrote {written} chunks")
+    return 0 if written else 4
+
+
 def cmd_licensed_pdf(args: argparse.Namespace) -> int:
     """Ingest a locally-licensed model-code PDF (ICC purchase, state-published
     edition). The compliant path for IBC/CBC/CRC full text — no scraping."""
@@ -383,6 +403,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_la.add_argument("--max", type=int, default=None, help="cap docs per kind")
     p_la.add_argument("--fail-fast", action="store_true")
     p_la.set_defaults(func=cmd_ladbs)
+
+    p_cl = sub.add_parser(
+        "ca-leginfo",
+        help="ingest curated CA statutes (Gov Code 51182 VHFSZ, PRC 4291, "
+             "ADU law) from leginfo.legislature.ca.gov — official, no Cloudflare",
+    )
+    p_cl.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_cl.set_defaults(func=cmd_ca_leginfo)
+
+    p_ag = sub.add_parser(
+        "ada-gov",
+        help="ingest the complete 2010 ADA Standards from ada.gov (public domain)",
+    )
+    p_ag.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_ag.set_defaults(func=cmd_ada_gov)
 
     p_lic = sub.add_parser(
         "licensed-pdf",

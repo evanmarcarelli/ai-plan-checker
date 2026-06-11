@@ -11,6 +11,7 @@ away only the scraped half and the hand-curated baseline stays pristine.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -20,6 +21,12 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 CORPUS_DIR = Path(__file__).resolve().parent.parent / "corpus"
+
+# Refuse to replace an existing corpus file with one less than this fraction
+# of its size (in chunks). Catches the "capped test run (--max 25) silently
+# replaced a 233-chunk corpus with 13 chunks" footgun. Override deliberately
+# with INGEST_ALLOW_SHRINK=1 when a real re-ingest legitimately shrinks.
+SHRINK_GUARD_RATIO = 0.5
 
 
 def write_jsonl(target: IngestTarget, chunks: Iterable[Mapping]) -> Path:
@@ -47,6 +54,25 @@ def write_jsonl(target: IngestTarget, chunks: Iterable[Mapping]) -> Path:
             f"or its HTML structure drifted."
         )
         return out_path
+
+    # Shrink guard: a capped or partially-blocked run must not replace a
+    # bigger previously-good file. (The zero-chunk case above is the extreme
+    # of the same failure.)
+    if out_path.exists() and os.environ.get("INGEST_ALLOW_SHRINK") != "1":
+        try:
+            existing_count = sum(
+                1 for line in out_path.open(encoding="utf-8") if line.strip()
+            )
+        except Exception:
+            existing_count = 0
+        if existing_count and len(materialized) < existing_count * SHRINK_GUARD_RATIO:
+            logger.error(
+                f"[ingest] refusing to replace {out_path.name} "
+                f"({existing_count} chunks) with only {len(materialized)} chunks "
+                f"(<{SHRINK_GUARD_RATIO:.0%}). If this shrink is intentional, "
+                f"set INGEST_ALLOW_SHRINK=1 and re-run."
+            )
+            return out_path
 
     tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
     count = 0
