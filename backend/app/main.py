@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    description="Multi-Agent Building Code Compliance Verification",
+    description="Multi-agent AI pre-check for building plans — surfaces the corrections a city plan check will flag (preliminary review; not AHJ approval)",
     version=settings.app_version,
     lifespan=lifespan,
 )

@@ -91,7 +91,7 @@ export default function ScrollBuildingHero() {
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
               The single platform for modern planning,
-              <br className="hidden sm:block" /> construction, and certification,{" "}
+              <br className="hidden sm:block" /> construction, and code pre-checks,{" "}
               <span style={{ fontWeight: 600 }}>Architechtura</span>.
             </h2>
           </div>

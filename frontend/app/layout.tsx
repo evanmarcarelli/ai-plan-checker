@@ -5,8 +5,8 @@ import CookieBanner from "@/components/CookieBanner";
 import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
-  title: "Architechtura AI — Building Code Compliance",
-  description: "Multi-agent AI system for automated building code compliance verification",
+  title: "Architechtura AI — Building-Code Pre-Check",
+  description: "An AI pre-check for building plans: catch the corrections a city plan check will flag, before you submit.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
