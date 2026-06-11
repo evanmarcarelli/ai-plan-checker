@@ -150,6 +150,23 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         )
         self._apply_vision_fields(plan_data, vision_data)
 
+        # Round out the extraction audit trail with the vision outcome, so a
+        # hollow report ("everything needs_review") is explainable later from
+        # the persisted plan_data alone.
+        try:
+            plan_data.extraction_stats = {
+                **(plan_data.extraction_stats or {}),
+                "vision": {
+                    "fields_read": sorted(
+                        k for k, v in (vision_data or {}).items()
+                        if v not in (None, "", []) and k != "is_title_sheet"
+                    ),
+                    "error": vision_title_extractor.last_error,
+                },
+            }
+        except Exception:
+            pass
+
         # Build context for LLM
         title_block = raw_data.get("title_block", "") or ""
         first_pages_text = ""

@@ -296,3 +296,56 @@ def test_enhance_calls_textract_and_normalizes_kvs(tmp_path):
     assert "OCCUPANCY GROUP: R-3" in result["pages"][1]
     assert result["code_data_summary"]["occupancy"] == "R-3"
     assert result["code_data_summary"]["construction_type"] == "V-B"
+
+
+def test_enhance_kv_merge_fills_gaps_and_records_conflicts(tmp_path):
+    """Multi-page KV merge: first page wins per field, later pages FILL
+    missing fields, and a later page that DISAGREES is recorded in
+    stats.kv_conflicts instead of silently dropped."""
+    import fitz
+    pdf_path = tmp_path / "two-thin.pdf"
+    doc = fitz.open()
+    doc.new_page()
+    doc.new_page()
+    doc.save(str(pdf_path))
+    doc.close()
+
+    page_responses = [
+        _fake_response(
+            lines=["TITLE SHEET"],
+            pairs=[(["OCCUPANCY:"], ["R-3"])],
+        ),
+        _fake_response(
+            lines=["CODE DATA"],
+            pairs=[
+                (["OCCUPANCY:"], ["B"]),                 # disagrees with page 1
+                (["CONSTRUCTION", "TYPE:"], ["V-B"]),    # fills a gap
+            ],
+        ),
+    ]
+
+    class FakeClient:
+        def __init__(self):
+            self.calls = 0
+
+        def analyze_document(self, **kwargs):
+            resp = page_responses[self.calls]
+            self.calls += 1
+            return resp
+
+    ex = TextractExtractor()
+    with patch("app.services.textract_extractor.settings") as fake_settings:
+        fake_settings.aws_textract_enabled = True
+        fake_settings.aws_access_key_id = "AKIAFAKE"
+        fake_settings.aws_secret_access_key = "secret"
+        fake_settings.aws_region = "us-west-2"
+        fake_settings.textract_min_chars_per_page = 200
+        fake_settings.textract_max_pages = 25
+        with patch.object(ex, "_get_client", return_value=FakeClient()):
+            result = ex.enhance(str(pdf_path), {1: "", 2: ""})
+
+    # First page's value kept; second page filled the missing field.
+    assert result["code_data_summary"]["occupancy"] == "R-3"
+    assert result["code_data_summary"]["construction_type"] == "V-B"
+    # The disagreement is auditable.
+    assert result["stats"]["kv_conflicts"]["occupancy"] == ["R-3", "B"]

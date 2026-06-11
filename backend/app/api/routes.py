@@ -269,6 +269,41 @@ async def list_jobs(user: Dict[str, Any] = Depends(get_current_user)):
     return {"jobs": db.list_jobs_for_user(user["id"])}
 
 
+# ============================================================
+# Plan library (migration 010) — the cross-job plan-set corpus
+# ============================================================
+
+@router.get("/plan-library")
+async def list_plan_documents(user: Dict[str, Any] = Depends(get_current_user)):
+    """The user's plan library: every distinct plan set, with revision links."""
+    from app.services import plan_library
+    return {"documents": plan_library.list_documents(user["id"])}
+
+
+@router.get("/plan-library/search")
+async def search_plan_library(
+    q: str,
+    disciplines: Optional[str] = None,
+    document_id: Optional[str] = None,
+    limit: int = 20,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Ranked full-text search over the user's plan-sheet corpus.
+
+    `disciplines` is a comma-separated filter, e.g. "structural,architectural".
+    Returns sheet-level hits with page/sheet numbers and highlighted snippets,
+    so both humans and agents can trace an answer back to a source sheet.
+    """
+    if not q or not q.strip():
+        raise HTTPException(status_code=422, detail="q is required")
+    from app.services import plan_library
+    disc_list = [d.strip() for d in disciplines.split(",") if d.strip()] if disciplines else None
+    rows = plan_library.search_sheets(
+        user["id"], q, disciplines=disc_list, document_id=document_id, limit=limit
+    )
+    return {"query": q, "results": rows}
+
+
 @router.delete("/jobs/{job_id}")
 async def delete_job(
     job_id: str,

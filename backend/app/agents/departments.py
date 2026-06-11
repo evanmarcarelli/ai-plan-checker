@@ -223,6 +223,13 @@ from the plan text + code provided, lower your confidence rather than asserting.
         the reviewer the title/code sheet (always) plus the highest-scoring
         domain pages, up to a char budget.
 
+        The sheet index (when extraction identified sheet numbers) adds a
+        strong routing signal on top of the keyword score: a page whose sheet
+        DISCIPLINE maps to this department's category (E-sheets → electrical,
+        P-sheets → plumbing, FP/LS-sheets → fire ...) is what a human reviewer
+        would open first, even if its body text is drawing labels with few
+        domain keywords.
+
         Degrades safely: no plan text -> ""; no domain match anywhere -> just
         the first page (the previous behaviour, so no regression).
         """
@@ -231,6 +238,18 @@ from the plan text + code provided, lower your confidence rather than asserting.
             return ""
         from app.code_library.ingest.chunker import compiled_patterns_for_category
         patterns = compiled_patterns_for_category(self.category)
+
+        # Sheet-index lookup: page -> sheet record (discipline routing + the
+        # sheet-number label that makes the excerpt traceable).
+        sheets_by_page = {
+            rec.get("page_number"): rec
+            for rec in (plan_data.sheet_index if plan_data else None) or []
+            if rec.get("page_number") is not None
+        }
+
+        # A discipline match outranks any realistic keyword count: it is the
+        # "open the E-sheets first" instinct, not a tie-breaker.
+        DISCIPLINE_BOOST = 100
 
         first_pageno = min(pages.keys())
         selected: List[tuple] = []
@@ -252,12 +271,15 @@ from the plan text + code provided, lower your confidence rather than asserting.
         # analysis, which every department needs.
         add(first_pageno)
 
-        # Score the rest by domain-keyword hits, add highest first until budget.
+        # Score the rest: domain-keyword hits + sheet-discipline routing.
         scored = []
         for pageno, text in pages.items():
             if pageno in used or not text:
                 continue
             score = sum(1 for p in patterns if p.search(text))
+            rec = sheets_by_page.get(pageno)
+            if rec and rec.get("category") == self.category:
+                score += DISCIPLINE_BOOST
             if score > 0:
                 scored.append((score, pageno))
         scored.sort(key=lambda t: (-t[0], t[1]))
@@ -267,7 +289,17 @@ from the plan text + code provided, lower your confidence rather than asserting.
             add(pageno)
 
         selected.sort(key=lambda t: t[0])
-        return "\n\n".join(f"[PAGE {pn}]\n{tx}" for pn, tx in selected)
+
+        def _label(pn: int) -> str:
+            rec = sheets_by_page.get(pn) or {}
+            num, title = rec.get("sheet_number"), rec.get("sheet_title")
+            if num and title:
+                return f"[PAGE {pn} — SHEET {num} {title}]"
+            if num:
+                return f"[PAGE {pn} — SHEET {num}]"
+            return f"[PAGE {pn}]"
+
+        return "\n\n".join(f"{_label(pn)}\n{tx}" for pn, tx in selected)
 
     async def _call_reviewer(
         self,

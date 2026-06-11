@@ -57,7 +57,15 @@ def _chunk_to_row(c: CodeChunk) -> Dict[str, Any]:
     header = structure.build_context_header(
         c.code_short, c.version, ancestors=[], section=c.section, heading=c.title
     )
+    # Per-chunk provenance (e.g. the licensed-PDF ingester stamps
+    # source_tier/license_status="licensed") wins over the coarse per-code
+    # defaults — otherwise a licensed IBC ingest would be re-flagged
+    # fair_use_review here.
     prov = PROVENANCE.get(c.code_short, {"source_tier": "unspecified", "license_status": "review"})
+    if c.source_tier and c.source_tier != "unspecified":
+        prov = {**prov, "source_tier": c.source_tier}
+    if c.license_status and c.license_status != "review":
+        prov = {**prov, "license_status": c.license_status}
     return {
         "chunk_id": c.chunk_id,
         "adoption_id": adoption_id,

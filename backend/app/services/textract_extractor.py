@@ -164,12 +164,23 @@ class TextractExtractor:
                 # so we never destroy a partial text layer — we add to it).
                 merged = self._merge_text(result["pages"].get(page_num, ""), ocr["text"])
                 result["pages"][page_num] = merged
-                # First page that yields code-data KVs wins; the title sheet
-                # is the typical hit and we don't want a later sheet's
-                # "OCCUPANCY: B" overriding it.
-                if ocr["kv_pairs"] and not result["code_data_summary"]:
-                    result["code_data_summary"] = self._normalize_kv_pairs(ocr["kv_pairs"])
-                    result["stats"]["kv_pairs_found"] = len(result["code_data_summary"])
+                # First page that yields code-data KVs wins for each field;
+                # the title sheet is the typical hit and we don't want a
+                # later sheet's "OCCUPANCY: B" overriding it. But unlike the
+                # old strict first-page-wins, (a) later pages still FILL
+                # fields the first page didn't have, and (b) disagreements
+                # between pages are recorded as kv_conflicts so the audit
+                # trail shows the value was contested rather than certain.
+                if ocr["kv_pairs"]:
+                    normalized = self._normalize_kv_pairs(ocr["kv_pairs"])
+                    summary = result["code_data_summary"]
+                    conflicts = result["stats"].setdefault("kv_conflicts", {})
+                    for field, value in normalized.items():
+                        if field not in summary:
+                            summary[field] = value
+                        elif summary[field] != value:
+                            conflicts.setdefault(field, [summary[field]]).append(value)
+                    result["stats"]["kv_pairs_found"] = len(summary)
                 result["stats"]["pages_ocr_succeeded"] += 1
         finally:
             doc.close()

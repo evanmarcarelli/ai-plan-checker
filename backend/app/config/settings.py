@@ -155,6 +155,16 @@ class Settings(BaseSettings):
     checklist_review_enabled: bool = True
     checklist_max_per_department: int = 40
 
+    # ── Anti-hallucination guards on LLM department findings ──
+    # Contradiction guard: downgrade a NON_COMPLIANT whose cited section IS
+    # in the corpus but whose text doesn't support the claim (wrong-section
+    # cite). For text we have, the corpus is authoritative.
+    citation_contradiction_guard: bool = True
+    # Table cross-check: downgrade a NON_COMPLIANT citing IBC T506.2 / T504.4
+    # / 403 whose claimed limit can't be reproduced from the deterministic
+    # table store (an invented number hung on a real table).
+    table_value_cross_check: bool = True
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"

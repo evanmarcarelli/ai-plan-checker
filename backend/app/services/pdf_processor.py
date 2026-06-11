@@ -5,9 +5,23 @@ import re
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from app.models.schemas import ExtractedPlanData, PlanElement, PlanType
+from app.services.sheet_index import build_sheet_index, summarize_sheet_index
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _join_pages_with_markers(pages: Dict[int, str]) -> str:
+    """Join page texts with explicit page-boundary markers.
+
+    The old bare "\\n\\n".join let the metadata regexes match ACROSS page
+    boundaries (e.g. a "DOOR" at the end of page 1 + a width on page 2 →
+    spurious door-width). The marker line breaks those runs and gives any
+    human reading the blob a page reference for free.
+    """
+    return "\n\n".join(
+        f"=== PAGE {p} ===\n{pages.get(p, '')}" for p in sorted(pages)
+    )
 
 
 class PDFProcessor:
@@ -35,10 +49,12 @@ class PDFProcessor:
             "file_path": file_path,
             "file_hash": self.compute_file_hash(file_path),
             "pages": {},
+            "page_corners": {},
             "metadata": {},
             "title_block": None,
             "all_text": "",
             "page_count": 0,
+            "sheet_index": [],
         }
 
         try:
@@ -46,19 +62,36 @@ class PDFProcessor:
             result["page_count"] = len(doc)
             result["metadata"] = dict(doc.metadata)
 
-            all_texts = []
             for page_num in range(min(len(doc), self.max_pages_for_full_extraction)):
                 page = doc[page_num]
                 text = page.get_text("text")
                 result["pages"][page_num + 1] = text
-                all_texts.append(text)
+                # Title-block corner (bottom-right) text per page — where the
+                # sheet number is printed on every conventionally-drawn sheet.
+                corner = self._extract_page_corner(page)
+                if corner:
+                    result["page_corners"][page_num + 1] = corner
 
-            result["all_text"] = "\n\n".join(all_texts)
+            result["all_text"] = _join_pages_with_markers(result["pages"])
 
             # Extract title block from first or last page
             result["title_block"] = self._extract_title_block(doc)
 
             doc.close()
+
+            # Per-page sheet identification (sheet numbers, disciplines,
+            # cover-sheet drawing index). Deterministic, no LLM.
+            try:
+                result["sheet_index"] = build_sheet_index(
+                    result["pages"], result["page_corners"]
+                )
+                stats = summarize_sheet_index(result["sheet_index"])
+                logger.info(
+                    f"Sheet index: {stats['pages_with_sheet_number']}/{stats['pages']} "
+                    f"pages identified, disciplines={stats['disciplines']}"
+                )
+            except Exception as e:
+                logger.warning(f"Sheet-index build failed (continuing without): {e}")
 
             # AWS Textract OCR fallback for pages whose text layer is too
             # thin. Feature-flagged (off by default) so an unconfigured
@@ -72,9 +105,7 @@ class PDFProcessor:
                 if textract_extractor.enabled:
                     enhanced = textract_extractor.enhance(file_path, result["pages"])
                     result["pages"] = enhanced["pages"]
-                    result["all_text"] = "\n\n".join(
-                        result["pages"].get(p, "") for p in sorted(result["pages"])
-                    )
+                    result["all_text"] = _join_pages_with_markers(result["pages"])
                     if enhanced["code_data_summary"]:
                         result["code_data_summary"] = enhanced["code_data_summary"]
                     result["textract_stats"] = enhanced["stats"]
@@ -121,15 +152,28 @@ class PDFProcessor:
 
         return "\n---\n".join(title_block_texts) if title_block_texts else None
 
+    @staticmethod
+    def _extract_page_corner(page: "fitz.Page") -> Optional[str]:
+        """Bottom-right corner text of one page (sheet-number region of a
+        conventional title block). Kept small so it stays cheap on 50 pages."""
+        try:
+            rect = page.rect
+            corner = fitz.Rect(
+                rect.width * 0.65, rect.height * 0.7, rect.width, rect.height
+            )
+            blocks = page.get_text("blocks", clip=corner)
+            text = " \n".join(b[4] for b in blocks if len(b) > 4).strip()
+            return text or None
+        except Exception:
+            return None
+
     def _extract_with_pdfplumber(self, file_path: str) -> Dict[str, Any]:
         result = {"pages": {}, "all_text": ""}
         with pdfplumber.open(file_path) as pdf:
-            all_texts = []
             for i, page in enumerate(pdf.pages[:self.max_pages_for_full_extraction]):
                 text = page.extract_text() or ""
                 result["pages"][i + 1] = text
-                all_texts.append(text)
-            result["all_text"] = "\n\n".join(all_texts)
+            result["all_text"] = _join_pages_with_markers(result["pages"])
         return result
 
     def parse_plan_data(self, raw: Dict[str, Any]) -> ExtractedPlanData:
@@ -142,7 +186,17 @@ class PDFProcessor:
         plan_data = ExtractedPlanData(
             raw_text_by_page=raw.get("pages", {}),
             title_block_text=title_block,
+            file_hash=raw.get("file_hash"),
+            page_count=raw.get("page_count") or len(raw.get("pages", {})) or None,
+            sheet_index=raw.get("sheet_index") or [],
         )
+        # Extraction audit trail — persisted with the job via plan_data JSONB.
+        stats: Dict[str, Any] = {}
+        if raw.get("textract_stats"):
+            stats["textract"] = raw["textract_stats"]
+        if plan_data.sheet_index:
+            stats["sheet_index"] = summarize_sheet_index(plan_data.sheet_index)
+        plan_data.extraction_stats = stats
 
         # Extract project info
         plan_data.project_name = self._extract_project_name(all_text, title_block)

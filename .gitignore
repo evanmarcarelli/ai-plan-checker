@@ -18,8 +18,10 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+.venv-claude/
 venv/
 *.egg-info/
+.pytest_cache/
 
 # Node / Next.js
 node_modules/

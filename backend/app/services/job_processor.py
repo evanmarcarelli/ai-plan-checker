@@ -22,6 +22,7 @@ from app.models.schemas import ProcessingJob, JobStatus, AgentLog
 from app.agents.workflow import PlanCheckerWorkflow
 from app.services import db
 from app.services import email_service
+from app.services import plan_library
 from app.services.pdf_compressor import compress as compress_pdf
 from app.utils.logger import get_logger
 
@@ -205,6 +206,17 @@ async def _run_pipeline(job_id: str, file_path: str, row: dict) -> None:
                 db.insert_findings(finding_rows[i:i+100])
 
         logger.info(f"Job {job_id} completed: {len(finding_rows)} findings")
+
+        # Persist the extracted plan set into the durable plan library
+        # (dedupe by file hash, revision chaining, sheet-level FTS corpus).
+        # Best-effort: a missing migration 010 must never fail the job.
+        try:
+            await asyncio.to_thread(
+                plan_library.persist_plan_document,
+                job_id, row["user_id"], report.plan_data,
+            )
+        except Exception as e:
+            logger.warning(f"Job {job_id}: plan-library persistence failed: {e}")
 
         # "Your review is ready" email (no-op without RESEND_API_KEY).
         try:

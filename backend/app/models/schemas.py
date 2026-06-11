@@ -125,6 +125,20 @@ class ExtractedPlanData(BaseModel):
     state_code: Optional[str] = None
     # CalFire FHSZ overlay tier ("high" / "very_high"), address-derived.
     wui_zone: Optional[str] = None
+    # ---- Plan-library provenance (migration 010) ----
+    # SHA256 of the uploaded PDF. Persisted with the job so duplicate uploads
+    # and revisions of the same plan set are detectable across jobs.
+    file_hash: Optional[str] = None
+    # Total pages in the PDF (raw_text_by_page is capped, this is not).
+    page_count: Optional[int] = None
+    # Per-page sheet identification (sheet_number, discipline, sheet_title,
+    # source, confidence) built by app.services.sheet_index. Empty when no
+    # sheets could be identified.
+    sheet_index: List[Dict[str, Any]] = []
+    # Extraction audit trail: textract stats, vision status, sheet-index
+    # coverage. Persisted in plan_data JSONB so "why was this check hollow?"
+    # is answerable after the fact.
+    extraction_stats: Dict[str, Any] = {}
 
 
 # ==================== Code Requirements ====================

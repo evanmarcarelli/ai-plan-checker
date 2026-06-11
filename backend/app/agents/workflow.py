@@ -342,11 +342,51 @@ class PlanCheckerWorkflow:
         # ----- CITATION GATE (enrich the LLM findings) + DET DEPARTMENT -----
         # The deterministic findings were computed up front (above) and shared
         # with the reviewers. Here we (a) enrich the LLM department findings
-        # with verbatim corpus text where groundable (never downgrading — the
-        # corpus is too thin to be authoritative against dept retrieval), and
-        # (b) surface the deterministic findings as their own department.
+        # with verbatim corpus text where groundable (never downgrading for a
+        # MISSING section — the corpus is too thin to be authoritative
+        # against dept retrieval — but downgrading CONTRADICTED claims, where
+        # the section IS in the corpus and its text doesn't support the
+        # claim), and (b) surface the deterministic findings as their own
+        # department.
+        contradiction_guard = bool(getattr(settings, "citation_contradiction_guard", True))
+        llm_gate_contradicted = 0
         for r in reviews:
-            apply_citation_gate(r.findings, self.code_db, enforce=False)
+            g = apply_citation_gate(
+                r.findings, self.code_db,
+                enforce=False, contradiction_guard=contradiction_guard,
+            )
+            llm_gate_contradicted += g.contradicted
+        if llm_gate_contradicted:
+            await emit(
+                "Citation Gate",
+                f"Contradiction guard: {llm_gate_contradicted} non-compliant finding(s) "
+                f"cited a section whose text does not support the claim — "
+                f"downgraded to needs-review with the cited text attached.",
+                level="warning",
+                data={"contradicted": llm_gate_contradicted},
+            )
+
+        # ----- TABLE-VALUE CROSS-CHECK on LLM findings -----
+        # A reviewer citing a real table with an invented number (e.g. "Table
+        # 506.2 allows 6,000 sf" when it says 9,000) survives the citation
+        # gate. Reproduce the claimed limit from the deterministic table
+        # store; downgrade what can't be reproduced.
+        if bool(getattr(settings, "table_value_cross_check", True)):
+            from app.code_library.deterministic.value_check import cross_check_table_claims
+            mismatched = checked = 0
+            for r in reviews:
+                vs = cross_check_table_claims(r.findings, pd)
+                mismatched += vs.mismatched
+                checked += vs.checked
+            if checked:
+                await emit(
+                    "Table Cross-Check",
+                    f"Reproduced {checked} claimed table value(s) from the deterministic "
+                    f"table store; {mismatched} could not be reproduced and were "
+                    f"downgraded to needs-review.",
+                    level="warning" if mismatched else "info",
+                    data={"checked": checked, "mismatched": mismatched},
+                )
 
         if det_findings:
             det_summary = self._summarize(det_findings)

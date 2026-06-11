@@ -199,6 +199,26 @@ def cmd_ladbs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_licensed_pdf(args: argparse.Namespace) -> int:
+    """Ingest a locally-licensed model-code PDF (ICC purchase, state-published
+    edition). The compliant path for IBC/CBC/CRC full text — no scraping."""
+    from app.code_library.ingest.licensed_pdf import ingest_licensed_pdf
+
+    target = IngestTarget(
+        code_short=args.code_short,
+        code_name=args.code_name,
+        version=args.version,
+        jurisdictions=args.scope or ["*"],
+        output_filename=args.output
+        or f"licensed_{args.code_short.lower().replace(' ', '_')}_{args.version}.jsonl",
+    )
+    written = ingest_licensed_pdf(
+        args.pdf, target, max_pages=args.max_pages, max_sections=args.max
+    )
+    logger.info(f"[licensed-pdf] wrote {written} chunks for {args.code_short} {args.version}")
+    return 0 if written else 4
+
+
 def cmd_ladbs_local(args: argparse.Namespace) -> int:
     import glob as _glob
     from app.code_library.ingest.ladbs import ingest_ladbs_files
@@ -363,6 +383,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_la.add_argument("--max", type=int, default=None, help="cap docs per kind")
     p_la.add_argument("--fail-fast", action="store_true")
     p_la.set_defaults(func=cmd_ladbs)
+
+    p_lic = sub.add_parser(
+        "licensed-pdf",
+        help="ingest a locally-licensed model-code PDF (ICC purchase / "
+             "state-published edition) — the compliant IBC/CBC/CRC path",
+    )
+    p_lic.add_argument("--pdf", required=True, help="path to the licensed code PDF")
+    p_lic.add_argument("--code-short", required=True, help='e.g. "IBC", "CBC", "CRC"')
+    p_lic.add_argument("--code-name", required=True,
+                       help='e.g. "International Building Code"')
+    p_lic.add_argument("--version", required=True, help='edition, e.g. "2021"')
+    p_lic.add_argument(
+        "--scope", action="append",
+        help='jurisdiction tag (repeatable), e.g. "*" or "CA" (default "*")',
+    )
+    p_lic.add_argument("--output", help="corpus filename (default licensed_<code>_<ver>.jsonl)")
+    p_lic.add_argument("--max-pages", type=int, default=None, help="cap PDF pages (test runs)")
+    p_lic.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_lic.set_defaults(func=cmd_licensed_pdf)
 
     p_ll = sub.add_parser(
         "ladbs-local", help="ingest hand-downloaded LADBS bulletin PDFs (no scraping)"

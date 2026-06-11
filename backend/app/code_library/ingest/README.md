@@ -13,6 +13,7 @@ shape the retriever loads.
 | Quality Code Publishing | `qcode.py` | qcode.us | Hermosa Beach, Manhattan Beach, Redondo Beach, El Segundo, Palos Verdes Estates, Rancho Palos Verdes, Rolling Hills, Rolling Hills Estates, Lomita, San Marino, La Habra Heights |
 | General Code | `ecode360.py` | ecode360.com | (placeholder — verify slugs before use) |
 | LADBS publications | `ladbs.py` | dbs.lacity.gov | LA City information bulletins, correction lists, amendments |
+| **Licensed code PDFs** | `licensed_pdf.py` | local files (ICC purchase, state-published editions) | IBC / IFC / CBC / CRC / any ICC-style code the operator holds a license for |
 
 > **Neighborhoods of Los Angeles** (Hollywood, Venice, Silver Lake, Echo Park,
 > Studio City, etc.) are **not separate jurisdictions** — they sit inside the
@@ -99,6 +100,37 @@ growth needs one of:**
      describes), or
   2. the **licensed 2025 CBC / Title 24 text** (ICC Digital Codes), or
   3. **hand-curated JSONL** for the specific current bulletins you care about.
+
+## Licensed code PDFs (the compliant IBC / CBC / CRC path)
+
+`licensed_pdf.py` ingests a model-code PDF the operator is **licensed to
+use** — a purchased ICC PDF, a state-published edition, or a jurisdiction's
+own published amendments. It parses the conventional ICC structure
+(CHAPTER → SECTION → numbered subsections, with Exception detection), keeps
+the hierarchy as the breadcrumb, and writes standard corpus chunks tagged
+`source_tier/license_status = "licensed"` (which `jsonl_to_postgres`
+preserves):
+
+```bash
+cd backend
+python -m app.code_library.ingest licensed-pdf \
+    --pdf ~/codes/IBC_2021.pdf \
+    --code-short IBC --code-name "International Building Code" \
+    --version 2021 --scope "*"
+
+# California codes scope to the state layer:
+python -m app.code_library.ingest licensed-pdf \
+    --pdf ~/codes/CBC_2022_Part2.pdf \
+    --code-short CBC --code-name "California Building Code" \
+    --version 2022 --scope CA
+```
+
+**This is the path that closes the WUI citation gap.** The deterministic
+WUI rules cite CBC 708A / 709A / Chapter 7A; until those sections are in the
+corpus the citation gate correctly downgrades their findings to
+needs-review. Ingesting the CBC (Part 2, Chapter 7A) recovers them. Note:
+ingesting a licensed file does **not** create a right to republish its text —
+the fair-use quote cap in `citation_retrieval.py` still bounds what users see.
 
 ## Current blocker: Cloudflare (as of 2026-06)
 
