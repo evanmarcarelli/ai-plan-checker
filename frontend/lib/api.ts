@@ -6,6 +6,24 @@ const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 export const API_URL = `${API_BASE}/api/v1`;
 export const WS_URL = `${WS_BASE}/api/v1`;
 
+/** Extract a human-readable message from a FastAPI error body.
+ *  `detail` is a string for HTTPException, but an ARRAY of validation
+ *  objects for 422s — stringifying that yields "[object Object]". The
+ *  global 500 handler uses `message` instead of `detail`. */
+function apiErrorMessage(err: unknown, fallback: string): string {
+  const e = err as { detail?: unknown; message?: unknown } | null;
+  const detail = e?.detail;
+  if (typeof detail === "string" && detail) return detail;
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((d) => (d && typeof d === "object" && "msg" in d ? String((d as { msg: unknown }).msg) : ""))
+      .filter(Boolean);
+    if (msgs.length) return msgs.join("; ");
+  }
+  if (typeof e?.message === "string" && e.message) return e.message;
+  return fallback;
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
   const supabase = createClient();
@@ -35,7 +53,7 @@ export async function createCheckoutSession(plan: "starter" | "professional" | "
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Checkout failed: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Checkout failed: ${res.status}`));
   }
   return res.json();
 }
@@ -59,7 +77,10 @@ export interface FeedbackPost {
 export async function listFeedback(): Promise<{ posts: FeedbackPost[] }> {
   const headers = await authHeaders();
   const res = await fetch(`${API_URL}/feedback`, { headers });
-  if (!res.ok) throw new Error(`Failed to load feedback: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(err, `Failed to load feedback: ${res.status}`));
+  }
   return res.json();
 }
 
@@ -76,7 +97,7 @@ export async function createFeedback(body: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Failed to post: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Failed to post: ${res.status}`));
   }
   return res.json();
 }
@@ -87,7 +108,10 @@ export async function toggleFeedbackVote(postId: string): Promise<{ voted: boole
     method: "POST",
     headers,
   });
-  if (!res.ok) throw new Error(`Vote failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(err, `Vote failed: ${res.status}`));
+  }
   return res.json();
 }
 
@@ -103,7 +127,7 @@ export async function createPackCheckoutSession(pack: PackSize): Promise<{ url: 
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Pack checkout failed: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Pack checkout failed: ${res.status}`));
   }
   return res.json();
 }
@@ -113,7 +137,7 @@ export async function createPortalSession(): Promise<{ url: string }> {
   const res = await fetch(`${API_URL}/billing/portal`, { method: "POST", headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Portal failed: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Portal failed: ${res.status}`));
   }
   return res.json();
 }
@@ -138,7 +162,7 @@ export async function deleteMyAccount(): Promise<void> {
   const res = await fetch(`${API_URL}/me`, { method: "DELETE", headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Delete failed: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Delete failed: ${res.status}`));
   }
 }
 
@@ -324,7 +348,7 @@ export async function uploadPlan(
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
         await supabase.storage.from("plan-uploads").remove([storagePath]).catch(() => {});
-        throw new Error(errBody.detail || `Review start failed: ${res.status}`);
+        throw new Error(apiErrorMessage(errBody, `Review start failed: ${res.status}`));
       }
 
       onProgress?.(100);
@@ -467,7 +491,7 @@ export async function createShare(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Failed to create share: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Failed to create share: ${res.status}`));
   }
   return res.json();
 }
@@ -505,7 +529,7 @@ export async function fetchSharedReport(token: string): Promise<{
   const res = await fetch(`${API_URL}/shared/${token}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "This share link is no longer valid.");
+    throw new Error(apiErrorMessage(err, "This share link is no longer valid."));
   }
   return res.json();
 }
@@ -547,7 +571,7 @@ export async function addFindingComment(
   );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Failed to add comment: ${res.status}`);
+    throw new Error(apiErrorMessage(err, `Failed to add comment: ${res.status}`));
   }
   return res.json();
 }
@@ -598,7 +622,7 @@ export async function postChatQuestion(
       const res = await fetch(`${API_URL}/reports/${jobId}/chat`, { method: "POST", headers, body });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Chat failed: ${res.status}`);
+        throw new Error(apiErrorMessage(err, `Chat failed: ${res.status}`));
       }
       return res.json();
     } catch (e) {

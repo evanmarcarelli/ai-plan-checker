@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirect } from "@/lib/utils";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  const redirectTo = safeRedirect(search.get("redirect"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firm, setFirm] = useState("");
@@ -44,7 +47,7 @@ export default function SignupPage() {
       setLoading(false);
       return;
     }
-    router.push("/dashboard");
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -157,12 +160,20 @@ export default function SignupPage() {
           </button>
           <p className="text-sm text-center" style={{ color: "var(--text-secondary)" }}>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium" style={{ color: "var(--accent-bright)" }}>
+            <Link href={`/login?redirect=${encodeURIComponent(redirectTo)}`} className="font-medium" style={{ color: "var(--accent-bright)" }}>
               Sign in
             </Link>
           </p>
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

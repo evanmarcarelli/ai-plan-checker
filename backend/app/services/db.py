@@ -446,8 +446,15 @@ def touch_share(share_id: str) -> None:
         pass
 
 
-def revoke_share(share_id: str) -> None:
-    admin().table("report_shares").update({"revoked_at": datetime.utcnow().isoformat()}).eq("id", share_id).execute()
+def revoke_share(share_id: str, job_id: Optional[str] = None) -> bool:
+    """Revoke a share. When job_id is given the update is scoped to it, so a
+    caller who only proved ownership of job_id can't revoke another job's
+    share. Returns True if a row was actually revoked."""
+    q = admin().table("report_shares").update({"revoked_at": datetime.utcnow().isoformat()}).eq("id", share_id)
+    if job_id is not None:
+        q = q.eq("job_id", job_id)
+    res = q.execute()
+    return bool(res.data)
 
 
 # ----- comments -----

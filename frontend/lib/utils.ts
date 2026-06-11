@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Sanitize a post-auth ?redirect= target. Only same-site paths are allowed:
+ *  "https://evil.com", "//evil.com", and "/\evil.com" (backslash trick) would
+ *  all leave the site, so anything that isn't a plain internal path falls
+ *  back to /dashboard. */
+export function safeRedirect(target: string | null | undefined): string {
+  if (!target) return "/dashboard";
+  if (!target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) {
+    return "/dashboard";
+  }
+  return target;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

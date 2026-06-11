@@ -332,7 +332,7 @@ function Pricing() {
     const sb = createClient();
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
-      router.push(`/signup?redirect=/billing?pack=${pack}`);
+      router.push(`/signup?redirect=${encodeURIComponent(`/billing?pack=${pack}`)}`);
       return;
     }
     try {

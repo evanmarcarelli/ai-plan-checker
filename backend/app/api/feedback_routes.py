@@ -49,6 +49,20 @@ class FeedbackPostOut(BaseModel):
 # Helpers
 # ─────────────────────────────────────────────────────────────
 
+_SETUP_HINT = (
+    "The feedback board database tables are missing. "
+    "Apply backend/migrations/004_feedback.sql in the Supabase SQL editor."
+)
+
+
+def _is_missing_table_error(e: Exception) -> bool:
+    """Postgres raises 42P01 (undefined_table) through PostgREST when a
+    migration hasn't been applied. Match on the code or the message so we
+    don't depend on the exact exception class supabase-py raises."""
+    s = str(e)
+    return "42P01" in s or "does not exist" in s
+
+
 def _display_for_user(user: Dict[str, Any], override: Optional[str] = None) -> str:
     """Pick what name to show for this user's posts/votes. Prefer the
     explicit override (form input), then the profile display_name, then
@@ -75,23 +89,29 @@ async def list_feedback(
     user: Dict[str, Any] = Depends(get_current_user),
 ):
     """List all feedback posts sorted by vote count desc, then recency."""
-    posts_res = (db.admin().table("feedback_posts")
-                 .select("id, title, body, status, author_display, author_user_id, created_at")
-                 .order("created_at", desc=True)
-                 .execute())
-    posts = posts_res.data or []
+    try:
+        posts_res = (db.admin().table("feedback_posts")
+                     .select("id, title, body, status, author_display, author_user_id, created_at")
+                     .order("created_at", desc=True)
+                     .execute())
+        posts = posts_res.data or []
 
-    if not posts:
-        return {"posts": []}
+        if not posts:
+            return {"posts": []}
 
-    post_ids = [p["id"] for p in posts]
+        post_ids = [p["id"] for p in posts]
 
-    # Pull all votes for these posts in one query
-    votes_res = (db.admin().table("feedback_votes")
-                 .select("post_id, voter_user_id")
-                 .in_("post_id", post_ids)
-                 .execute())
-    votes = votes_res.data or []
+        # Pull all votes for these posts in one query
+        votes_res = (db.admin().table("feedback_votes")
+                     .select("post_id, voter_user_id")
+                     .in_("post_id", post_ids)
+                     .execute())
+        votes = votes_res.data or []
+    except Exception as e:
+        if _is_missing_table_error(e):
+            logger.error(f"feedback tables missing: {e}")
+            raise HTTPException(status_code=503, detail=_SETUP_HINT)
+        raise
 
     # Tally
     counts: Dict[str, int] = {pid: 0 for pid in post_ids}
@@ -128,13 +148,19 @@ async def create_feedback(
     user: Dict[str, Any] = Depends(get_current_user),
 ):
     display = _display_for_user(user, body.author_display)
-    res = db.admin().table("feedback_posts").insert({
-        "author_user_id": user["id"],
-        "author_display": display,
-        "title": body.title.strip(),
-        "body": body.body.strip(),
-        "status": "open",
-    }).execute()
+    try:
+        res = db.admin().table("feedback_posts").insert({
+            "author_user_id": user["id"],
+            "author_display": display,
+            "title": body.title.strip(),
+            "body": body.body.strip(),
+            "status": "open",
+        }).execute()
+    except Exception as e:
+        if _is_missing_table_error(e):
+            logger.error(f"feedback tables missing: {e}")
+            raise HTTPException(status_code=503, detail=_SETUP_HINT)
+        raise
     if not res.data:
         raise HTTPException(status_code=500, detail="Could not create post")
     row = res.data[0]
@@ -157,12 +183,18 @@ async def toggle_vote(
     user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Idempotent toggle: if the user has voted, remove the vote; otherwise add it."""
-    existing = (db.admin().table("feedback_votes")
-                .select("post_id")
-                .eq("post_id", post_id)
-                .eq("voter_user_id", user["id"])
-                .limit(1)
-                .execute())
+    try:
+        existing = (db.admin().table("feedback_votes")
+                    .select("post_id")
+                    .eq("post_id", post_id)
+                    .eq("voter_user_id", user["id"])
+                    .limit(1)
+                    .execute())
+    except Exception as e:
+        if _is_missing_table_error(e):
+            logger.error(f"feedback tables missing: {e}")
+            raise HTTPException(status_code=503, detail=_SETUP_HINT)
+        raise
     if existing.data:
         db.admin().table("feedback_votes") \
             .delete() \

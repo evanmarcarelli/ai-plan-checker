@@ -34,16 +34,20 @@ export default function SharedReportPage() {
   // Cached per-browser so they don't get re-prompted.
   useEffect(() => {
     if (!data) return;
-    const cached = localStorage.getItem("up2code:guest_name");
+    // "up2code" is the pre-rebrand key — migrate any cached name forward.
+    const cached =
+      localStorage.getItem("architechtura:guest_name") ||
+      localStorage.getItem("up2code:guest_name");
     if (cached) {
       setGuestName(cached);
       setAskedName(true);
+      localStorage.setItem("architechtura:guest_name", cached);
       return;
     }
     if (data.share.invited_name) {
       setGuestName(data.share.invited_name);
       setAskedName(true);
-      localStorage.setItem("up2code:guest_name", data.share.invited_name);
+      localStorage.setItem("architechtura:guest_name", data.share.invited_name);
     }
   }, [data]);
 
@@ -51,7 +55,7 @@ export default function SharedReportPage() {
     const clean = name.trim().slice(0, 80);
     if (!clean) return;
     setGuestName(clean);
-    localStorage.setItem("up2code:guest_name", clean);
+    localStorage.setItem("architechtura:guest_name", clean);
     setAskedName(true);
   }
 

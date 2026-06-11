@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirect } from "@/lib/utils";
 
 function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
-  const redirectTo = search.get("redirect") || "/dashboard";
+  const redirectTo = safeRedirect(search.get("redirect"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,7 +106,7 @@ function LoginForm() {
             <Link href="/forgot-password" className="font-medium" style={{ color: "var(--text-muted)" }}>
               Forgot password?
             </Link>
-            <Link href="/signup" className="font-medium" style={{ color: "var(--accent-bright)" }}>
+            <Link href={`/signup?redirect=${encodeURIComponent(redirectTo)}`} className="font-medium" style={{ color: "var(--accent-bright)" }}>
               Create an account
             </Link>
           </div>

@@ -278,11 +278,21 @@ def _find_user_by_customer(customer_id: Optional[str]) -> Optional[str]:
     return res.data[0]["id"] if res.data else None
 
 
+def _sub_price_id(sub) -> str:
+    """Price id of the subscription's first item, or "" when the items list
+    is absent or empty — `if sub.get("items")` alone passes an items object
+    whose data array is empty, and [0] then raises in the webhook handler."""
+    items = (sub.get("items") or {}).get("data") or []
+    if not items:
+        return ""
+    return _strip(items[0]["price"]["id"])
+
+
 def _apply_subscription(user_id: str, sub) -> None:
     """Update plan metadata on subscription create/update. Credits are NOT
     granted here — that's the `invoice.payment_succeeded` path, which fires
     both on initial purchase and each renewal."""
-    price_id = _strip(sub["items"]["data"][0]["price"]["id"]) if sub.get("items") else ""
+    price_id = _sub_price_id(sub)
     tier, credits = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
 
     from datetime import datetime, timezone
@@ -309,7 +319,7 @@ def _grant_monthly_credits(
     rollover. Idempotent on invoice_id — Stripe retries on transient failures
     are no-ops once we've written the credit_purchases row.
     """
-    price_id = _strip(sub["items"]["data"][0]["price"]["id"]) if sub.get("items") else ""
+    price_id = _sub_price_id(sub)
     tier, monthly = PRICE_TO_PLAN.get(price_id, ("unknown", 0))
     if monthly == 0:
         logger.warning(f"[invoice {invoice_id}] unknown price {price_id}; no credits granted")

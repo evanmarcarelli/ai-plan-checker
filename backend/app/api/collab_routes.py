@@ -194,7 +194,8 @@ async def revoke_share(
     """Revoke a share. Owner only."""
     if not db.get_job_for_user(job_id, user["id"]):
         raise HTTPException(status_code=404, detail="Job not found")
-    db.revoke_share(share_id)
+    if not db.revoke_share(share_id, job_id=job_id):
+        raise HTTPException(status_code=404, detail="Share not found")
     return {"ok": True}
 
 
