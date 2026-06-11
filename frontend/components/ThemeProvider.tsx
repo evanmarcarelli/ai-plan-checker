@@ -18,7 +18,9 @@ export const THEME_STORAGE_KEY = "theme";
 
 // Inline script string, run before paint in <head>. Kept here so the resolution
 // logic lives in one place and can't drift from the provider's.
-export const themeInitScript = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();`;
+// Default is LIGHT for everyone — only an explicit "dark" or "system" choice
+// (stored by the account Appearance control) deviates from it.
+export const themeInitScript = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}')||'light';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();`;
 
 function systemPrefersDark(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -44,12 +46,12 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePref>("system");
+  const [theme, setThemeState] = useState<ThemePref>("light");
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light");
 
   // Hydrate from storage on mount (the inline script already set the attribute).
   useEffect(() => {
-    let stored: ThemePref = "system";
+    let stored: ThemePref = "light";
     try {
       const v = localStorage.getItem(THEME_STORAGE_KEY) as ThemePref | null;
       if (v === "light" || v === "dark" || v === "system") stored = v;

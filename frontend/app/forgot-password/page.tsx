@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import BrandMark from "@/components/BrandMark";
+import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -38,8 +38,13 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <BrandMark size={44} style={{ color: "var(--text-primary)" }} />
+          {/* Wordmark — "Architechtura" followed by the northeast arrow */}
+          <div
+            className="flex justify-center items-center gap-1 mb-4 text-xl font-semibold tracking-tight"
+            style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
+          >
+            Architechtura
+            <ArrowUpRight className="w-4 h-4" strokeWidth={2.5} style={{ color: "var(--text-primary)" }} />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
             Reset password

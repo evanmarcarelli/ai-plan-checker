@@ -9,7 +9,7 @@
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, useScroll, useTransform } from "framer-motion";
-import BrandMark from "@/components/BrandMark";
+import { ArrowUpRight } from "lucide-react";
 
 // R3F touches `window` and `WebGLRenderingContext` — disable SSR.
 const BuildingScene = dynamic(() => import("./BuildingScene"), {
@@ -61,15 +61,19 @@ export default function ScrollBuildingHero() {
           style={{ opacity: wordmarkOpacity, top: "calc(22vh - 56px)" }}
           className="pointer-events-none absolute left-0 right-0 flex justify-center"
         >
-          <div className="flex items-center gap-2">
-            {/* Brand mark — geometric "A" with ascending arrow — then the wordmark */}
-            <BrandMark size={30} style={{ color: "#0B1220" }} />
+          <div className="flex items-center gap-1.5">
             <span
               className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.025em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
+              {/* Wordmark — "Architechtura" followed by the northeast arrow */}
               Architechtura
             </span>
+            <ArrowUpRight
+              className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
+              strokeWidth={2.5}
+              style={{ color: "#0B1220" }}
+            />
           </div>
         </motion.div>
 

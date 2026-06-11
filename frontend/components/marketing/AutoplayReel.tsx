@@ -5,6 +5,7 @@ import {
   AnimatePresence,
   useReducedMotion,
 } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
@@ -323,12 +324,8 @@ function SceneIntro() {
             boxShadow: "0 0 60px -10px rgba(47,91,255,0.5)",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Architechtura"
-            className="w-11 h-11 object-contain"
-          />
+          {/* Northeast arrow — matches the wordmark's trailing arrow */}
+          <ArrowUpRight className="w-9 h-9" strokeWidth={2.5} style={{ color: "#0B1220" }} />
         </motion.div>
         <motion.h3
           initial={{ opacity: 0, y: 12 }}

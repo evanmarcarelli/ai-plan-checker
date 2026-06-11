@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import BrandMark from "@/components/BrandMark";
+import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirect } from "@/lib/utils";
 
@@ -42,11 +42,13 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <BrandMark size={44} style={{ color: "var(--text-primary)" }} />
-          </div>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-            Architechtura AI
+          {/* Wordmark — "Architechtura" followed by the northeast arrow */}
+          <h1
+            className="text-3xl font-bold inline-flex items-center gap-1.5"
+            style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
+          >
+            Architechtura
+            <ArrowUpRight className="w-5 h-5" strokeWidth={2.5} style={{ color: "var(--text-primary)" }} />
           </h1>
           <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>
             Sign in to your account

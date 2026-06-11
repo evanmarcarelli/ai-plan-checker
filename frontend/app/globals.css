@@ -59,17 +59,21 @@
 /* ── Dark theme ───────────────────────────────────────────────────────────
    Applied when <html data-theme="dark"> is set (by the no-flash script in the
    root layout + the account Appearance control). Every surface in the app
-   reads these tokens, so flipping them re-themes the whole product. The "A" in
-   the brand mark uses currentColor, so it follows --text-primary automatically. */
-[data-theme="dark"] {
-  /* Surfaces — deep navy-black, cards lifted just enough to separate */
-  --bg: #0B0E14;
-  --bg-card: #141925;
-  --bg-elevated: #1C2230;
+   reads these tokens, so flipping them re-themes the whole product. The brand
+   wordmark + arrow use currentColor, so they follow --text-primary automatically.
 
-  /* Borders — low-contrast cool greys */
-  --border: #232A38;
-  --border-bright: #323B4D;
+   COLOR RULE: dark surfaces/borders are NEUTRAL greys — no navy/blue cast.
+   The only blues in dark mode are the brand accent + primary-button blues
+   that already exist in the light palette. */
+[data-theme="dark"] {
+  /* Surfaces — neutral near-black, cards lifted just enough to separate */
+  --bg: #0D0D0F;
+  --bg-card: #161618;
+  --bg-elevated: #1E1E21;
+
+  /* Borders — low-contrast neutral greys */
+  --border: #27272B;
+  --border-bright: #3A3A40;
 
   /* Typography */
   --text-primary: #F3F5F9;
@@ -87,8 +91,8 @@
   --btn-primary-bg-hover: #6B92FF;
   --btn-primary-text: #FFFFFF;
 
-  --btn-secondary-bg: #1C2230;
-  --btn-secondary-bg-hover: #232A38;
+  --btn-secondary-bg: #1E1E21;
+  --btn-secondary-bg-hover: #27272B;
   --btn-secondary-text: #F3F5F9;
 
   /* Inverted solids (CTAs/chips/badges) become brand-blue on dark so their
