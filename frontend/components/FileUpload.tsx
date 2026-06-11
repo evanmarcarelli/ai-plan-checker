@@ -2,20 +2,66 @@
 
 import { useCallback, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
-import { Upload, FileText, X, AlertCircle } from "lucide-react";
+import { Upload, FileText, X, AlertCircle, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatFileSize } from "@/lib/utils";
+import { resolveSite, type SiteResolution } from "@/lib/api";
 
 interface Props {
-  onUpload: (file: File) => void;
+  onUpload: (file: File, projectAddress?: string) => void;
   isUploading: boolean;
   uploadProgress: number;
   uploadStatus?: string;
 }
 
+/** Site overlays as short chips for the pre-check card — the warnings list
+ *  below them carries the full sentences; these are the at-a-glance flags. */
+function overlayChips(r: SiteResolution): string[] {
+  const o = r.overlays;
+  if (!o) return [];
+  const chips: string[] = [];
+  if (o.fire_hazard?.in_zone)
+    chips.push(`${o.fire_hazard.severity ?? ""} fire hazard zone (${o.fire_hazard.responsibility ?? "?"})`.trim());
+  if (o.flood?.in_sfha) chips.push(`Flood zone ${o.flood.zone ?? ""}`.trim());
+  if (o.coastal?.in_zone) chips.push("Coastal Zone");
+  if (o.hillside?.in_zone) chips.push("Hillside Ordinance");
+  if (o.hpoz?.in_zone) chips.push(o.hpoz.name ? `HPOZ: ${o.hpoz.name}` : "HPOZ");
+  if (o.methane?.in_zone) chips.push(o.methane.kind ?? "Methane Zone");
+  if (o.liquefaction?.in_zone) chips.push("Liquefaction zone");
+  return chips;
+}
+
 export default function FileUpload({ onUpload, isUploading, uploadProgress, uploadStatus }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Project address pre-check. Optional, but when filled it pins the
+  // jurisdiction + code editions server-side (instead of the pipeline
+  // guessing them off the title block) and shows the customer which code
+  // stack applies before they spend a credit.
+  const [address, setAddress] = useState("");
+  const [resolution, setResolution] = useState<SiteResolution | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  const runResolve = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed.length < 8) return;
+    if (resolution && resolution.address.input === trimmed) return; // already resolved
+    setResolving(true);
+    setResolveError(null);
+    try {
+      const r = await resolveSite(trimmed);
+      setResolution(r);
+    } catch (e) {
+      // Lookup failure never blocks the upload — the pipeline falls back to
+      // reading the location from the plans.
+      setResolution(null);
+      setResolveError(e instanceof Error ? e.message : "Address lookup failed");
+    } finally {
+      setResolving(false);
+    }
+  }, [resolution]);
 
   // Storage tier caps every file at ~50 MB. Compress before uploading anything bigger.
   const MAX_BYTES = 49 * 1024 * 1024;
@@ -54,7 +100,7 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
 
   const handleSubmit = () => {
     if (selectedFile && !isUploading) {
-      onUpload(selectedFile);
+      onUpload(selectedFile, address.trim() || undefined);
     }
   };
 
@@ -152,6 +198,133 @@ export default function FileUpload({ onUpload, isUploading, uploadProgress, uplo
         </div>
       </div>
       </motion.div>
+
+      {/* Project address — appears once a file is picked. Resolves on blur /
+          Enter via POST /site/resolve and shows the jurisdiction + code stack
+          the review will use, so any "we don't cover this yet" surprise lands
+          BEFORE a credit is spent, not in the report. */}
+      <AnimatePresence>
+        {selectedFile && (
+          <motion.div
+            key="address"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-2"
+          >
+            <label
+              htmlFor="project-address"
+              className="block text-[12px] font-medium px-1"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Project address{" "}
+              <span className="font-normal">
+                (optional — pins the jurisdiction and code editions for the review)
+              </span>
+            </label>
+            <div className="relative">
+              <MapPin
+                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--text-muted)" }}
+              />
+              <input
+                id="project-address"
+                type="text"
+                value={address}
+                disabled={isUploading}
+                placeholder="200 N Spring St, Los Angeles, CA"
+                autoComplete="street-address"
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  // Stale results are worse than none — clear the card the
+                  // moment the input no longer matches what was resolved.
+                  if (resolution && resolution.address.input !== e.target.value.trim()) {
+                    setResolution(null);
+                  }
+                  setResolveError(null);
+                }}
+                onBlur={() => runResolve(address)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    runResolve(address);
+                  }
+                }}
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg text-[13px] outline-none transition-colors focus:border-[var(--accent)]"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+              />
+              {resolving && (
+                <Loader2
+                  className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 animate-spin"
+                  style={{ color: "var(--text-muted)" }}
+                />
+              )}
+            </div>
+
+            {/* Resolution card */}
+            {resolution && !resolving && (
+              <div
+                className="px-4 py-3 rounded-xl space-y-1.5 text-[13px]"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {!resolution.geocode_failed && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                    <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      {resolution.adoption?.authority ||
+                        [resolution.jurisdiction.city || resolution.jurisdiction.county,
+                         resolution.jurisdiction.state_code].filter(Boolean).join(", ") ||
+                        "Jurisdiction resolved"}
+                    </span>
+                  </div>
+                )}
+                {!resolution.geocode_failed && resolution.adoption?.headline && (
+                  <p style={{ color: "var(--text-muted)" }}>
+                    Will be checked against: {resolution.adoption.headline}
+                    {Object.keys(resolution.adoption.amendments || {}).length > 0 && " + local amendments"}
+                  </p>
+                )}
+                {overlayChips(resolution).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {overlayChips(resolution).map((chip) => (
+                      <span
+                        key={chip}
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-md"
+                        style={{
+                          background: "var(--needs-review-bg)",
+                          color: "var(--needs-review)",
+                        }}
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {resolution.warnings.map((w) => (
+                  <p key={w} className="flex items-start gap-2" style={{ color: "var(--needs-review, #b45309)" }}>
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    {w}
+                  </p>
+                ))}
+              </div>
+            )}
+            {resolveError && !resolving && (
+              <p className="px-1 text-[12px]" style={{ color: "var(--text-muted)" }}>
+                Couldn&apos;t look up that address ({resolveError}). You can still run the
+                check — the location will be read from the plans.
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Error message */}
       {error && (

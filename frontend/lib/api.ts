@@ -180,6 +180,66 @@ export interface UploadResponse {
   file_size: number;
 }
 
+// ─────────────────────────────────────────────────────────
+// Site pre-check (project address → jurisdiction + code stack)
+// ─────────────────────────────────────────────────────────
+
+export interface SiteResolution {
+  address: {
+    input: string;
+    matched?: string | null;
+    lat?: number | null;
+    lon?: number | null;
+  };
+  jurisdiction: {
+    city?: string | null;
+    county?: string | null;
+    state?: string | null;
+    state_code?: string | null;
+  };
+  adoption: {
+    matched_id?: string;
+    level?: string;
+    authority?: string | null;
+    headline?: string;
+    code_versions?: Record<string, string>;
+    amendments?: Record<string, string>;
+    overlays?: string[];
+  };
+  overlays?: {
+    checked?: string[];
+    errors?: Record<string, string>;
+    fire_hazard?: { in_zone: boolean; severity?: string | null; responsibility?: string | null; label?: string | null };
+    flood?: { zone?: string | null; subtype?: string | null; in_sfha?: boolean };
+    coastal?: { in_zone: boolean };
+    hpoz?: { in_zone: boolean; name?: string | null };
+    hillside?: { in_zone: boolean; type?: string | null };
+    methane?: { in_zone: boolean; kind?: string | null };
+    liquefaction?: { in_zone: boolean };
+  };
+  pilot_scope?: { likely_in_scope: boolean | null; reasons: string[] };
+  support_level: "full" | "state" | "baseline";
+  warnings: string[];
+  geocode_failed?: boolean;
+}
+
+/** Resolve a project address to its jurisdiction + adopted code stack —
+ *  shown to the user BEFORE upload so they see which codes will be checked
+ *  (and any unsupported-jurisdiction warning) before spending a credit. */
+export async function resolveSite(address: string): Promise<SiteResolution> {
+  const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
+  const res = await fetch(`${API_URL}/site/resolve`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ address }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(err, `Address lookup failed: ${res.status}`));
+  }
+  return res.json();
+}
+
 export interface AgentLog {
   timestamp: string;
   agent: string;
@@ -285,7 +345,8 @@ export interface JobStatus {
 export async function uploadPlan(
   file: File,
   onProgress?: (pct: number) => void,
-  onStatus?: (msg: string) => void
+  onStatus?: (msg: string) => void,
+  projectAddress?: string
 ): Promise<UploadResponse> {
   // Step 1: upload directly to Supabase Storage (bypass our backend's size limit).
   const supabase = createClient();
@@ -312,6 +373,7 @@ export async function uploadPlan(
     storage_path: storagePath,
     filename: file.name,
     file_size: file.size,
+    ...(projectAddress?.trim() ? { project_address: projectAddress.trim() } : {}),
   });
 
   // Render Free dynos can take a full 90 seconds to wake up from sleep.

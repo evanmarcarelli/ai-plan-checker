@@ -44,14 +44,17 @@ def create_job(
     file_size: int,
     storage_path: Optional[str] = None,
     credit_charged: bool = False,
+    project_address: Optional[str] = None,
 ) -> str:
     """Enqueue a job (status 'pending'). A worker claims and runs it; the web
     tier never processes it inline. credit_charged is persisted so a later
     failure can refund idempotently without the web request being involved.
+    project_address is the raw user input from the upload form; the worker
+    resolves it into site_context when it claims the job.
 
-    Backward-compatible: if the credit_charged column isn't present yet
-    (migration 007 not applied), retry the insert without it so uploads keep
-    working."""
+    Backward-compatible: if the credit_charged / project_address columns
+    aren't present yet (migrations 007 / 011 not applied), retry the insert
+    without them so uploads keep working."""
     base = {
         "user_id": user_id,
         "filename": filename,
@@ -60,10 +63,13 @@ def create_job(
         "status": "pending",
         "progress": 0,
     }
+    extra: Dict[str, Any] = {"credit_charged": credit_charged}
+    if project_address:
+        extra["project_address"] = project_address
     try:
-        res = admin().table("jobs").insert({**base, "credit_charged": credit_charged}).execute()
+        res = admin().table("jobs").insert({**base, **extra}).execute()
     except Exception:
-        # Pre-migration: column may not exist. Fall back to the base insert.
+        # Pre-migration: a column may not exist. Fall back to the base insert.
         res = admin().table("jobs").insert(base).execute()
     return res.data[0]["id"]
 

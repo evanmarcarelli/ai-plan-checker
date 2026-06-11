@@ -23,6 +23,7 @@ from app.agents.workflow import PlanCheckerWorkflow
 from app.services import db
 from app.services import email_service
 from app.services import plan_library
+from app.services.site_resolver import resolve_site
 from app.services.pdf_compressor import compress as compress_pdf
 from app.utils.logger import get_logger
 
@@ -127,6 +128,28 @@ async def _run_pipeline(job_id: str, file_path: str, row: dict) -> None:
     """Run the workflow and persist the report, or fail terminally."""
     db.update_job(job_id, {"progress": 0})
 
+    # Resolve the user-provided project address (if any) into site context
+    # BEFORE the workflow starts: jurisdiction + adoption stack pinned from a
+    # geocoded address instead of guessed off the title block. Re-resolved
+    # here rather than handed over by the web tier — separate processes, and
+    # ~1s of geocode (cached after the dashboard pre-check warmed Census) is
+    # noise against the 90s pipeline. Failure is never fatal: the workflow
+    # falls back to plan-text extraction, keeping today's behavior.
+    site_context = None
+    project_address = (row.get("project_address") or "").strip() or None
+    if project_address:
+        try:
+            site_context = await asyncio.to_thread(resolve_site, project_address)
+        except Exception as e:
+            logger.warning(f"Job {job_id}: site resolve failed ({e}); keeping raw address only")
+            site_context = {"address": {"input": project_address}, "jurisdiction": {}}
+        try:
+            db.update_job(job_id, {"site_context": site_context})
+        except Exception:
+            # site_context column may predate migration 011 — snapshot is
+            # nice-to-have; the run itself still uses the resolved context.
+            pass
+
     workflow = PlanCheckerWorkflow()
 
     job_shell = ProcessingJob(
@@ -152,7 +175,7 @@ async def _run_pipeline(job_id: str, file_path: str, row: dict) -> None:
 
     try:
         report = await asyncio.wait_for(
-            workflow.run(job_shell, file_path, log_callback=on_log),
+            workflow.run(job_shell, file_path, log_callback=on_log, site_context=site_context),
             timeout=JOB_TIMEOUT_SEC,
         )
 

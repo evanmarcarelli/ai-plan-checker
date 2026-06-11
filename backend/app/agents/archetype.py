@@ -37,10 +37,10 @@ from app.models.schemas import ExtractedPlanData
 
 
 # =====================================================================
-# Property profile — lightweight, optional. The Surveyor doesn't
-# currently populate these from a GIS source. When it does, the
-# archetype gate gets sharper. For now most rejects rely on
-# plan-text cues, which is still valuable.
+# Property profile — lightweight, optional. Populated from GIS overlay
+# lookups (services/gis_overlays.py via site_resolver) when the customer
+# provided a project address at upload; absent otherwise, in which case
+# the gate falls back to plan-text cues, which is still valuable.
 # =====================================================================
 @dataclass
 class ParcelInfo:
@@ -64,6 +64,11 @@ class PropertyProfile:
     parcel: Optional[ParcelInfo] = None
     coastal_zone: Optional[CoastalZoneInfo] = None
     wui_zone: Optional[WuiInfo] = None
+    # GIS-resolved LA-city overlay flags. None = not checked (no address /
+    # layer failed) — only an explicit True triggers a reject, so unknown
+    # never masquerades as "in zone".
+    in_hpoz: Optional[bool] = None
+    in_hillside: Optional[bool] = None
 
 
 # =====================================================================
@@ -168,6 +173,16 @@ def classify_archetype(
             excluded.append("Hillside / BHO zoning")
             reasoning.append(f'Parcel zoning code "{z}" indicates Hillside overlay')
             return _finalize(ARCHETYPE_LA_HILLSIDE_SFR, excluded, reasoning, pilot_archetypes)
+
+    if property_profile and property_profile.in_hillside:
+        excluded.append("Hillside Ordinance (GIS)")
+        reasoning.append("Address falls inside the LA Hillside Ordinance area (GIS overlay)")
+        return _finalize(ARCHETYPE_LA_HILLSIDE_SFR, excluded, reasoning, pilot_archetypes)
+
+    if property_profile and property_profile.in_hpoz:
+        excluded.append("HPOZ (GIS)")
+        reasoning.append("Address falls inside a Historic Preservation Overlay Zone (GIS overlay)")
+        return _finalize(ARCHETYPE_LA_HPOZ_PROPERTY, excluded, reasoning, pilot_archetypes)
 
     if property_profile and property_profile.coastal_zone and property_profile.coastal_zone.in_coastal_zone:
         excluded.append("CA Coastal Zone")

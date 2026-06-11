@@ -4,6 +4,7 @@ This module is the WEB tier. It validates, authenticates, reserves credits,
 and enqueues jobs — it never runs the plan-check pipeline. The pipeline lives
 in app.worker / app.services.job_processor, in a separate process.
 """
+import asyncio
 import json
 import uuid
 from datetime import datetime
@@ -154,6 +155,43 @@ class StartReviewBody(_BM):
     storage_path: str       # e.g. "<user_id>/<uuid>.pdf"
     filename: str           # original filename for display
     file_size: int          # bytes
+    # Optional project address typed at upload. Stored raw on the job row;
+    # the WORKER geocodes + resolves it (see site_resolver) so this handler
+    # stays fast and we never trust a client-resolved jurisdiction blob.
+    project_address: Optional[str] = None
+
+
+class SiteResolveBody(_BM):
+    address: str
+
+
+@router.post("/site/resolve")
+# Pre-check, not the expensive pipeline — but it does hit an external
+# geocoder, so keep a modest per-user ceiling. Repeats are served from the
+# resolver's in-process cache.
+@limiter.limit("20/minute")
+async def resolve_site_precheck(
+    request: Request,
+    body: SiteResolveBody,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Resolve a project address to its jurisdiction + adopted code stack.
+
+    Called by the dashboard as the user fills in the address field, BEFORE
+    upload — so the customer sees which codes will be checked (and any
+    unsupported-jurisdiction warning) before a credit is spent. Free,
+    keyless US Census geocoding; never raises on an unmatched address
+    (the response carries geocode_failed + warnings instead).
+    """
+    address = (body.address or "").strip()
+    if not (8 <= len(address) <= 250):
+        raise HTTPException(
+            status_code=400,
+            detail="Enter a full street address, e.g. '200 N Spring St, Los Angeles, CA'.",
+        )
+    from app.services.site_resolver import resolve_site
+    # Sync httpx call → thread, so the geocoder's latency never blocks the loop.
+    return await asyncio.to_thread(resolve_site, address)
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -212,6 +250,7 @@ async def start_review(
         file_size=body.file_size,
         storage_path=body.storage_path,
         credit_charged=charged,
+        project_address=(body.project_address or "").strip()[:250] or None,
     )
 
     logger.info(f"Job {job_id} enqueued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")

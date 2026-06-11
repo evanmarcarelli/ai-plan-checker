@@ -280,7 +280,7 @@ export default function Dashboard() {
     }, 1000);
   };
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (file: File, projectAddress?: string) => {
     if (isAuthed === false) {
       router.push("/login?redirect=/dashboard");
       return;
@@ -295,7 +295,8 @@ export default function Dashboard() {
       const result = await uploadPlan(
         file,
         (pct) => setUploadProgress(pct),
-        (msg) => setUploadStatus(msg || "")
+        (msg) => setUploadStatus(msg || ""),
+        projectAddress
       );
       setUploadProgress(100);
       setUploadStatus("");

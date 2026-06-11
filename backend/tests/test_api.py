@@ -60,11 +60,13 @@ class FakeDB:
     def __init__(self):
         self._jobs = {}
 
-    def create_job(self, user_id, filename, file_size, storage_path=None, credit_charged=False):
+    def create_job(self, user_id, filename, file_size, storage_path=None, credit_charged=False,
+                   project_address=None):
         jid = str(_uuid.uuid4())
         self._jobs[jid] = {
             "id": jid, "user_id": user_id, "filename": filename,
             "file_size": file_size, "storage_path": storage_path,
+            "project_address": project_address,
             "status": "pending", "progress": 0,
             "created_at": datetime.utcnow().isoformat(), "completed_at": None,
             "current_agent": None, "agents_completed": [], "error": None,

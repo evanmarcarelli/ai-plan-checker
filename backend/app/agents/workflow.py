@@ -1,11 +1,15 @@
 import asyncio
+import re
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Callable, List, Optional
 from app.agents.surveyor import SurveyorAgent
 from app.agents.librarian import LibrarianAgent
 from app.agents.departments import ALL_DEPARTMENTS, DepartmentReviewer
-from app.agents.archetype import classify_archetype, render_archetype_banner
+from app.agents.archetype import (
+    CoastalZoneInfo, ParcelInfo, PropertyProfile, WuiInfo,
+    classify_archetype, render_archetype_banner,
+)
 from app.agents.critic import critique_finding, apply_critique
 from app.config.pilot import PIPELINE_GATES, ARCHETYPE_UNCLASSIFIED
 from app.code_library.checklists.checker import checklist_requirements
@@ -32,6 +36,102 @@ logger = get_logger(__name__)
 DEPARTMENT_CONCURRENCY = 2
 
 
+def _address_mismatch_reason(
+    user_address: Optional[str],
+    plan_address: Optional[str],
+    extracted_city: Optional[str],
+    site_city: Optional[str],
+) -> Optional[str]:
+    """Why the address entered at upload and the plan set disagree, or None.
+
+    Deliberately conservative: only a different leading street number or a
+    clearly different city counts. Fuzzier comparison (street-name spelling,
+    abbreviations, missing zips, suite numbers) produces noise, and a false
+    mismatch finding erodes trust faster than a missed one."""
+    if user_address and plan_address:
+        u = re.match(r"\s*(\d+)", user_address)
+        p = re.match(r"\s*(\d+)", plan_address)
+        if u and p and u.group(1) != p.group(1):
+            return (
+                f"the plan set reads '{plan_address.strip()}' but the application "
+                f"address entered at upload is '{user_address.strip()}' "
+                f"(different street numbers)"
+            )
+    if extracted_city and site_city:
+        a, b = extracted_city.strip().lower(), site_city.strip().lower()
+        if a and b and a not in b and b not in a:
+            return (
+                f"the plans appear to reference {extracted_city}, but the address "
+                f"entered at upload geocodes to {site_city}"
+            )
+    return None
+
+
+def _overlay_summary(overlays: Dict[str, Any]) -> str:
+    """One log line for the agent timeline: each overlay as yes/no/its detail,
+    'unknown' when that layer's lookup failed (unknown must never read as no)."""
+    errors = overlays.get("errors") or {}
+
+    def describe(key: str, detail_key: str = None) -> str:
+        verdict = overlays.get(key)
+        if verdict is None:
+            return "unknown" if key in errors else "n/a"
+        if key == "flood":
+            zone = verdict.get("zone") or "none"
+            return f"{zone}{' (SFHA)' if verdict.get('in_sfha') else ''}"
+        if not verdict.get("in_zone"):
+            return "no"
+        detail = detail_key and verdict.get(detail_key)
+        return str(detail) if detail else "yes"
+
+    return (
+        f"fire: {describe('fire_hazard', 'severity')} | flood: {describe('flood')} | "
+        f"coastal: {describe('coastal')} | hillside: {describe('hillside')} | "
+        f"HPOZ: {describe('hpoz', 'name')} | methane: {describe('methane', 'kind')} | "
+        f"liquefaction: {describe('liquefaction')}"
+    )
+
+
+def _property_profile_from_overlays(site_context, jurisdiction) -> Optional[PropertyProfile]:
+    """Build the archetype gate's PropertyProfile from the GIS overlay sweep
+    in site_context. None when no sweep ran (no address / geocode failed) —
+    the gate then falls back to plan-text cues as before. Per-overlay: a key
+    absent from the sweep (layer errored or out of geographic scope) maps to
+    None/absent, never to False, so 'unknown' can't suppress a text-cue reject.
+    """
+    overlays = (site_context or {}).get("overlays") or {}
+    if not overlays.get("checked"):
+        return None
+    fire = overlays.get("fire_hazard") or {}
+    # CBC Ch. 7A applies in all SRA classes and Very High LRA — that's the
+    # wildfire-review trigger the gate's WUI reject keys on.
+    in_wui = bool(fire.get("in_zone")) and (
+        fire.get("severity") == "Very High" or fire.get("responsibility") == "SRA"
+    )
+    haz = (fire.get("severity") or "").lower().replace(" ", "_") or None
+    # City AND county: the gate's Ventura detection regexes this string for
+    # county names, so "Ojai, CA" without the county would silently disarm
+    # the Ventura VHFHSZ reject.
+    place = ", ".join(
+        p for p in [jurisdiction.city, jurisdiction.county, jurisdiction.state_code] if p
+    )
+    return PropertyProfile(
+        parcel=ParcelInfo(jurisdiction=place or None),
+        coastal_zone=(
+            CoastalZoneInfo(in_coastal_zone=bool(overlays["coastal"].get("in_zone")))
+            if overlays.get("coastal") is not None else None
+        ),
+        wui_zone=(
+            WuiInfo(in_wui=in_wui, haz_class=haz)
+            if overlays.get("fire_hazard") is not None else None
+        ),
+        in_hpoz=(overlays["hpoz"].get("in_zone") if overlays.get("hpoz") is not None else None),
+        in_hillside=(
+            overlays["hillside"].get("in_zone") if overlays.get("hillside") is not None else None
+        ),
+    )
+
+
 class PlanCheckerWorkflow:
     """Orchestrates Surveyor → Librarian → parallel Department reviewers → Synthesis."""
 
@@ -50,6 +150,7 @@ class PlanCheckerWorkflow:
         job: ProcessingJob,
         file_path: str,
         log_callback: Optional[Callable] = None,
+        site_context: Optional[Dict[str, Any]] = None,
     ) -> ComplianceReport:
 
         async def emit(agent: str, message: str, level: str = "info", data: dict = None):
@@ -119,6 +220,51 @@ class PlanCheckerWorkflow:
             await emit("Surveyor", f"Surveyor failed: {e}", level="error")
             raise
 
+        # ----- USER-PROVIDED SITE CONTEXT -----
+        # When the customer entered a project address at upload, the worker
+        # already geocoded it and resolved the adoption stack (site_resolver).
+        # That jurisdiction is authoritative — a typed, geocoded address beats
+        # an LLM reading a title block — so it overrides the Surveyor's guess
+        # before the adoption resolver and reviewers consume it. The
+        # Surveyor's own extraction is NOT discarded: it becomes a cross-check,
+        # and a disagreement is surfaced as a finding below (real plan checkers
+        # flag application/plan address mismatches too).
+        if site_context:
+            state["site_context"] = site_context
+            extracted_city, extracted_state_code = j.city, j.state_code
+            site_jur = site_context.get("jurisdiction") or {}
+            if site_jur.get("state_code") or site_jur.get("county") or site_jur.get("city"):
+                j.city = site_jur.get("city") or j.city
+                j.county = site_jur.get("county") or j.county
+                j.state = site_jur.get("state") or j.state
+                j.state_code = site_jur.get("state_code") or j.state_code
+                adoption_info = site_context.get("adoption") or {}
+                if adoption_info.get("authority"):
+                    j.governing_authority = adoption_info["authority"]
+                j.confidence = max(j.confidence, 0.95)
+                replaced = (
+                    f" (plan-text guess was '{extracted_city or '?'}, {extracted_state_code or '?'}')"
+                    if (extracted_city or extracted_state_code)
+                    and (extracted_city != j.city or extracted_state_code != j.state_code)
+                    else ""
+                )
+                await emit(
+                    "Surveyor",
+                    f"Jurisdiction pinned from the project address provided at upload: "
+                    f"{j.city or j.county or 'Unknown'}, {j.state_code or '??'}{replaced}",
+                    data={"source": "user_address", "city": j.city,
+                          "county": j.county, "state": j.state_code},
+                )
+            mismatch = _address_mismatch_reason(
+                (site_context.get("address") or {}).get("input"),
+                pd.project_address,
+                extracted_city,
+                site_jur.get("city"),
+            )
+            if mismatch:
+                state["address_mismatch"] = mismatch
+                await emit("Surveyor", f"Address cross-check: {mismatch}", level="warning")
+
         # ----- ARCHETYPE GATE -----
         # Decide whether this submittal falls inside the current pilot's
         # broad-scope 90% target. Out-of-pilot archetypes (Hillside, HPOZ,
@@ -130,7 +276,17 @@ class PlanCheckerWorkflow:
         # doesn't have a graceful "out-of-scope" view. The CRITICAL finding
         # is sufficient signal for now. See docs/PILOT_BRIEF.md.
         plan_text_for_gate = "\n".join(pd.raw_text_by_page.values()) if pd.raw_text_by_page else ""
-        archetype_result = classify_archetype(pd, plan_text_for_gate)
+        # GIS overlays (resolved from the upload address) make the gate's
+        # overlay rejects authoritative instead of plan-text-cue guesses.
+        property_profile = _property_profile_from_overlays(state.get("site_context"), j)
+        if property_profile is not None:
+            overlays = state["site_context"].get("overlays") or {}
+            await emit(
+                "Archetype",
+                f"GIS overlays from project address — {_overlay_summary(overlays)}",
+                data={"overlays": overlays},
+            )
+        archetype_result = classify_archetype(pd, plan_text_for_gate, property_profile=property_profile)
         state["archetype"] = archetype_result
         await emit(
             "Archetype",
@@ -476,6 +632,44 @@ class PlanCheckerWorkflow:
                 verified=True,
                 source_text="docs/PILOT_BRIEF.md — out-of-pilot archetypes",
                 source_citation=f"Pilot scope ({archetype_result.archetype})",
+            ))
+
+        # ----- ADDRESS CROSS-CHECK INJECTION -----
+        # The user-entered address and the plan set disagreed (detected right
+        # after the Surveyor ran). Surface it at the top: every jurisdiction-
+        # dependent check below used the upload address, so if the plans are
+        # for a different site the whole report's code stack may be wrong.
+        mismatch_reason = state.get("address_mismatch")
+        if mismatch_reason:
+            user_addr = ((state.get("site_context") or {}).get("address") or {}).get("input")
+            all_findings.insert(0, ComplianceFinding(
+                finding_id=str(uuid.uuid4()),
+                code_requirement=CodeRequirement(
+                    code_id="SITE-ADDRESS-MISMATCH",
+                    code_name="Application / plan address cross-check",
+                    section="intake",
+                    description="The project address on the application must match the plan set.",
+                    category="intake",
+                    source="site_resolver",
+                ),
+                status=ComplianceStatus.NEEDS_REVIEW,
+                plan_value=pd.project_address or "address not found on plans",
+                required_value=user_addr,
+                description=(
+                    f"ADDRESS MISMATCH: {mismatch_reason}. The jurisdiction and code "
+                    f"editions for this review were taken from the address entered at "
+                    f"upload — if the plans are for a different site, re-run the check "
+                    f"with the correct address."
+                ),
+                recommendation=(
+                    "Confirm the project address: correct the title block on the plans "
+                    "or re-submit with the right application address."
+                ),
+                severity="high",
+                confidence=1.0,
+                verified=True,
+                source_text="Upload-time address pre-check (site resolver)",
+                source_citation="Site address cross-check",
             ))
 
         # ----- ADVERSARIAL CRITIC LOOP -----
