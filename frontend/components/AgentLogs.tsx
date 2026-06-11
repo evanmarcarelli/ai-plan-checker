@@ -26,12 +26,30 @@ const LEVEL_STYLES: Record<string, string> = {
 export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Whether the view is "stuck" to the newest log. Starts true so a fresh run
+  // streams live; flips off the moment the user scrolls up to read history, and
+  // back on when they scroll near the bottom again.
+  const pinnedToBottomRef = useRef(true);
+
+  // Update the pinned flag whenever the user (or a programmatic jump) scrolls
+  // this container. Threshold gives a little slack so being "almost" at the
+  // bottom still counts as following.
+  function handleScroll() {
+    const el = containerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    pinnedToBottomRef.current = distanceFromBottom < 60;
+  }
 
   useEffect(() => {
-    // Auto-scroll to bottom
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
+    // On each new log, follow the tail ONLY if pinned, and scroll ONLY this
+    // container — never via scrollIntoView, which would scroll every ancestor
+    // and yank the whole dashboard down to the log on every agent action. When
+    // the user has scrolled up, we leave their position alone so they can
+    // freely watch the race track and read the stream at their own pace.
+    if (!pinnedToBottomRef.current) return;
+    const el = containerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [logs]);
 
   return (
@@ -74,6 +92,7 @@ export default function AgentLogs({ logs, isProcessing, currentAgent }: Props) {
       {/* Log entries — light surface, monospace stream */}
       <div
         ref={containerRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-3 space-y-0.5 font-mono text-[12px]"
         style={{ background: "var(--bg-elevated)" }}
       >

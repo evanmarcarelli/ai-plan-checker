@@ -164,8 +164,11 @@ export default function AutoplayReel() {
         </div>
 
         {/* ── Reel stage ────────────────────────────────────────────── */}
+        {/* On phones the 16:10 box is too short for the taller scenes, so the
+            graphics overflow/clip. Use a portrait-ish ratio (with a min height
+            for very small screens) on mobile, easing back to 16:10 from sm up. */}
         <div
-          className="relative aspect-[16/10] rounded-2xl overflow-hidden"
+          className="relative aspect-[3/4] min-h-[440px] sm:min-h-0 sm:aspect-[16/10] rounded-2xl overflow-hidden"
           style={{
             background: "var(--bg-card)",
             border: "1px solid var(--border)",
@@ -220,7 +223,7 @@ function SceneFrame({ children }: { children: React.ReactNode }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4, ease: EASE }}
-      className="absolute inset-0 flex items-center justify-center p-8 lg:p-10"
+      className="absolute inset-0 flex items-center justify-center p-4 sm:p-8 lg:p-10"
     >
       {children}
     </motion.div>
@@ -291,7 +294,7 @@ function ScenePain() {
           className="mt-10 text-center"
         >
           <div
-            className="text-[56px] md:text-[68px] font-bold tracking-tight leading-none"
+            className="text-[44px] sm:text-[56px] md:text-[68px] font-bold tracking-tight leading-none"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
             438 days.
@@ -331,7 +334,7 @@ function SceneIntro() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.6, ease: EASE }}
-          className="text-[56px] md:text-[80px] font-bold tracking-tight leading-none"
+          className="text-[40px] sm:text-[56px] md:text-[80px] font-bold tracking-tight leading-none"
           style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
         >
           Architechtura.
@@ -501,7 +504,7 @@ function SceneProcess() {
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: EASE }}
-          className="text-center mb-6"
+          className="text-center mb-4 sm:mb-6"
         >
           <div
             className="text-[10px] tracking-[0.24em] font-semibold uppercase mb-2"
@@ -510,13 +513,13 @@ function SceneProcess() {
             Step 02
           </div>
           <div
-            className="text-[24px] md:text-[30px] font-bold tracking-tight"
+            className="text-[20px] sm:text-[24px] md:text-[30px] font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
             An army of agents goes to work.
           </div>
         </motion.div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
           {AGENTS.map((a, i) => {
             const enter = 0.35 + i * 0.18;
             const done = enter + 1.4;
@@ -526,7 +529,7 @@ function SceneProcess() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: enter, duration: 0.4, ease: EASE }}
-                className="rounded-lg p-2.5 flex items-center gap-2.5 min-w-0"
+                className="rounded-lg p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 min-w-0"
                 style={{
                   background: "var(--bg-card)",
                   border: "1px solid var(--border)",
@@ -594,13 +597,13 @@ function SceneFindings() {
             Step 03
           </div>
           <div
-            className="text-[24px] md:text-[28px] font-bold tracking-tight"
+            className="text-[20px] sm:text-[24px] md:text-[28px] font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
           >
             Every finding, cited on the sheet.
           </div>
         </motion.div>
-        <div className="grid grid-cols-[1fr_220px] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-4">
           {/* Plan sheet */}
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
@@ -656,12 +659,14 @@ function SceneFindings() {
             </div>
           </motion.div>
 
-          {/* Findings list */}
+          {/* Findings list — hidden on phones (the pinned plan sheet alone tells
+              the "cited on the sheet" story and a 2nd card would overflow the
+              compact mobile stage); shown from sm up alongside the sheet. */}
           <motion.div
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 3.0, duration: 0.6, ease: EASE }}
-            className="rounded-xl p-4 space-y-3"
+            className="hidden sm:block rounded-xl p-4 space-y-3"
             style={{
               background: "var(--bg-card)",
               border: "1px solid var(--border)",
