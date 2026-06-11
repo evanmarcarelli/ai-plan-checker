@@ -209,6 +209,26 @@ def cmd_ca_leginfo(args: argparse.Namespace) -> int:
     return 0 if written else 4
 
 
+def cmd_ca_coastal(args: argparse.Namespace) -> int:
+    """Ingest the curated Coastal Act (PRC Div. 20) sections from leginfo,
+    scoped to the CA:Coastal corpus layer."""
+    from app.code_library.ingest.ca_leginfo import ingest_ca_coastal_act
+
+    written = ingest_ca_coastal_act(max_sections=args.max)
+    logger.info(f"[ca-coastal] wrote {written} chunks")
+    return 0 if written else 4
+
+
+def cmd_malibu_lip(args: argparse.Namespace) -> int:
+    """Ingest the certified Malibu LCP Local Implementation Plan from the
+    Coastal Commission's published PDF, scoped to CA:Malibu."""
+    from app.code_library.ingest.malibu_lip import ingest_malibu_lip
+
+    written = ingest_malibu_lip(pdf_path=args.pdf, max_sections=args.max)
+    logger.info(f"[malibu-lip] wrote {written} chunks")
+    return 0 if written else 4
+
+
 def cmd_ada_gov(args: argparse.Namespace) -> int:
     """Ingest the complete 2010 ADA Standards from ada.gov (US government
     work — public domain)."""
@@ -411,6 +431,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     p_cl.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
     p_cl.set_defaults(func=cmd_ca_leginfo)
+
+    p_cc = sub.add_parser(
+        "ca-coastal",
+        help="ingest curated Coastal Act sections (PRC Div. 20) from leginfo, "
+             "scoped to the CA:Coastal layer (coastal-zone projects only)",
+    )
+    p_cc.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_cc.set_defaults(func=cmd_ca_coastal)
+
+    p_ml = sub.add_parser(
+        "malibu-lip",
+        help="ingest the certified Malibu LCP Local Implementation Plan "
+             "(coastal.ca.gov PDF — government edict), scoped to CA:Malibu",
+    )
+    p_ml.add_argument("--pdf", help="local LIP PDF path (default: download/cache)")
+    p_ml.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_ml.set_defaults(func=cmd_malibu_lip)
 
     p_ag = sub.add_parser(
         "ada-gov",

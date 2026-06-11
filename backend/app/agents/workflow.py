@@ -92,6 +92,27 @@ def _overlay_summary(overlays: Dict[str, Any]) -> str:
     )
 
 
+def _maybe_add_coastal_layer(resolved_stack, site_context) -> bool:
+    """Add the Coastal Act corpus layer ("CA:Coastal") to the resolved stack
+    when the GIS overlay sweep put the project site inside the Coastal Zone.
+
+    Static adoption records carry the key for jurisdictions wholly inside the
+    zone (Malibu); this handles coastal parcels inside ordinary jurisdictions
+    (Venice, San Pedro) whose records don't. Returns True when the key was
+    added, so the caller can log it.
+    """
+    if resolved_stack is None:
+        return False
+    overlays = (site_context or {}).get("overlays") or {}
+    if not (overlays.get("coastal") or {}).get("in_zone"):
+        return False
+    keys = list(resolved_stack.corpus_layer_keys or [])
+    if "CA:Coastal" in keys:
+        return False
+    resolved_stack.corpus_layer_keys = keys + ["CA:Coastal"]
+    return True
+
+
 def _property_profile_from_overlays(site_context, jurisdiction) -> Optional[PropertyProfile]:
     """Build the archetype gate's PropertyProfile from the GIS overlay sweep
     in site_context. None when no sweep ran (no address / geocode failed) —
@@ -307,6 +328,12 @@ class PlanCheckerWorkflow:
         # layer keys and cite the resolved edition.
         try:
             resolved_stack = get_resolver().resolve(j.state_code, j.county, j.city)
+            if _maybe_add_coastal_layer(resolved_stack, state.get("site_context")):
+                await emit(
+                    "Adoption",
+                    "Site is inside the CA Coastal Zone (GIS) — Coastal Act layer "
+                    "added to the corpus scope for retrieval and citations.",
+                )
             state["resolved_stack"] = resolved_stack
             await emit(
                 "Adoption",

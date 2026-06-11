@@ -70,6 +70,30 @@ TARGET_SECTIONS: List[Tuple[str, str, str, List[str]]] = [
     ("GOV", "66333", "Junior accessory dwelling units", ["jadu", "accessory dwelling"]),
 ]
 
+# ── California Coastal Act (PRC Division 20) — coastal-zone projects ──
+# Keyed to the "CA:Coastal" corpus layer, NOT "CA": the Coastal Act only
+# governs inside the Coastal Zone, and surfacing it for a downtown-LA TI
+# would be retrieval noise. The layer is activated two ways: statically by
+# adoption records for jurisdictions wholly inside the zone (Malibu), and
+# dynamically by the workflow when the GIS overlay sweep puts the project
+# site in the zone (Venice, San Pedro, ...).
+# Curated to the sections plan reviewers actually cite on residential and
+# small-commercial coastal submittals.
+COASTAL_TARGET_SECTIONS: List[Tuple[str, str, str, List[str]]] = [
+    ("PRC", "30106", "Coastal Act — 'development' defined", ["coastal", "development definition"]),
+    ("PRC", "30210", "Coastal Act — maximum public access and recreation", ["coastal", "public access"]),
+    ("PRC", "30211", "Coastal Act — development not to interfere with access", ["coastal", "public access"]),
+    ("PRC", "30212", "Coastal Act — public access in new development projects", ["coastal", "public access", "new development"]),
+    ("PRC", "30231", "Coastal Act — biological productivity; water quality", ["coastal", "water quality", "septic", "owts"]),
+    ("PRC", "30235", "Coastal Act — shoreline structures (seawalls, revetments)", ["coastal", "seawall", "shoreline protective device", "bluff"]),
+    ("PRC", "30240", "Coastal Act — environmentally sensitive habitat areas", ["coastal", "esha", "habitat", "buffer"]),
+    ("PRC", "30251", "Coastal Act — scenic and visual qualities", ["coastal", "scenic", "visual", "view corridor"]),
+    ("PRC", "30253", "Coastal Act — minimization of adverse impacts (hazards)", ["coastal", "geologic hazard", "bluff", "fire hazard", "erosion"]),
+    ("PRC", "30519", "Coastal Act — effect of certified local coastal program", ["coastal", "lcp", "cdp", "local permit"]),
+    ("PRC", "30600", "Coastal Act — coastal development permit required", ["coastal", "cdp", "permit required"]),
+    ("PRC", "30610", "Coastal Act — developments authorized without a permit", ["coastal", "cdp exemption", "existing single-family residence", "repair"]),
+]
+
 
 def parse_section_html(html: str, section: str) -> Optional[str]:
     """Extract one statute section's text from a leginfo display page.
@@ -143,6 +167,32 @@ def fetch_sections(
         if own_client:
             client.close()
     return out
+
+
+def ingest_ca_coastal_act(max_sections: Optional[int] = None) -> int:
+    """Fetch the curated Coastal Act sections and write ca_coastal_act.jsonl.
+
+    Separate from ingest_ca_leginfo because the output is scoped to the
+    "CA:Coastal" layer (and its own file) instead of statewide "CA" — see
+    COASTAL_TARGET_SECTIONS for why. Same source, same edict licensing.
+    """
+    targets = COASTAL_TARGET_SECTIONS[:max_sections] if max_sections else COASTAL_TARGET_SECTIONS
+    fetched = fetch_sections(targets)
+
+    target = IngestTarget(
+        code_short="PRC",
+        code_name="California Coastal Act (Pub. Resources Code Div. 20)",
+        version="current",
+        jurisdictions=["CA:Coastal"],
+        output_filename="ca_coastal_act.jsonl",
+    )
+    chunks = []
+    for c in chunk_many([sec for _, sec in fetched], target):
+        c["source_tier"] = "official_gov"
+        c["license_status"] = "edict"
+        chunks.append(c)
+    write_jsonl(target, chunks)
+    return len(chunks)
 
 
 def ingest_ca_leginfo(max_sections: Optional[int] = None) -> int:

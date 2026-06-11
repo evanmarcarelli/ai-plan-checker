@@ -93,6 +93,49 @@ records:
       - { layer: base_model, kind: icc_2024_ibc, access: buy_license }
 
   # ---------------------------------------------------------------
+  # City of Malibu — entire city inside the Coastal Zone
+  # ---------------------------------------------------------------
+  - id: ca_malibu_city
+    level: city
+    inherits: ca_state
+    names: ["Malibu", "City of Malibu"]
+    geo:
+      state_code: CA
+      county: "Los Angeles"
+      city: "Malibu"
+      place_fips: "0645246"
+    authority: "City of Malibu — Community Development Dept., Building Safety Division"
+    # Malibu adopts the LA COUNTY versions of the state codes by reference
+    # (MMC Title 15), then layers city amendments on top. Ord. 531
+    # (adopted 2026-01-12) brought in the 2025 code cycle.   [confirmed]
+    # The whole city sits inside the Coastal Zone under a certified LCP
+    # (Coastal Commission, 2002-09-13): every project also needs LCP/CDP
+    # review against the Local Implementation Plan.           [confirmed]
+    local_amendments:
+      building:    "MMC Ch. 15.04 — adopts LA County Code Title 26 (CBC) + city amendments, Ord. 531"  # [confirmed]
+      residential: "MMC Title 15 — LA County residential code by reference + city amendments"  # [verify] chapter
+      electrical:  "MMC Title 15 — LA County electrical code by reference"   # [verify] chapter
+      plumbing:    "MMC Title 15 — LA County plumbing code by reference"     # [verify] chapter
+      mechanical:  "MMC Title 15 — LA County mechanical code by reference"   # [verify] chapter
+      fire:        "MMC Title 15 — fire code w/ VHFHSZ amendments"           # [verify] chapter
+      green:       "MMC Ch. 15.24 — Green Building Standards Code"           # [confirmed]
+      zoning:      "Malibu LCP — Land Use Plan + Local Implementation Plan (certified 2002-09-13)"
+      coastal:     "Malibu LIP — CDP procedures (Ch. 13), ESHA (Ch. 4), hazards/bluff (Ch. 9-10)"
+    overlays: [coastal, very_high_fhsz, fema_flood, liquefaction]
+    corpus_layer_keys: ["*", "CA", "CA:Los Angeles County", "CA:Malibu", "CA:Coastal"]
+    sources:
+      - { layer: local_amend, kind: malibu_lcp_lip,
+          url: "https://www.coastal.ca.gov/ventura/malibu-lip-final.pdf",
+          access: public_pdf }
+      - { layer: local_amend, kind: malibu_lcp_city_page,
+          url: "https://www.malibucity.org/372/Local-Coastal-Program",
+          access: public_pdf }
+      - { layer: local_amend, kind: ecode360_malibu_mmc,
+          url: "https://ecode360.com/44335445",
+          access: cloudflare_blocked }
+      - { layer: state_model, kind: ca_title24_cbc_2025, access: buy_license }
+
+  # ---------------------------------------------------------------
   # Los Angeles County (unincorporated)
   # ---------------------------------------------------------------
   - id: ca_los_angeles_county

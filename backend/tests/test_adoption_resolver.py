@@ -37,6 +37,22 @@ def test_resolve_la_city_electrical_is_2023_nec(resolver):
     assert "2023 NEC" in s.code_versions["electrical"]
 
 
+def test_resolve_malibu_city(resolver):
+    s = resolver.resolve("CA", "Los Angeles County", "Malibu")
+    assert s.matched_id == "ca_malibu_city"
+    # County layer included (Malibu adopts LA County Title 26 by reference);
+    # CA:Coastal included statically (whole city inside the Coastal Zone).
+    assert s.corpus_layer_keys == [
+        "*", "CA", "CA:Los Angeles County", "CA:Malibu", "CA:Coastal",
+    ]
+    assert "coastal" in s.overlays and "very_high_fhsz" in s.overlays
+    # Editions inherit from the CA state base; amendments are Malibu's own.
+    assert "2025 CBC" in s.code_versions["building"]
+    assert "MMC" in s.amendments["building"]
+    assert "LIP" in s.amendments["coastal"]
+    assert s.authority and "Malibu" in s.authority
+
+
 def test_resolve_county_when_no_city(resolver):
     s = resolver.resolve("CA", "Los Angeles", None)
     assert s.matched_id == "ca_los_angeles_county"
