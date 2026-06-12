@@ -259,6 +259,16 @@ def cmd_licensed_pdf(args: argparse.Namespace) -> int:
     return 0 if written else 4
 
 
+def cmd_vcbc(args: argparse.Namespace) -> int:
+    """Ingest the compiled Ventura County Building Code ordinance (county
+    edict — Ord. 4655 adopts the 2025 Title 24 parts and amends them)."""
+    from app.code_library.ingest.vcbc import ingest_vcbc
+
+    written = ingest_vcbc(args.pdf, max_sections=args.max)
+    logger.info(f"[vcbc] wrote {written} chunks")
+    return 0 if written else 4
+
+
 def cmd_ladbs_local(args: argparse.Namespace) -> int:
     import glob as _glob
     from app.code_library.ingest.ladbs import ingest_ladbs_files
@@ -474,6 +484,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_lic.add_argument("--max-pages", type=int, default=None, help="cap PDF pages (test runs)")
     p_lic.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
     p_lic.set_defaults(func=cmd_licensed_pdf)
+
+    p_vc = sub.add_parser(
+        "vcbc",
+        help="ingest the compiled Ventura County Building Code ordinance "
+             "(Ord. 4655 PDF — county edict), scoped to CA:Ventura County",
+    )
+    p_vc.add_argument("--pdf", required=True, help="local VCBC ordinance PDF path")
+    p_vc.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_vc.set_defaults(func=cmd_vcbc)
 
     p_ll = sub.add_parser(
         "ladbs-local", help="ingest hand-downloaded LADBS bulletin PDFs (no scraping)"

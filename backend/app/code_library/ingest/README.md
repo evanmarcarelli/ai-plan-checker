@@ -15,6 +15,7 @@ shape the retriever loads.
 | LADBS publications | `ladbs.py` | dbs.lacity.gov | LA City information bulletins, correction lists, amendments |
 | **Licensed code PDFs** | `licensed_pdf.py` | local files (ICC purchase, state-published editions) | IBC / IFC / CBC / CRC / any ICC-style code the operator holds a license for |
 | **CA Legislature** | `ca_leginfo.py` | leginfo.legislature.ca.gov | Curated statutes the rules cite: Gov. Code §§51175–51189 (VHFSZ / defensible space), §§66310/66314/66333 (ADU law), PRC §4291 — official state publication, public domain, **no Cloudflare** |
+| **Ventura County Building Code** | `vcbc.py` | local file (county-published Ord. 4655 PDF) | Unincorporated Ventura County: the compiled VCBC — adoption of the 2025 Title 24 parts plus county amendments to CBC/CRC/CEC/CMC/CPC/CWUIC/CalGreen/IPMC/ISPSC and county-original articles (post-disaster, mobile homes, limited-density dwellings) — county edict, public domain |
 | **ADA 2010 Standards** | `ada_gov.py` | ada.gov | The complete 2010 ADA Standards for Accessible Design (~1,100 provisions) — US government work, public domain, **no Cloudflare** |
 
 > **Neighborhoods of Los Angeles** (Hollywood, Venice, Silver Lake, Echo Park,
@@ -152,6 +153,19 @@ corpus the citation gate correctly downgrades their findings to
 needs-review. Ingesting the CBC (Part 2, Chapter 7A) recovers them. Note:
 ingesting a licensed file does **not** create a right to republish its text —
 the fair-use quote cap in `citation_retrieval.py` still bounds what users see.
+
+## Ventura County Building Code (compiled ordinance)
+
+`vcbc.py` ingests the county-published VCBC PDF (Ord. 4655, 2025 ed.) —
+a compiled ordinance whose articles each amend a different adopted code, so
+the same section numbers repeat across articles. The ingester splits on the
+ARTICLE headers and namespaces each article's chunks by the code it amends
+(`VCBC-CBC`, `VCBC-CWUIC`, ...), scoped to `CA:Ventura County`:
+
+```bash
+cd backend
+python -m app.code_library.ingest vcbc --pdf ~/codes/vcbc_ord4655.pdf
+```
 
 ## Current blocker: Cloudflare (as of 2026-06)
 

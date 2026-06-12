@@ -53,6 +53,16 @@ _SECTION_HDR_RE = re.compile(
     re.MULTILINE,
 )
 
+# "APPENDIX J GRADING" / "CBC APPENDIX Q EMERGENCY HOUSING" — appendix
+# headers are chapter-level breadcrumbs (J101.1 lives under Appendix J, not
+# under whatever CHAPTER preceded it). Uppercase-only so mixed-case TOC
+# entries ("Appendix J--Amendments ... 52") don't match; the optional
+# all-caps prefix covers compiled ordinances that write "CBC APPENDIX J".
+_APPENDIX_RE = re.compile(
+    r"^\s*(?:[A-Z]{2,6}\s+)?APPENDIX\s+([A-Z]\d?)\s*[—–-]?\s*(.{0,100}?)\s*$",
+    re.MULTILINE,
+)
+
 # A numbered subsection heading at line start:
 #   "1004.1 Design occupant load."  /  "R301.2.1 Title."  /  "701A.3 Application."
 # Title group: starts uppercase, runs to the first period followed by space/EOL
@@ -67,6 +77,7 @@ _NUMBERED_RE = re.compile(
 # footers, ALL-CAPS running heads that repeat every page.
 _FURNITURE_RES = [
     re.compile(r"^\s*\d{1,4}\s*$", re.MULTILINE),                      # page numbers
+    re.compile(r"^\s*-\s*\d{1,4}\s*-\s*$", re.MULTILINE),              # "- 138 -" style
     re.compile(r"^\s*\d{4}\s+(?:INTERNATIONAL|CALIFORNIA)[^\n]*$",     # ed. footer
                re.MULTILINE | re.IGNORECASE),
     re.compile(r"^\s*Copyright\s*©[^\n]*$", re.MULTILINE | re.IGNORECASE),
@@ -96,22 +107,30 @@ def parse_code_text(
     *,
     source_url: str = "",
     max_sections: Optional[int] = None,
+    numbered_re: Optional[re.Pattern] = None,
 ) -> List[RawSection]:
     """Split ICC-style code text into RawSections with hierarchy breadcrumbs.
 
     Pure function (string → sections) so the parser is testable without a
-    PDF. Chapter and SECTION headers become breadcrumb levels; each numbered
-    subsection becomes one RawSection whose text runs to the next heading.
+    PDF. Chapter, SECTION, and APPENDIX headers become breadcrumb levels;
+    each numbered subsection becomes one RawSection whose text runs to the
+    next heading. `numbered_re` swaps the subsection-heading pattern for
+    sources whose numbering deviates from the 3-4 digit ICC convention
+    (e.g. county compilations writing "90.4.1.1" or "A4.8"); it must keep
+    the (number, title) group order.
     """
     text = _strip_page_furniture(text)
+    heading_re = numbered_re or _NUMBERED_RE
 
     # Collect every structural marker position, sorted by offset.
     markers: List[Tuple[int, str, str, str]] = []  # (pos, kind, number, title)
     for m in _CHAPTER_RE.finditer(text):
         markers.append((m.start(), "chapter", m.group(1), m.group(2).strip()))
+    for m in _APPENDIX_RE.finditer(text):
+        markers.append((m.start(), "appendix", m.group(1), m.group(2).strip()))
     for m in _SECTION_HDR_RE.finditer(text):
         markers.append((m.start(), "section_hdr", m.group(1), m.group(2).strip()))
-    for m in _NUMBERED_RE.finditer(text):
+    for m in heading_re.finditer(text):
         markers.append((m.start(), "numbered", m.group(1), m.group(2).strip().rstrip(".")))
     markers.sort(key=lambda t: t[0])
 
@@ -124,6 +143,10 @@ def parse_code_text(
             chapter_crumb = f"Chapter {number}" + (f" {title}" if title else "")
             section_crumb = None
             continue
+        if kind == "appendix":
+            chapter_crumb = f"Appendix {number}" + (f" {title}" if title else "")
+            section_crumb = None
+            continue
         if kind == "section_hdr":
             section_crumb = f"Section {number}" + (f" {title}" if title else "")
             # The SECTION header itself often carries scope text up to the
@@ -134,7 +157,7 @@ def parse_code_text(
         # numbered subsection: body runs to the next marker (any kind).
         end = markers[i + 1][0] if i + 1 < len(markers) else len(text)
         # Skip past the heading line itself.
-        heading_match = _NUMBERED_RE.match(text, pos)
+        heading_match = heading_re.match(text, pos)
         body_start = heading_match.end() if heading_match else pos
         body = text[body_start:end].strip()
         breadcrumb = [c for c in (chapter_crumb, section_crumb) if c]

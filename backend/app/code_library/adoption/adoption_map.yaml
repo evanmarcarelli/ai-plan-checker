@@ -147,9 +147,11 @@ records:
       state_code: CA
       county: "Ventura"
       city: null
-    authority: "Ventura County Public Works Agency — Building & Safety"   # [verify] RMA vs PWA org
+    # Verified from the VCBC 2025 cover page (Ord. 4655): compiled by the
+    # Resource Management Agency, Division of Building and Safety.
+    authority: "Ventura County Resource Management Agency — Division of Building and Safety"
     local_amendments:
-      building: "Ventura County Building Code — Ord. Code Div. 8"          # [verify] division
+      building: "Ventura County Building Code (VCBC) — Ord. 4655, 2025 ed., eff. 2026-01-01 (ingested: corpus/vcbc_2025_ord4655.jsonl)"
       fire:     "Ventura County Fire Protection District amendments"        # [verify]
       coastal:  "Ventura County certified LCP — Coastal Zoning Ordinance"   # [verify] segments
     overlays: [coastal, very_high_fhsz, fema_flood]
@@ -157,6 +159,9 @@ records:
     sources:
       - { layer: local_amend, kind: ventura_county_building,
           url: "https://vcpublicworks.org/bs/", access: public_index }
+      - { layer: local_amend, kind: vcbc_ordinance_pdf,
+          note: "Ord. 4655 compiled PDF (county edict) — ingest via: python -m app.code_library.ingest vcbc --pdf <path>",
+          access: public_pdf }
 
   # ---------------------------------------------------------------
   # Ventura County coastal cities (north → south)
