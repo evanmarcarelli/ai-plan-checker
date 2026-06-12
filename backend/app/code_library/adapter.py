@@ -93,8 +93,14 @@ class CorpusCodeSource:
         city: Optional[str],
         plan_type: str = "commercial",
         county: Optional[str] = None,
+        layer_keys: Optional[List[str]] = None,
     ) -> List[CodeRequirement]:
-        layers = self._layers(state, city, county)
+        # layer_keys: pass the WORKFLOW's resolved stack when it has been
+        # enriched beyond what a fresh resolve would return — the dynamic
+        # CA:Coastal key (GIS overlay hit) only exists on that copy. Without
+        # this, re-resolving here silently drops it and coastal chunks never
+        # reach the reviewers for coastal sites in ordinary jurisdictions.
+        layers = layer_keys if layer_keys is not None else self._layers(state, city, county)
         return [chunk_to_requirement(c) for c in self._corpus.chunks
                 if self._scoped(c, layers, state, city)]
 
@@ -105,8 +111,9 @@ class CorpusCodeSource:
         city: Optional[str],
         plan_type: str = "commercial",
         county: Optional[str] = None,
+        layer_keys: Optional[List[str]] = None,
     ) -> List[CodeRequirement]:
-        layers = self._layers(state, city, county)
+        layers = layer_keys if layer_keys is not None else self._layers(state, city, county)
         return [chunk_to_requirement(c) for c
                 in self._retriever.all_for_category(category, state=state, city=city, layer_keys=layers)]
 

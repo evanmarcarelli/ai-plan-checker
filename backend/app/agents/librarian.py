@@ -41,11 +41,18 @@ class LibrarianAgent(BaseAgent):
             else "commercial"
         )
 
+        # Prefer the workflow's resolved stack when present: it may carry
+        # dynamically-added layers (CA:Coastal from a GIS coastal hit) that a
+        # fresh resolve inside the adapter would not reproduce.
+        resolved_stack = state.get("resolved_stack")
+        layer_keys = list(resolved_stack.corpus_layer_keys) if resolved_stack else None
+
         codes = self.code_db.get_applicable_codes(
             state=jurisdiction.state_code,
             city=jurisdiction.city,
             plan_type=plan_type,
             county=jurisdiction.county,
+            layer_keys=layer_keys,
         )
         logger.info(
             f"[Librarian] {len(codes)} applicable codes for "
@@ -56,8 +63,10 @@ class LibrarianAgent(BaseAgent):
         return {
             "code_requirements": codes,
             "jurisdiction_amendments": self.code_db.get_jurisdiction_amendments(
-                jurisdiction.state_code, jurisdiction.city
+                jurisdiction.state_code, jurisdiction.city, jurisdiction.county
             ),
-            "code_version": self.code_db.get_code_version(jurisdiction.state_code),
+            "code_version": self.code_db.get_code_version(
+                jurisdiction.state_code, jurisdiction.city, jurisdiction.county
+            ),
             "sources_used": ["code_library/bm25"],
         }

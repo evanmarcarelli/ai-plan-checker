@@ -397,6 +397,9 @@ class PlanCheckerWorkflow:
             city=j.city,
             plan_type=pd.plan_type.value if pd.plan_type else "commercial",
             county=j.county,
+            # The workflow's stack may carry dynamically-added layers (e.g.
+            # CA:Coastal from the GIS sweep) that a fresh resolve would drop.
+            layer_keys=(list(resolved_stack.corpus_layer_keys) if resolved_stack else None),
         )
         codes_by_category: Dict[str, List] = {}
         for c in full_codes:

@@ -95,6 +95,29 @@ def test_malibu_lip_chunks_present_and_scoped(corpus):
     assert any("4.5" == c.section or c.section.startswith("4.5.") for c in lip)
 
 
+# --------------------------------------------- adapter layer-keys path
+
+def test_adapter_honors_enriched_layer_keys(corpus):
+    """The dynamic CA:Coastal key only exists on the workflow's enriched stack —
+    get_applicable_codes must use it verbatim instead of re-resolving (which
+    would silently drop it and keep coastal chunks out of reviewer prompts)."""
+    from app.code_library.adapter import CorpusCodeSource
+    src = CorpusCodeSource()
+
+    base = src.get_applicable_codes(
+        state="CA", city="Los Angeles", county="Los Angeles",
+        layer_keys=["*", "CA", "CA:Los Angeles"],
+    )
+    enriched = src.get_applicable_codes(
+        state="CA", city="Los Angeles", county="Los Angeles",
+        layer_keys=["*", "CA", "CA:Los Angeles", "CA:Coastal"],
+    )
+    base_prc = {r.code_id for r in base if r.code_id.startswith("PRC 30")}
+    enriched_prc = {r.code_id for r in enriched if r.code_id.startswith("PRC 30")}
+    assert not base_prc, "Coastal Act leaked into a non-coastal scope"
+    assert "PRC 30600" in enriched_prc and "PRC 30253" in enriched_prc
+
+
 # ------------------------------------------------------ workflow helper
 
 def _stack(keys):
