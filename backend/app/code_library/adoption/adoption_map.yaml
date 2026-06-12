@@ -136,6 +136,201 @@ records:
       - { layer: state_model, kind: ca_title24_cbc_2025, access: buy_license }
 
   # ---------------------------------------------------------------
+  # Ventura County (unincorporated) — pilot county; coastal segments
+  # at La Conchita / Rincon / Solimar and Channel Islands Harbor
+  # ---------------------------------------------------------------
+  - id: ca_ventura_county
+    level: county
+    inherits: ca_state
+    names: ["Ventura County", "County of Ventura", "unincorporated Ventura"]
+    geo:
+      state_code: CA
+      county: "Ventura"
+      city: null
+    authority: "Ventura County Public Works Agency — Building & Safety"   # [verify] RMA vs PWA org
+    local_amendments:
+      building: "Ventura County Building Code — Ord. Code Div. 8"          # [verify] division
+      fire:     "Ventura County Fire Protection District amendments"        # [verify]
+      coastal:  "Ventura County certified LCP — Coastal Zoning Ordinance"   # [verify] segments
+    overlays: [coastal, very_high_fhsz, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Ventura County"]
+    sources:
+      - { layer: local_amend, kind: ventura_county_building,
+          url: "https://vcpublicworks.org/bs/", access: public_index }
+
+  # ---------------------------------------------------------------
+  # Ventura County coastal cities (north → south)
+  # ---------------------------------------------------------------
+  - id: ca_ventura_city
+    level: city
+    inherits: ca_state
+    names: ["Ventura", "San Buenaventura", "City of Ventura"]
+    geo: { state_code: CA, county: "Ventura", city: "Ventura" }
+    authority: "City of Ventura — Community Development Dept., Building & Safety"  # [verify]
+    local_amendments:
+      building: "Ventura Municipal Code — building code adoption chapter"   # [verify] chapter
+      coastal:  "City of Ventura certified LCP (city issues CDPs)"          # [verify] cert year
+    overlays: [coastal, very_high_fhsz, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Ventura"]
+
+  - id: ca_oxnard
+    level: city
+    inherits: ca_state
+    names: ["Oxnard", "City of Oxnard"]
+    geo: { state_code: CA, county: "Ventura", city: "Oxnard" }
+    authority: "City of Oxnard — Community Development, Building & Engineering"  # [verify]
+    local_amendments:
+      building: "Oxnard City Code — building code adoption chapter"        # [verify] chapter
+      coastal:  "Oxnard certified LCP (Oxnard Shores / Channel Islands segments)"  # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Oxnard"]
+
+  - id: ca_port_hueneme
+    level: city
+    inherits: ca_state
+    names: ["Port Hueneme", "City of Port Hueneme"]
+    geo: { state_code: CA, county: "Ventura", city: "Port Hueneme" }
+    authority: "City of Port Hueneme — Community Development, Building Division"  # [verify]
+    local_amendments:
+      building: "Port Hueneme Municipal Code — building code adoption"     # [verify]
+      coastal:  "Port Hueneme certified LCP"                               # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Port Hueneme"]
+
+  # ---------------------------------------------------------------
+  # LA County coastal cities (north → south; Malibu has its own
+  # record above; LA-city coastal communities ride ca_los_angeles_city
+  # + the dynamic CA:Coastal layer; Marina del Rey + Catalina
+  # unincorporated ride ca_los_angeles_county)
+  # ---------------------------------------------------------------
+  - id: ca_santa_monica
+    level: city
+    inherits: ca_state
+    names: ["Santa Monica", "City of Santa Monica"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Santa Monica" }
+    authority: "City of Santa Monica — Building & Safety Division"          # [verify]
+    # NOTE: Santa Monica's LUP is certified but the LCP is NOT fully
+    # certified — the Coastal Commission still issues CDPs there. That
+    # flips the permit path vs the beach cities below.            [verify]
+    local_amendments:
+      building: "Santa Monica Municipal Code Art. 8 — building regulations + seismic retrofit program"  # [verify]
+      coastal:  "LUP certified; CDPs issued by the Coastal Commission (no certified LIP)"  # [verify]
+    overlays: [coastal, fema_flood, liquefaction]
+    corpus_layer_keys: ["*", "CA", "CA:Santa Monica"]
+
+  - id: ca_el_segundo
+    level: city
+    inherits: ca_state
+    names: ["El Segundo", "City of El Segundo"]
+    geo: { state_code: CA, county: "Los Angeles", city: "El Segundo" }
+    authority: "City of El Segundo — Community Development, Building Safety"  # [verify]
+    local_amendments:
+      building: "El Segundo Municipal Code Title 13 — building code adoption"  # [verify]
+      coastal:  "Certified LCP (small coastal segment)"                     # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:El Segundo"]
+
+  - id: ca_manhattan_beach
+    level: city
+    inherits: ca_state
+    names: ["Manhattan Beach", "City of Manhattan Beach"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Manhattan Beach" }
+    authority: "City of Manhattan Beach — Community Development, Building Division"  # [verify]
+    local_amendments:
+      building: "Manhattan Beach Municipal Code Title 9 — building code adoption"  # [verify] title
+      coastal:  "Certified LCP (1994) — city issues CDPs west of Sepulveda"  # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Manhattan Beach"]
+
+  - id: ca_hermosa_beach
+    level: city
+    inherits: ca_state
+    names: ["Hermosa Beach", "City of Hermosa Beach"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Hermosa Beach" }
+    authority: "City of Hermosa Beach — Community Development, Building & Safety"  # [verify]
+    local_amendments:
+      building: "Hermosa Beach Municipal Code Title 15 — building code adoption"  # [verify]
+      coastal:  "Certified LCP — city issues CDPs"                          # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Hermosa Beach"]
+
+  - id: ca_redondo_beach
+    level: city
+    inherits: ca_state
+    names: ["Redondo Beach", "City of Redondo Beach"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Redondo Beach" }
+    authority: "City of Redondo Beach — Community Development, Building Division"  # [verify]
+    local_amendments:
+      building: "Redondo Beach Municipal Code Title 9 — building code adoption"  # [verify]
+      coastal:  "Certified LCP — city issues CDPs (King Harbor area procedures vary)"  # [verify]
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Redondo Beach"]
+
+  - id: ca_torrance
+    level: city
+    inherits: ca_state
+    names: ["Torrance", "City of Torrance"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Torrance" }
+    authority: "City of Torrance — Community Development, Building & Safety Division"  # [verify]
+    local_amendments:
+      building: "Torrance Municipal Code — building code adoption"          # [verify]
+      coastal:  "Coastal zone limited to the Torrance Beach strip"          # [verify] LCP status
+    overlays: [coastal, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Torrance"]
+
+  - id: ca_palos_verdes_estates
+    level: city
+    inherits: ca_state
+    names: ["Palos Verdes Estates", "City of Palos Verdes Estates"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Palos Verdes Estates" }
+    authority: "City of Palos Verdes Estates — Building & Safety (plan check contracted)"  # [verify] contract arrangement
+    local_amendments:
+      building: "PVE Municipal Code Title 8 — building code adoption"       # [verify]
+      coastal:  "Certified LCP — bluff-top development standards"           # [verify]
+    overlays: [coastal, very_high_fhsz, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Palos Verdes Estates"]
+
+  - id: ca_rancho_palos_verdes
+    level: city
+    inherits: ca_state
+    names: ["Rancho Palos Verdes", "City of Rancho Palos Verdes", "RPV"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Rancho Palos Verdes" }
+    authority: "City of Rancho Palos Verdes — Community Development, Building & Safety"  # [verify]
+    # Portuguese Bend landslide complex: active moratorium area with its
+    # own development restrictions — a hard reviewer flag.        [confirmed]
+    local_amendments:
+      building: "RPV Municipal Code Title 15 — building code adoption"      # [verify]
+      coastal:  "Certified LCP (1983) — city issues CDPs; Coastal Specific Plan district"  # [verify]
+      geology:  "Landslide Moratorium Ordinance — RPVMC Ch. 15.20 (Portuguese Bend)"  # [verify] chapter
+    overlays: [coastal, very_high_fhsz, fema_flood, landslide]
+    corpus_layer_keys: ["*", "CA", "CA:Rancho Palos Verdes"]
+
+  - id: ca_long_beach
+    level: city
+    inherits: ca_state
+    names: ["Long Beach", "City of Long Beach"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Long Beach" }
+    authority: "City of Long Beach — Community Development Dept., Building & Safety Bureau"  # [verify]
+    local_amendments:
+      building: "Long Beach Municipal Code Title 18 — building standards + local amendments"  # [verify]
+      coastal:  "Certified LCP (1980, first in the state) — city issues CDPs"  # [verify]
+      methane:  "LBMC methane district requirements (former oil fields)"    # [verify]
+    overlays: [coastal, fema_flood, liquefaction, methane_zone]
+    corpus_layer_keys: ["*", "CA", "CA:Long Beach"]
+
+  - id: ca_avalon
+    level: city
+    inherits: ca_state
+    names: ["Avalon", "City of Avalon", "Catalina"]
+    geo: { state_code: CA, county: "Los Angeles", city: "Avalon" }
+    authority: "City of Avalon — Building Department (services contracted to LA County)"  # [verify]
+    local_amendments:
+      building: "Avalon Municipal Code — building code adoption"            # [verify]
+      coastal:  "Entire island inside the Coastal Zone"                     # [verify] LCP status
+    overlays: [coastal, very_high_fhsz, fema_flood]
+    corpus_layer_keys: ["*", "CA", "CA:Avalon", "CA:Coastal"]
+
+  # ---------------------------------------------------------------
   # Los Angeles County (unincorporated)
   # ---------------------------------------------------------------
   - id: ca_los_angeles_county

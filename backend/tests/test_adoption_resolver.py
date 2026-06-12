@@ -53,6 +53,46 @@ def test_resolve_malibu_city(resolver):
     assert s.authority and "Malibu" in s.authority
 
 
+def test_resolve_coastal_cities_ventura_to_long_beach(resolver):
+    """Every coastal jurisdiction from Ventura County down to Long Beach
+    resolves to its own record instead of falling through to county/state."""
+    expectations = {
+        ("Ventura", "Ventura"): "ca_ventura_city",
+        ("Ventura", "Oxnard"): "ca_oxnard",
+        ("Ventura", "Port Hueneme"): "ca_port_hueneme",
+        ("Los Angeles", "Santa Monica"): "ca_santa_monica",
+        ("Los Angeles", "El Segundo"): "ca_el_segundo",
+        ("Los Angeles", "Manhattan Beach"): "ca_manhattan_beach",
+        ("Los Angeles", "Hermosa Beach"): "ca_hermosa_beach",
+        ("Los Angeles", "Redondo Beach"): "ca_redondo_beach",
+        ("Los Angeles", "Torrance"): "ca_torrance",
+        ("Los Angeles", "Palos Verdes Estates"): "ca_palos_verdes_estates",
+        ("Los Angeles", "Rancho Palos Verdes"): "ca_rancho_palos_verdes",
+        ("Los Angeles", "Long Beach"): "ca_long_beach",
+        ("Los Angeles", "Avalon"): "ca_avalon",
+    }
+    for (county, city), expected_id in expectations.items():
+        s = resolver.resolve("CA", county, city)
+        assert s.matched_id == expected_id, f"{city} resolved to {s.matched_id}"
+        assert "coastal" in s.overlays, f"{city} missing coastal overlay"
+        # Editions always inherit the CA state base.
+        assert "2025 CBC" in s.code_versions["building"]
+
+
+def test_resolve_ventura_county_unincorporated(resolver):
+    s = resolver.resolve("CA", "Ventura County", None)
+    assert s.matched_id == "ca_ventura_county"
+    assert s.corpus_layer_keys == ["*", "CA", "CA:Ventura County"]
+
+
+def test_new_records_do_not_steal_existing_resolutions(resolver):
+    """Adding 14 records must not disturb the LA city / county / Malibu matches
+    (the name matcher is substring-fuzzy, so collisions are a real risk)."""
+    assert resolver.resolve("CA", "Los Angeles", "Los Angeles").matched_id == "ca_los_angeles_city"
+    assert resolver.resolve("CA", "Los Angeles", None).matched_id == "ca_los_angeles_county"
+    assert resolver.resolve("CA", "Los Angeles County", "Malibu").matched_id == "ca_malibu_city"
+
+
 def test_resolve_county_when_no_city(resolver):
     s = resolver.resolve("CA", "Los Angeles", None)
     assert s.matched_id == "ca_los_angeles_county"

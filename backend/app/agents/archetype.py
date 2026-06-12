@@ -185,8 +185,14 @@ def classify_archetype(
         return _finalize(ARCHETYPE_LA_HPOZ_PROPERTY, excluded, reasoning, pilot_archetypes)
 
     if property_profile and property_profile.coastal_zone and property_profile.coastal_zone.in_coastal_zone:
-        excluded.append("CA Coastal Zone")
-        reasoning.append("Address is inside the CA Coastal Commission jurisdiction")
+        # Coastal is an in-pilot archetype (allowlist) since the Coastal Act +
+        # LCP corpus layers landed — classify it, but don't mark it excluded.
+        # Agencies that override the allowlist without it still get a clean
+        # out-of-scope verdict from _finalize.
+        reasoning.append(
+            "Address is inside the CA Coastal Zone — coastal code stack "
+            "(Coastal Act + certified LCP) applies"
+        )
         return _finalize(ARCHETYPE_LA_COASTAL_ZONE, excluded, reasoning, pilot_archetypes)
 
     # ---- Ventura County VHFHSZ reject ----------------------------------

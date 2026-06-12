@@ -120,7 +120,10 @@ def test_overlay_warnings_scope_reasons():
 
     # LA (not Ventura) Very-High fire is a warning but NOT an out-of-scope reason.
     assert any("Chapter 7A" in w for w in warnings)
-    assert reasons == ["California Coastal Zone", "HPOZ (Angelino Heights)"]
+    # Coastal is IN scope since the Coastal Act / LCP layers landed — it warns
+    # (CDP applies, coastal codes included) but no longer rejects.
+    assert reasons == ["HPOZ (Angelino Heights)"]
+    assert any("Coastal Zone" in w and "included in this review" in w for w in warnings)
     assert any("methane" in w.lower() for w in warnings)
     assert any("Zone AE" in w for w in warnings)
 
@@ -180,6 +183,19 @@ def test_gis_ventura_vhfhsz_rejects():
     result = classify_archetype(ExtractedPlanData(), "new single family dwelling", profile)
     assert not result.in_pilot_scope
     assert any("VHFHSZ" in o for o in result.excluded_overlays)
+
+
+def test_gis_coastal_is_in_pilot_scope():
+    """Coastal classifies as the coastal archetype and stays IN pilot scope —
+    the Coastal Act + LCP corpus layers made it supportable."""
+    profile = _profile({
+        "checked": ["coastal"], "errors": {},
+        "coastal": {"in_zone": True},
+    })
+    result = classify_archetype(ExtractedPlanData(), "new single family dwelling", profile)
+    assert result.archetype == "la_coastal_zone"
+    assert result.in_pilot_scope
+    assert result.excluded_overlays == []
 
 
 def test_gis_all_clear_keeps_sfr_in_scope():

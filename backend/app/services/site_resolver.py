@@ -217,11 +217,11 @@ def _overlay_warnings(overlays: Dict[str, Any], county: Optional[str]) -> tuple:
     out-of-pilot-scope reasons.
 
     Two tiers, mirroring the archetype gate: overlays that kick a submittal
-    out of pilot scope (coastal, HPOZ, hillside, Ventura VHFHSZ) become
-    scope_reasons; overlays that stay in scope but change the review
-    (methane, SFHA flood, liquefaction, non-Ventura fire zones) become
-    plain warnings. Errored layers are silent here — unknown is not "no",
-    but it isn't a warning either.
+    out of pilot scope (HPOZ, hillside, Ventura VHFHSZ) become scope_reasons;
+    overlays that stay in scope but change the review (coastal, methane,
+    SFHA flood, liquefaction, non-Ventura fire zones) become plain warnings.
+    Errored layers are silent here — unknown is not "no", but it isn't a
+    warning either.
     """
     warnings: list = []
     reasons: list = []
@@ -245,10 +245,12 @@ def _overlay_warnings(overlays: Dict[str, Any], county: Optional[str]) -> tuple:
 
     coastal = overlays.get("coastal") or {}
     if coastal.get("in_zone"):
-        reasons.append("California Coastal Zone")
+        # Coastal is IN scope (since 2026-06: Coastal Act corpus layer +
+        # certified-LCP standards) — inform, don't reject.
         warnings.append(
-            "Inside the California Coastal Zone — coastal development review "
-            "applies and the project is outside the current AI pilot scope."
+            "Inside the California Coastal Zone — a coastal development permit "
+            "applies. Coastal Act (PRC Div. 20) and certified-LCP standards are "
+            "included in this review."
         )
 
     hpoz = overlays.get("hpoz") or {}

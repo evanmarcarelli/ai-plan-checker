@@ -25,10 +25,14 @@ ARCHETYPE_LA_TI_COMMERCIAL = "la_ti_commercial"
 ARCHETYPE_VENTURA_SFR_TYP_VB_MINISTERIAL = "ventura_sfr_typ_vb_ministerial"
 ARCHETYPE_VENTURA_TI_COMMERCIAL = "ventura_ti_commercial"
 
+# Coastal — in pilot since 2026-06-11, when the Coastal Act corpus layer
+# (PRC Div. 20, "CA:Coastal") and the Malibu LIP landed. Coastal submittals
+# get the coastal code stack instead of a scope rejection.
+ARCHETYPE_LA_COASTAL_ZONE = "la_coastal_zone"
+
 # Out-of-pilot archetypes (each maps to a specific human-readable reason)
 ARCHETYPE_LA_HILLSIDE_SFR = "la_hillside_sfr"
 ARCHETYPE_LA_HPOZ_PROPERTY = "la_hpoz_property"
-ARCHETYPE_LA_COASTAL_ZONE = "la_coastal_zone"
 ARCHETYPE_VENTURA_VHFHSZ_SFR = "ventura_vhfhsz_sfr"
 ARCHETYPE_VENTURA_AG_BUILDING = "ventura_ag_building"
 ARCHETYPE_HIGH_RISE_OR_MID_RISE = "high_rise_or_mid_rise"
@@ -104,6 +108,7 @@ PILOT_ARCHETYPES_DEFAULT: tuple[str, ...] = (
     ARCHETYPE_LA_TI_COMMERCIAL,
     ARCHETYPE_VENTURA_SFR_TYP_VB_MINISTERIAL,
     ARCHETYPE_VENTURA_TI_COMMERCIAL,
+    ARCHETYPE_LA_COASTAL_ZONE,
 )
 
 
