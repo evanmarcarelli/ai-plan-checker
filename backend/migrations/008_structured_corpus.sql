@@ -106,11 +106,10 @@ create table if not exists code_chunks (
   content_sha256 text,
   embedding      halfvec(1024),            -- NULLABLE: lexical search works without it
   fts            tsvector generated always as (
-                   to_tsvector('english',
+                   to_tsvector('english'::regconfig,
                      coalesce(context_header,'') || ' ' ||
                      coalesce(heading,'')        || ' ' ||
-                     coalesce(body,'')           || ' ' ||
-                     array_to_string(tags,' '))
+                     coalesce(body,''))
                  ) stored
 );
 create index if not exists code_chunks_fts_idx       on code_chunks using gin (fts);
