@@ -1,18 +1,44 @@
 {
   "slug": "la-sfr-v5b-no-sprinkler-stories-violation",
-  "title": "LA SFR — Type V-B, 3 stories non-sprinklered (exceeds Table 504.4 1-story sprinkler-reduced limit)",
+  "title": "LA SFR \u2014 Type V-B, 4 stories non-sprinklered (exceeds Table 504.4 3-story NS limit)",
   "jurisdiction_key": "CA:LOS_ANGELES",
-  "archetype": "la_sfr_typ_vb_ministerial",
+  "archetype": "unclassified",
   "project_address": "12 Coastal Way, Los Angeles, CA 90402",
   "source": "synthetic",
-  "notes": "Tests stories_check + sprinkler-detection negation handling.",
-  "plan_text": "PROJECT DATA - 12 COASTAL WAY\nCODE ANALYSIS A-0.1\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 3\nBuilding height: 32 ft\nTotal building area: 3,000 sf\nPer-story area: 1,000 sf\nNon-sprinklered\nDesign occupant load: 10\nIECC: Title 24 Part 6\nElectrical service: 200 A main breaker\nWC 3, LAV 3\nEXIT 1 (front)\nEXIT 2 (rear)\nNFPA 72 smoke alarms",
+  "notes": "Tests stories_check: 2021 Table 504.4 R-3/V-B NS row allows 3 stories; 4 fails. (Previously authored as 3 stories against an inverted sprinkler model using the R-2 row.) (4-story SFD is outside the ministerial SFR archetype; gate correctly cannot bucket it.)",
+  "plan_text": "PROJECT DATA - 12 COASTAL WAY\nCODE ANALYSIS A-0.1\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 4\nBuilding height: 42 ft\nTotal building area: 3,000 sf\nPer-story area: 1,000 sf\nNon-sprinklered\nDesign occupant load: 10\nIECC: Title 24 Part 6\nElectrical service: 200 A main breaker\nWC 3, LAV 3\nEXIT 1 (front)\nEXIT 2 (rear)\nNFPA 72 smoke alarms",
   "ground_truth": [
-    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "fail", "expected_severity": "critical", "rationale": "3 stories exceeds 1-story non-sprinklered limit for R-2/V-B" },
-    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "FLS-SPRINKLER",            "expected_status": "fail", "expected_severity": "critical", "rationale": "Plans explicitly state non-sprinklered; required for this configuration" }
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "fail",
+      "expected_severity": "critical",
+      "rationale": "4 stories exceeds the 3-story NS limit for R-3/V-B (Table 504.4)"
+    },
+    {
+      "rule_id": "COM-HIGH-RISE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "EGR-OCCUPANT-LOAD",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "FLS-SPRINKLER",
+      "expected_status": "fail",
+      "expected_severity": "critical",
+      "rationale": "Plans explicitly state non-sprinklered; required for this configuration"
+    }
   ]
 }

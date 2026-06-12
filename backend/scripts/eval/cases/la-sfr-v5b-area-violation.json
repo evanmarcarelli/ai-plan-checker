@@ -1,20 +1,53 @@
 {
   "slug": "la-sfr-v5b-area-violation",
-  "title": "LA SFR — Type V-B with explicit per-story area over 7000 sf R-3 limit",
+  "title": "LA SFR \u2014 Type V-B with explicit per-story area over 7000 sf R-3 limit",
   "jurisdiction_key": "CA:LOS_ANGELES",
   "archetype": "la_sfr_typ_vb_ministerial",
   "project_address": "456 Hilltop Dr, Los Angeles, CA 90049",
   "source": "synthetic",
-  "notes": "Tests the deterministic IBC Table 506.2 numeric check on a clear over-limit case.",
+  "notes": "R-3 is UL (unlimited) in 2021 IBC Table 506.2 \u2014 dwellings have no IBC area limit; lot coverage is zoning. The prior fail expectation borrowed the R-2 row. Case retained as a true-negative check for the area rule on R-3.",
   "plan_text": "PROJECT DATA - 456 HILLTOP DR\nCODE ANALYSIS A-0.1\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 1\nBuilding height: 18 ft\nTotal building area: 8,500 sf\nPer-story area: 8,500 sf\nFully sprinklered: yes\nDesign occupant load: 12\nIECC: Title 24 Part 6\nElectrical service: 400 A main breaker\nWC 3, LAV 3\nEXIT 1 (main)\nEXIT 2 (kitchen)\nNFPA 13D residential sprinklers\nNFPA 72 smoke alarms",
   "ground_truth": [
-    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "fail", "expected_severity": "critical", "rationale": "8500 sf exceeds 7000 sf Table 506.2 R-2/V-B without frontage or NFPA 13 increases" },
-    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" }
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-AREA-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "Table 506.2 R-3 = UL; no IBC area limit applies to a dwelling"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-HIGH-RISE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "EGR-OCCUPANT-LOAD",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "GEN-CODE-ANALYSIS",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "FLS-SPRINKLER",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    }
   ]
 }

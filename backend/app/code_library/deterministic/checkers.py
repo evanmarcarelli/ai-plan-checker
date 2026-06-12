@@ -59,6 +59,7 @@ def check_allowable_area(
     occupancy_primary: Optional[str],
     construction_type: Optional[str],
     area_sf: Optional[float],
+    sprinklered: Optional[bool] = None,
 ) -> CheckResult:
     if not occupancy_primary or not construction_type:
         return _info("Cannot evaluate — occupancy or construction type missing.")
@@ -75,13 +76,86 @@ def check_allowable_area(
     if allowable == "NP":
         return _fail(f"{occupancy_primary} NOT PERMITTED in Type {construction_type}.")
     if area_sf > allowable:
+        # The stored value is the NON-SPRINKLERED tabular factor. A CONFIRMED
+        # sprinklered building may legally be 3-4x larger (506.2 S1/SM rows)
+        # — flag for the increase math instead of hard-failing. Unknown
+        # sprinkler status fails against the NS row, exactly as an examiner
+        # writes the correction: the applicant must demonstrate the increase.
+        if sprinklered is True:
+            return _warn(
+                f"Area {_fmt(area_sf)} sf exceeds the {_fmt(allowable)} sf NS tabular value "
+                f"for Group {occupancy_primary} / Type {construction_type}. Sprinklered — "
+                f"verify the increased allowable area under IBC 506.2 (S1/SM rows) and 506.3."
+            )
         return _fail(
             f"Area {_fmt(area_sf)} sf exceeds tabular {_fmt(allowable)} sf for "
             f"Group {occupancy_primary} / Type {construction_type}. "
-            f"Verify frontage and sprinkler increases under IBC 506.3.",
-            [f"{_fmt(area_sf)} sf actual", f"{_fmt(allowable)} sf tabular"],
+            f"Demonstrate sprinkler (506.2) and/or frontage (506.3) increases, "
+            f"or reduce the area.",
+            [f"{_fmt(area_sf)} sf actual", f"{_fmt(allowable)} sf NS tabular"],
         )
     return _pass(f"Area {_fmt(area_sf)} sf within {_fmt(allowable)} sf tabular limit.")
+
+
+# =====================================================================
+# Allowable height in feet (IBC Table 504.3)
+# =====================================================================
+def check_allowable_height(
+    construction_type: Optional[str],
+    height_ft: Optional[float],
+    sprinklered: Optional[bool],
+) -> CheckResult:
+    """Height in FEET vs Table 504.3 (NS row; sprinklering adds 20 ft per
+    IBC 504.2). Closes the gap where a 60-ft Type V-B building sailed past
+    the only height check in the engine — the 75-ft high-rise threshold —
+    despite a 40 ft NS / 60 ft S actual limit."""
+    if not construction_type:
+        return _info("Cannot evaluate — construction type missing.")
+    if height_ft is None:
+        return _warn("Building height not declared.")
+    lim = table_store.t504_3_ns_ft().get(construction_type)
+    if lim is None:
+        return _info(f"No Table 504.3 value for Type {construction_type}.")
+    if lim == "UL":
+        return _pass("Unlimited height for this construction type.")
+    # Consistent posture with the area/stories checks: compare against the
+    # NS row unless sprinklering is CONFIRMED (then +20 ft per IBC 504.2);
+    # the failure message points at the sprinkler path the applicant can take.
+    eff = lim + 20 if sprinklered is True else lim
+    if height_ft > eff:
+        suffix = " incl. sprinkler increase" if sprinklered is True else " (NS row)"
+        hint = (
+            f" If the building is fully sprinklered, the limit is {_fmt(lim + 20)} ft "
+            f"— demonstrate it on the plans." if sprinklered is not True else ""
+        )
+        return _fail(
+            f"Height {_fmt(height_ft)} ft exceeds the {_fmt(eff)} ft limit "
+            f"(Table 504.3{suffix}) for Type {construction_type}.{hint}",
+            [f"{_fmt(height_ft)} ft actual", f"{_fmt(eff)} ft allowable"],
+        )
+    return _pass(f"Height {_fmt(height_ft)} ft within the {_fmt(eff)} ft limit.")
+
+
+# =====================================================================
+# Generic minimum-dimension scalar (CRC R-3 pack)
+# =====================================================================
+def check_min_dimension(
+    value: Optional[float],
+    minimum: float,
+    unit: str,
+    label: str,
+    code_ref: str,
+) -> CheckResult:
+    """One extracted dimension vs a code minimum. None → warn (not found),
+    never a false fail — absence of a regex match is not a violation."""
+    if value is None:
+        return _warn(f"{label} not found on plans — verify {code_ref} minimum of {_fmt(minimum)}{unit}.")
+    if value < minimum:
+        return _fail(
+            f"{label} {_fmt(value)}{unit} is below the {_fmt(minimum)}{unit} minimum ({code_ref}).",
+            [f"{_fmt(value)}{unit} shown", f"{_fmt(minimum)}{unit} required"],
+        )
+    return _pass(f"{label} {_fmt(value)}{unit} meets the {_fmt(minimum)}{unit} minimum.")
 
 
 # =====================================================================
@@ -130,10 +204,18 @@ def required_min_exits(occupant_load: int) -> int:
     return buckets[-1][1]
 
 
-def check_min_exits(occupant_load: Optional[int], declared_exits: int) -> CheckResult:
+def check_min_exits(occupant_load: Optional[int], declared_exits: Optional[int]) -> CheckResult:
     if occupant_load is None:
         return _info("Occupant load not declared.")
     required = required_min_exits(occupant_load)
+    if declared_exits is None:
+        # "We couldn't count the exits" is not "zero exits" — treating an
+        # unextracted count as 0 false-failed every plan whose exits weren't
+        # machine-readable the moment occupant load became available.
+        return _warn(
+            f"OL {occupant_load} requires {required} exit(s); exit count could "
+            f"not be read from the plans — verify."
+        )
     if declared_exits >= required:
         return _pass(f"{declared_exits} exit(s); {required} required for OL {occupant_load}.")
     return _fail(f"OL {occupant_load} requires {required} exits; only {declared_exits} labeled.")

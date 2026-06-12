@@ -376,6 +376,19 @@ class PDFProcessor:
             if v is not None:
                 dims["occupant_load"] = v
 
+        # Plumbing fixture counts ("WC 4", "Water closets: WC 4", "LAV: 3") —
+        # the IPC 403.1 fixture-ratio check is unevaluable without them.
+        wc_match = re.search(r'\bWC\s*:?\s*(\d{1,3})\b', text, re.IGNORECASE)
+        if wc_match:
+            v = self._safe_int(wc_match.group(1))
+            if v is not None:
+                dims["wc_count"] = v
+        lav_match = re.search(r'\bLAV(?:ATORIES)?\s*:?\s*(\d{1,3})\b', text, re.IGNORECASE)
+        if lav_match:
+            v = self._safe_int(lav_match.group(1))
+            if v is not None:
+                dims["lav_count"] = v
+
         return dims
 
     def _extract_elements(self, text: str) -> List[PlanElement]:

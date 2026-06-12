@@ -74,9 +74,49 @@ def _fmt(x: Optional[float]) -> str:
     return "n/a" if x is None else f"{x:.3f}"
 
 
+# Field extraction from the case's plan_text, mirroring what the production
+# Surveyor (regex + Textract + vision title-sheet parse) hands the engine.
+# Without this, every case lacking an explicit plan_data block ran the engine
+# with occupancy/construction/stories all None — COM-OCCUPANCY-DECL and
+# COM-CONSTRUCTION-TYPE then "failed" on plans that clearly declare both,
+# accounting for 20 of the eval's 23 false positives as pure harness artifact.
+# Explicit plan_data values always win; text extraction only fills gaps.
+import re as _re
+
+_TEXT_FIELDS = [
+    ("occupancy_type", r"Occupancy(?:\s+Group)?\s*:\s*([^\n]+)", str),
+    ("construction_type", r"(?:Construction\s+)?Type\s*:\s*([IV][IVAB\s-]*)\b", str),
+    ("stories", r"(?:Number\s+of\s+stories|Stories)\s*:\s*(\d+)", int),
+    ("building_height", r"(?:Building\s+height|Height)\s*:\s*([\d.]+)", float),
+    ("building_area", r"(?:Total\s+building\s+area|Building\s+area)\s*:\s*([\d,]+)", float),
+    ("per_story_area", r"(?:Per-story\s+area|Area\s+per\s+story)\s*:\s*([\d,]+)", float),
+    ("occupant_load", r"(?:Design\s+)?occupant\s+load\s*:\s*([\d,]+)", int),
+    ("actual_wc", r"\bWC\s*:?\s*(\d{1,3})\b", int),
+    ("actual_lav", r"\bLAV(?:ATORIES)?\s*:?\s*(\d{1,3})\b", int),
+]
+
+
+def _extract_text_fields(plan_text: str) -> dict:
+    out: dict = {}
+    for field_name, pattern, cast in _TEXT_FIELDS:
+        m = _re.search(pattern, plan_text, _re.IGNORECASE)
+        if m:
+            try:
+                out[field_name] = cast(m.group(1).strip().replace(",", ""))
+            except (TypeError, ValueError):
+                pass
+    if _re.search(r"non-?sprinklered", plan_text, _re.IGNORECASE):
+        out["sprinklered"] = False
+    elif _re.search(r"(?:fully\s+)?sprinklered\s*:?\s*yes|NFPA\s*13", plan_text, _re.IGNORECASE):
+        out["sprinklered"] = True
+    return out
+
+
 def build_plan_data(case: dict) -> ExtractedPlanData:
     raw = dict(case.get("plan_data") or {})
     plan_text = case.get("plan_text") or ""
+    for k, v in _extract_text_fields(plan_text).items():
+        raw.setdefault(k, v)
     raw.setdefault("raw_text_by_page", {1: plan_text} if plan_text else {})
     return ExtractedPlanData(**raw)
 
@@ -122,9 +162,34 @@ def main(argv: Optional[List[str]] = None) -> int:
     overall = {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "wrong_status": 0}
     per_case_rows: List[tuple] = []
     mismatches: List[str] = []
+    # Archetype-gate scoring: every case that declares its archetype becomes
+    # a gate observation (the 8 out-of-scope cases previously contributed
+    # NOTHING — empty ground_truth, and 'measured separately' was measured
+    # nowhere). PILOT_TARGETS.out_of_scope_rejection_precision_min is 0.95.
+    gate_total = gate_correct = 0
+    gate_misses: List[str] = []
 
     for fp_ in files:
         case = json.loads(fp_.read_text())
+        expected_arch = case.get("archetype")
+        if expected_arch:
+            from app.agents.archetype import classify_archetype
+            arch = classify_archetype(build_plan_data(case), case.get("plan_text") or "")
+            gate_total += 1
+            # "out_of_scope" labels assert the VERDICT (must be rejected),
+            # not a specific archetype name; named labels assert both.
+            correct = (
+                (not arch.in_pilot_scope)
+                if expected_arch == "out_of_scope"
+                else arch.archetype == expected_arch
+            )
+            if correct:
+                gate_correct += 1
+            else:
+                gate_misses.append(
+                    f"  {case['slug']:34} expected={expected_arch} actual={arch.archetype}"
+                    f" (in_scope={arch.in_pilot_scope})"
+                )
         actual_by_rule = run_case(case, args.with_gate)
         c = {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "wrong_status": 0}
         for gt in case.get("ground_truth", []):
@@ -156,6 +221,11 @@ def main(argv: Optional[List[str]] = None) -> int:
           f"{overall['tn']:>3}  {_fmt(p):>6} {_fmt(r):>6} {_fmt(f1):>6}")
     if overall["wrong_status"]:
         print(f"  wrong_status (e.g. expected warn, got something else): {overall['wrong_status']}")
+    if gate_total:
+        print(f"  archetype gate: {gate_correct}/{gate_total} correct "
+              f"({gate_correct / gate_total:.0%}; pilot target 95%)")
+        if gate_misses:
+            print("\n".join(gate_misses))
 
     if (args.verbose or args.min_f1 is not None) and mismatches:
         print("\nMismatches:")

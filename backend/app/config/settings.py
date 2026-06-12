@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     # DEPARTMENT_CONCURRENCY after a dyno upgrade — no code change needed.
     department_concurrency: int = 2
 
+    # Adversarial-critic model. Empty = the premium model (anthropic_model).
+    # Was hardcoded in critic.py, bypassing configuration entirely.
+    anthropic_model_critic: str = ""
+
     # Supabase
     supabase_url: str = ""
     supabase_anon_key: str = ""

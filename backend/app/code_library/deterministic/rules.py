@@ -34,6 +34,16 @@ class Rule:
     severity: str            # critical | major | moderate | minor
     check: Dict[str, Any]    # {"type": "...", ...params}
     requires_citation: bool = False
+    # Applicability constraints. Empty = applies everywhere. Keys:
+    #   plan_types:      run only for these plan types ("commercial", ...)
+    #   occupancies:     run only for these groups/tokens ("A", "E", "R-1")
+    #   not_occupancies: skip for these groups/tokens ("R-3", "U")
+    # Gating is positive-evidence only (engine._rule_applies): unknown
+    # occupancy/plan type falls OPEN, so missing extraction never silently
+    # disables a check. Before this existed, every commercial rule ran on
+    # every plan — ADA parking and NFPA 72 fired on private single-family
+    # homes as auto-verified false positives.
+    applies: Dict[str, Any] = field(default_factory=dict)
 
 
 # Discipline -> department category (matches chunker.classify_category buckets).
@@ -108,9 +118,20 @@ BASELINE_RULES: List[Rule] = [
     Rule("COM-AREA-ALLOWABLE", "Commercial", "IBC Table 506.2",
          "Building area per story shall not exceed the tabular allowable area.",
          "critical", {"type": "allowable_area_check"}, requires_citation=True),
+    # requires_citation=False: engine table math — the table-store values are
+    # the provenance. Table 504.4's text is not in the corpus, so the gate
+    # was silently downgrading every TRUE story-limit violation to
+    # needs_review (caught by tests/test_rule_citation_coverage.py).
     Rule("COM-STORIES-ALLOWABLE", "Commercial", "IBC Table 504.4",
          "Number of stories shall not exceed the tabular limit.",
-         "critical", {"type": "stories_check"}, requires_citation=True),
+         "critical", {"type": "stories_check"}, requires_citation=False),
+    # requires_citation=False: this is engine table math (the Table 504.3
+    # values ARE the provenance) and the table's text is not yet in the
+    # corpus — enforce-mode would mute every true positive, exactly what
+    # happened to the WUI rules.
+    Rule("COM-HEIGHT-ALLOWABLE", "Commercial", "IBC Table 504.3 · 504.2",
+         "Building height in feet shall not exceed the tabular limit for the construction type.",
+         "critical", {"type": "height_check"}, requires_citation=False),
     Rule("COM-HIGH-RISE", "Commercial", "IBC 403",
          "High-rise (>75 ft) provisions: smoke control, voice alarm, standby power.",
          "critical", {"type": "high_rise_check"}, requires_citation=True),
@@ -128,7 +149,8 @@ BASELINE_RULES: List[Rule] = [
     Rule("EGR-PANIC-HARDWARE", "Fire & Life Safety", "IBC 1010.1.10",
          "Panic hardware required on Group A (OL >= 50) and Group E doors.",
          "major", {"type": "required_keyword",
-                   "patterns": [r"panic\s+hardware", r"panic\s+bar"]}, requires_citation=False),
+                   "patterns": [r"panic\s+hardware", r"panic\s+bar"]}, requires_citation=False,
+         applies={"occupancies": ["A", "E"]}),
 
     # ---- Required submittal items (completeness) ----
     Rule("GEN-CODE-ANALYSIS", "General", "IBC Ch. 3-5",
@@ -143,47 +165,68 @@ BASELINE_RULES: List[Rule] = [
     Rule("FLS-ALARM", "Fire & Life Safety", "IFC 907 · NFPA 72",
          "Fire alarm system per NFPA 72 where required.",
          "critical", {"type": "required_keyword",
-                      "patterns": [r"NFPA\s*72", r"fire\s+alarm"]}, requires_citation=False),
+                      "patterns": [r"NFPA\s*72", r"fire\s+alarm"]}, requires_citation=False,
+         # SFDs use CRC R314 smoke alarms, not NFPA 72 systems (see CRC pack).
+         applies={"not_occupancies": ["R-3", "U"]}),
     Rule("NEC-SERVICE-RATING", "Electrical", "NEC 230.42",
          "Service entrance ampacity shall be specified.",
          "major", {"type": "required_keyword",
-                   "patterns": [r"\d+\s*A(?:MP)?\s+service", r"main\s+breaker"]}, requires_citation=False),
+                   # Both orderings appear on real sheets: "400 A service" and
+                   # "Electrical service: 200 A" (also subpanel/panel).
+                   "patterns": [r"\d+\s*A(?:MP)?\s+(?:service|subpanel|panel)",
+                                r"service[:\s]+\d+\s*A\b", r"main\s+breaker"]},
+         requires_citation=False),
+    # requires_citation=False: same table-store-provenance rationale as
+    # COM-STORIES-ALLOWABLE — IPC Table 403.1's text is not in the corpus.
     Rule("PLUMB-FIXTURES", "Plumbing", "IPC Table 403.1",
          "Plumbing fixture count shall meet minimum ratios for occupancy.",
-         "major", {"type": "plumbing_fixture_calc"}, requires_citation=True),
-    Rule("ENR-IECC", "Energy", "IECC C401 · R401",
-         "IECC compliance path shall be identified.",
+         "major", {"type": "plumbing_fixture_calc"}, requires_citation=False),
+    Rule("ENR-IECC", "Energy", "IECC C401 · R401 · CA Title 24 Pt 6",
+         "Energy code compliance path shall be identified (IECC, or Title 24 "
+         "Part 6 / CF1R / CBECC for California).",
          "major", {"type": "required_keyword",
-                   "patterns": [r"\bIECC\b", r"energy\s+code"]}, requires_citation=False),
+                   # CA plans cite Title 24 / CF1R / CBECC, never "IECC" — the
+                   # IECC-only patterns failed exactly the CA jurisdictions the
+                   # product targets, as an auto-verified major finding.
+                   "patterns": [r"\bIECC\b", r"energy\s+code", r"Title\s*24",
+                                r"\bT-?24\b", r"CF-?1R", r"CBECC"]},
+         requires_citation=False),
 
-    # ---- ADA (federal — applies to every commercial project) ----
+    # ---- ADA (federal — public accommodations / commercial; a private
+    #      single-family dwelling is NOT a covered entity) ----
     Rule("ADA-PARKING", "Accessibility", "ADA Table 208.2",
          "Accessible parking count shall meet ADA Table 208.2 ratio; at least one "
          "van-accessible space per facility (208.2.4).",
          "critical", {"type": "required_keyword",
                       "patterns": [r"accessible\s+parking", r"ADA\s+parking",
-                                   r"van[-\s]accessible"]}, requires_citation=False),
+                                   r"van[-\s]accessible"]}, requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     Rule("ADA-ROUTE", "Accessibility", "ADA 402",
          "An accessible route shall connect accessible parking, public sidewalks, and "
          "the primary entrance (ADA 402, 206.2.1).",
          "critical", {"type": "required_keyword",
                       "patterns": [r"accessible\s+route", r"path\s+of\s+travel", r"POT\b"]},
-         requires_citation=False),
+         requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     Rule("ADA-RESTROOM", "Accessibility", "ADA 603",
          "At least one accessible toilet compartment shall be provided per ADA 603/604.",
          "major", {"type": "required_keyword",
                    "patterns": [r"accessible\s+(?:restroom|toilet|water\s+closet)",
-                                r"ADA\s+restroom", r"ANSI\s+A117\.1"]}, requires_citation=False),
+                                r"ADA\s+restroom", r"ANSI\s+A117\.1"]}, requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     Rule("ADA-SIGNAGE", "Accessibility", "ADA 703",
          "Permanent room signs shall have tactile characters and Braille per ADA 703.",
          "moderate", {"type": "required_keyword",
-                      "patterns": [r"braille", r"tactile\s+sign", r"ADA\s+sign"]}, requires_citation=False),
+                      "patterns": [r"braille", r"tactile\s+sign", r"ADA\s+sign"]},
+         requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 
     # ---- NFPA completeness ----
     Rule("FLS-NFPA13R", "Fire & Life Safety", "NFPA 13R",
          "Residential occupancies (R-1, R-2) 4 stories or less may use NFPA 13R; declare 13 vs 13R.",
          "moderate", {"type": "required_keyword",
-                      "patterns": [r"NFPA\s*13R", r"residential\s+sprinkler"]}, requires_citation=False),
+                      "patterns": [r"NFPA\s*13R", r"residential\s+sprinkler"]}, requires_citation=False,
+         applies={"occupancies": ["R-1", "R-2"]}),
     Rule("FLS-NFPA101", "Fire & Life Safety", "NFPA 101",
          "Reference to NFPA 101 Life Safety Code shall appear on egress/life-safety analysis where required.",
          "moderate", {"type": "required_keyword",
@@ -194,7 +237,45 @@ BASELINE_RULES: List[Rule] = [
          "Minimum outdoor air ventilation rates per IMC Table 403.3 shall be declared.",
          "major", {"type": "required_keyword",
                    "patterns": [r"ventilation\s+rate", r"outdoor\s+air", r"IMC\s+(?:Table\s+)?403",
-                                r"\bCFM/(?:person|occupant)\b"]}, requires_citation=False),
+                                r"\bCFM/(?:person|occupant)\b"]}, requires_citation=False,
+         # Dwellings ventilate under CRC/ASHRAE 62.2, not IMC commercial rates.
+         applies={"not_occupancies": ["R-3", "U"]}),
+
+    # ---- CRC R-3 dwelling scalar pack ----
+    # The product's main workload is SFD review, but the engine had ZERO CRC
+    # numeric checks — all residential math was delegated to LLM checklist
+    # review. These compare dimensions the extractor already pulls into
+    # plan_data.dimensions; a missing dimension warns, never false-fails.
+    Rule("CRC-CEILING-HT", "Architectural", "CRC R305.1",
+         "Habitable rooms: minimum ceiling height 7 feet.",
+         "major", {"type": "min_dimension_check", "dim": "ceiling_height",
+                   "minimum": 7.0, "unit": " ft", "label": "Ceiling height"},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
+    Rule("CRC-STAIR-WIDTH", "Architectural", "CRC R311.7.1",
+         "Stairways: minimum clear width 36 inches.",
+         "major", {"type": "min_dimension_check", "dim": "stair_width",
+                   "minimum": 36.0, "unit": " in", "label": "Stair width"},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
+    Rule("CRC-EGRESS-DOOR", "Architectural", "CRC R311.2",
+         "At least one egress door: minimum 32-inch clear width.",
+         "major", {"type": "min_dimension_check", "dim": "door_widths",
+                   "minimum": 32.0, "unit": " in", "label": "Widest door",
+                   # max: at least ONE door must satisfy R311.2 — closet doors
+                   # are legitimately narrower, so min() would false-fail.
+                   "agg": "max"},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
+    Rule("CRC-EGRESS-WINDOW", "Architectural", "CRC R310.1",
+         "Sleeping rooms: emergency escape and rescue openings (egress windows) required.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"egress\s+window", r"emergency\s+escape\s+and\s+rescue",
+                                r"\bR310\b"]},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
+    Rule("CRC-SMOKE-CO", "Fire & Life Safety", "CRC R314 · R315",
+         "Smoke alarms (R314) and carbon monoxide alarms (R315) shall be shown.",
+         "critical", {"type": "required_keyword",
+                      "patterns": [r"smoke\s+(?:alarm|detector)", r"carbon\s+monoxide",
+                                   r"\bCO\s+alarm", r"\bR31[45]\b"]},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
 ]
 
 
@@ -232,7 +313,7 @@ def rules_for_agency(
             continue
         if r.id in sev:
             out.append(Rule(r.id, r.discipline, r.code_ref, r.description,
-                            sev[r.id], r.check, r.requires_citation))
+                            sev[r.id], r.check, r.requires_citation, r.applies))
         else:
             out.append(r)
     return out

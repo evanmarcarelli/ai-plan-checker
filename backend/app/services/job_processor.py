@@ -220,6 +220,14 @@ async def _run_pipeline(job_id: str, file_path: str, row: dict) -> None:
             timeout=JOB_TIMEOUT_SEC,
         )
 
+        # Best-effort: persist the run's LLM token usage so cost-per-job is a
+        # query, not a guess. Separate update — the column may predate
+        # migration 012, and a missing column must not fail the completion.
+        try:
+            db.update_job(job_id, {"llm_usage": workflow.usage_summary()})
+        except Exception:
+            pass
+
         db.update_job(job_id, {
             "status": "completed",
             "progress": 100,

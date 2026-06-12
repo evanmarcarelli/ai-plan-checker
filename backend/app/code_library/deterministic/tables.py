@@ -27,6 +27,11 @@ IBC_T506_2: Dict[str, Dict[str, Cell]] = {
     "M":   {"I-A": "UL", "I-B": "UL", "II-A": 21500, "II-B": 12500, "III-A": 18500, "III-B": 12500, "IV": 20500, "V-A": 14000, "V-B": 9000},
     "R-1": {"I-A": "UL", "I-B": "UL", "II-A": 24000, "II-B": 16000, "III-A": 24000, "III-B": 16000, "IV": 20500, "V-A": 12000, "V-B": 7000},
     "R-2": {"I-A": "UL", "I-B": "UL", "II-A": 24000, "II-B": 16000, "III-A": 24000, "III-B": 16000, "IV": 20500, "V-A": 12000, "V-B": 7000},
+    # R-3/R-4 are UL across all construction types in the 2021 Table 506.2 —
+    # IBC area limits don't constrain dwellings (lot coverage is zoning).
+    # Their absence made every SFR area/story check silently unevaluable.
+    "R-3": {"I-A": "UL", "I-B": "UL", "II-A": "UL", "II-B": "UL", "III-A": "UL", "III-B": "UL", "IV": "UL", "V-A": "UL", "V-B": "UL"},
+    "R-4": {"I-A": "UL", "I-B": "UL", "II-A": "UL", "II-B": "UL", "III-A": "UL", "III-B": "UL", "IV": "UL", "V-A": "UL", "V-B": "UL"},
     "S-1": {"I-A": "UL", "I-B": 48000, "II-A": 26000, "II-B": 17500, "III-A": 26000, "III-B": 17500, "IV": 25500, "V-A": 14000, "V-B": 9000},
     "S-2": {"I-A": "UL", "I-B": 79000, "II-A": 39000, "II-B": 26000, "III-A": 39000, "III-B": 26000, "IV": 38500, "V-A": 21000, "V-B": 13500},
 }
@@ -43,8 +48,20 @@ IBC_T504_4: Dict[str, Dict[str, Cell]] = {
     "M":   {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 2, "III-A": 4, "III-B": 2, "IV": 4, "V-A": 3, "V-B": 1},
     "R-1": {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 4, "III-A": 4, "III-B": 4, "IV": 4, "V-A": 3, "V-B": 2},
     "R-2": {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 4, "III-A": 4, "III-B": 4, "IV": 4, "V-A": 3, "V-B": 2},
+    # 2021 Table 504.4 NS row for R-3/R-4 — a 3-story V-B dwelling is legal.
+    "R-3": {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 4, "III-A": 4, "III-B": 4, "IV": 4, "V-A": 3, "V-B": 3},
+    "R-4": {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 4, "III-A": 4, "III-B": 4, "IV": 4, "V-A": 3, "V-B": 3},
     "S-1": {"I-A": "UL", "I-B": 11, "II-A": 4, "II-B": 2, "III-A": 3, "III-B": 2, "IV": 4, "V-A": 3, "V-B": 1},
     "S-2": {"I-A": "UL", "I-B": 11, "II-A": 5, "II-B": 3, "III-A": 4, "III-B": 3, "IV": 4, "V-A": 4, "V-B": 2},
+}
+
+# Table 504.3 — allowable building HEIGHT above grade plane in feet,
+# NON-SPRINKLERED row, abbreviated. For the occupancy groups in this set the
+# NS height row is uniform per construction type (H/I groups differ — not in
+# this abbreviated set); sprinklering adds 20 ft (IBC 504.2 / the S row).
+IBC_T504_3_NS_FT: Dict[str, Cell] = {
+    "I-A": "UL", "I-B": 160, "II-A": 65, "II-B": 55,
+    "III-A": 65, "III-B": 55, "IV": 65, "V-A": 50, "V-B": 40,
 }
 
 # IBC 1006.3.2 — minimum number of exits by occupant load.

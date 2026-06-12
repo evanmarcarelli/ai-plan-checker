@@ -446,12 +446,19 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                 except Exception:
                     status = ComplianceStatus.NEEDS_REVIEW
 
-                # Verify against corpus: if code_id is a real chunk, use its
-                # verbatim text as the source quote. Findings without a real
-                # corpus hit are marked verified=False so the UI can flag them.
+                # Verify against corpus: if code_id is a real chunk, attach a
+                # LICENSE-BOUNDED quote as the grounding (edict text passes
+                # whole; licensed model-code text is capped at the fair-use
+                # limit, preferring the claim-supporting span). Findings
+                # without a real corpus hit are marked verified=False so the
+                # UI can flag them.
+                from app.code_library.citation_retrieval import bounded_source_quote
                 source_chunk = corpus.get(req.code_id)
                 verified = source_chunk is not None
-                source_text = source_chunk.text if source_chunk else req.full_text
+                source_text = (
+                    bounded_source_quote(source_chunk, item.get("description") or "")
+                    if source_chunk else req.full_text
+                )
                 source_citation = source_chunk.citation if source_chunk else req.code_id
 
                 findings.append(ComplianceFinding(

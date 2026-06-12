@@ -27,6 +27,7 @@ Cell = Union[int, str]  # int | "UL" | "NP"
 # Canonical table ids (edition-qualified). The hardcoded set is the IBC/IPC
 # 2021 abbreviated values, so that's the edition tag.
 T506_2_ID = "IBC:2021:T506.2"
+T504_3_ID = "IBC:2021:T504.3"
 T504_4_ID = "IBC:2021:T504.4"
 MIN_EXITS_ID = "IBC:2021:1006.3.2"
 FIXTURES_ID = "IPC:2021:T403.1"
@@ -125,6 +126,16 @@ def t506_2(adoption_id: Optional[str] = None) -> Dict[str, Dict[str, Cell]]:
 def t504_4(adoption_id: Optional[str] = None) -> Dict[str, Dict[str, Cell]]:
     """Table 504.4 — allowable stories by occupancy × construction."""
     return _matrix(T504_4_ID, adoption_id, _fallback.IBC_T504_4)
+
+
+def t504_3_ns_ft(adoption_id: Optional[str] = None) -> Dict[str, Cell]:
+    """Table 504.3 — allowable height (ft), NS row, by construction type."""
+    def build():
+        rows = _cells(T504_3_ID, adoption_id)
+        if not rows:
+            return _fallback.IBC_T504_3_NS_FT
+        return {r["col_key"]: _cell_value(r) for r in rows}
+    return _memo((T504_3_ID, adoption_id), build)
 
 
 # ── min exits by occupant load (ordered buckets) ─────────────

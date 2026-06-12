@@ -1,25 +1,43 @@
 {
   "slug": "office-vb-stories-violation",
-  "title": "Commercial office, Type V-B, 3 stories over the Group B / V-B limit of 2",
-  "notes": "Tests IBC Table 504.4 story-limit check.",
+  "title": "Commercial office, Type V-B, 4 stories over the sprinklered Group B / V-B limit of 3",
+  "notes": "Tests IBC Table 504.4: NS row 2 + sprinkler story (504.2) = 3 allowed; 4 stories fails. (Previously authored as 3 stories against an inverted sprinkler model.)",
   "plan_data": {
     "project_address": "12 Spring St, Los Angeles, CA",
     "occupancy_type": "B",
     "construction_type": "V-B",
     "per_story_area": 6000,
     "building_area": 18000,
-    "stories": 3,
-    "building_height": 38,
+    "stories": 4,
+    "building_height": 48,
     "occupant_load": 120,
     "sprinklered": true
   },
-  "plan_text": "CODE ANALYSIS\nOccupancy: B\nType: V-B\nStories: 3\nHeight: 38 ft\nArea per story: 6,000 sf\nSprinklered: yes (NFPA 13)\nOccupant load: 120\nFire alarm per NFPA 72.\nAccessible parking, accessible route, ADA restroom, braille signage.\nIECC energy code compliance. Ventilation rate outdoor air per IMC 403.\nPanic hardware. Main breaker 600 A service. CALGreen low-flow. Construction waste management plan.",
+  "plan_text": "CODE ANALYSIS\nOccupancy: B\nType: V-B\nStories: 4\nHeight: 48 ft\nArea per story: 6,000 sf\nSprinklered: yes (NFPA 13)\nOccupant load: 120\nFire alarm per NFPA 72.\nAccessible parking, accessible route, ADA restroom, braille signage.\nIECC energy code compliance. Ventilation rate outdoor air per IMC 403.\nPanic hardware. Main breaker 600 A service. CALGreen low-flow. Construction waste management plan.",
   "ground_truth": [
-    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass" },
-    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "fail" },
-    { "rule_id": "COM-HIGH-RISE", "expected_status": "pass" },
-    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass" },
-    { "rule_id": "FLS-SPRINKLER", "expected_status": "pass" },
-    { "rule_id": "FLS-ALARM", "expected_status": "pass" }
+    {
+      "rule_id": "COM-AREA-ALLOWABLE",
+      "expected_status": "pass"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "fail"
+    },
+    {
+      "rule_id": "COM-HIGH-RISE",
+      "expected_status": "pass"
+    },
+    {
+      "rule_id": "GEN-CODE-ANALYSIS",
+      "expected_status": "pass"
+    },
+    {
+      "rule_id": "FLS-SPRINKLER",
+      "expected_status": "pass"
+    },
+    {
+      "rule_id": "FLS-ALARM",
+      "expected_status": "pass"
+    }
   ]
 }

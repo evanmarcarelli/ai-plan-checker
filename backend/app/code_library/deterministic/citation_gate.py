@@ -142,7 +142,24 @@ def apply_citation_gate(
     for f in findings:
         # Declarative findings already grounded (verified=True, no citation
         # needed) are left alone — a missing sprinkler note needs no quote.
+        # EXCEPTION: with the contradiction guard on, a pre-verified
+        # NON_COMPLIANT finding still gets its claim checked against the text
+        # it carries. Department findings arrive verified=True on mere
+        # section EXISTENCE (departments.py), which used to bypass exactly
+        # the wrong-cite case this guard was built to police: a real section
+        # whose text says something else entirely.
         if f.verified:
+            if (
+                contradiction_guard
+                and f.status == ComplianceStatus.NON_COMPLIANT
+                and f.source_text
+                and not _claim_supported_by(f.source_text, f.description or "")
+            ):
+                f.status = ComplianceStatus.NEEDS_REVIEW
+                if _CONTRADICTED_NOTE.strip() not in (f.description or ""):
+                    f.description = (f.description or "") + _CONTRADICTED_NOTE
+                stats.contradicted += 1
+                stats.downgraded += 1
             continue
 
         stats.checked += 1

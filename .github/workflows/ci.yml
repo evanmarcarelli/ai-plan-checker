@@ -26,13 +26,14 @@ jobs:
           SECRET_KEY: test-secret-key-32-characters-long
           DATABASE_URL: sqlite+aiosqlite:///./test.db
       # Deterministic-engine accuracy floor. Runs fully offline (no API keys).
-      # The floor sits just under the current measured F1 so accuracy can only
-      # ratchet UP from here; raise it as eval-case false positives are
-      # triaged, toward PILOT_TARGETS (precision 0.90 / recall 0.85) in
-      # app/config/pilot.py. Before this gate existed, the eval was failing
-      # its own targets (F1 ~0.70) and nothing noticed.
+      # Current measured: P=1.000 / R=1.000 / F1=1.000 after the 2026-06-11
+      # triage (rule applicability gating, R-3 table rows, harness field
+      # extraction, ground-truth corrections). The floor sits at 0.95 — above
+      # the PILOT_TARGETS (0.90/0.85) in app/config/pilot.py — so any rule or
+      # extraction regression fails CI. Before this gate existed, the eval
+      # was failing its own targets (F1 ~0.70) and nothing noticed.
       - name: Deterministic-engine accuracy floor
-        run: python -m scripts.eval.run_eval --min-f1 0.65
+        run: python -m scripts.eval.run_eval --min-f1 0.95
 
   frontend-lint:
     runs-on: ubuntu-latest

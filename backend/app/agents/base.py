@@ -37,6 +37,13 @@ class BaseAgent(ABC):
     def __init__(self, name: str):
         self.name = name
         self._client: Optional[anthropic.AsyncAnthropic] = None
+        # Cumulative token usage across this agent's calls. response.usage
+        # used to be discarded entirely — per-run cost was invisible, and
+        # whether prompt caching paid for itself was unmeasurable.
+        self.usage_totals: Dict[str, int] = {
+            "calls": 0, "input_tokens": 0, "output_tokens": 0,
+            "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
+        }
 
     def _get_client(self) -> anthropic.AsyncAnthropic:
         if not self._client:
@@ -117,6 +124,14 @@ class BaseAgent(ABC):
                 )
                 # Success — clear any stale error state from a previous retry.
                 self.last_llm_error = None
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    self.usage_totals["calls"] += 1
+                    for k in ("input_tokens", "output_tokens",
+                              "cache_creation_input_tokens", "cache_read_input_tokens"):
+                        v = getattr(usage, k, None)
+                        if v:
+                            self.usage_totals[k] += int(v)
                 if getattr(response, "stop_reason", None) == "max_tokens":
                     # Output was cut mid-stream. Don't fail the call — the
                     # JSON salvage in _parse_json_response recovers the

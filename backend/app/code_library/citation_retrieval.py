@@ -201,6 +201,28 @@ def find_supporting_text(
     return f"{cut}…"
 
 
+def bounded_source_quote(chunk, claim: str) -> str:
+    """License-aware source quote for a customer-facing finding.
+
+    Government-edict text (statutes, certified plans — public domain) passes
+    through whole; anything else (licensed model-code text, unreviewed
+    scrapes) is bounded to the fair-use MAX_QUOTE_CHARS, preferring the span
+    that actually supports the claim. Closes the gap where findings attached
+    FULL verbatim ICC-derived chunks (up to ~3,000 chars) despite the
+    documented ≤280-char posture in docs/ICC_LICENSING.md.
+    """
+    text = chunk.text or ""
+    if getattr(chunk, "license_status", "review") == "edict":
+        return text
+    if len(text) <= MAX_QUOTE_CHARS:
+        return text
+    span = find_supporting_text(text, claim or "")
+    if span:
+        return span
+    cut = text[: MAX_QUOTE_CHARS - 1].rsplit(" ", 1)[0]
+    return f"{cut}…"
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # Structural retrieval
 # ─────────────────────────────────────────────────────────────────────────

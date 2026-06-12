@@ -101,6 +101,35 @@ def _check_required_keyword(text: str, patterns: List[str]) -> ck.CheckResult:
     )
 
 
+def _rule_applies(rule: Rule, plan_data: ExtractedPlanData, occ: Optional[str]) -> bool:
+    """Positive-evidence applicability gate.
+
+    A rule is skipped only when the plan's KNOWN occupancy / plan type is
+    excluded by the rule's `applies` constraints — unknown data falls OPEN
+    (the rule runs), so missing extraction never silently disables a check.
+    """
+    ap = getattr(rule, "applies", None) or {}
+    if not ap:
+        return True
+    letter = occ.split("-")[0] if occ else None
+
+    plan_types = ap.get("plan_types")
+    if plan_types:
+        pt = plan_data.plan_type.value if plan_data.plan_type else None
+        if pt and pt != "unknown" and pt not in plan_types:
+            return False
+
+    occupancies = ap.get("occupancies")
+    if occupancies and occ and not (occ in occupancies or letter in occupancies):
+        return False
+
+    not_occupancies = ap.get("not_occupancies")
+    if not_occupancies and occ and (occ in not_occupancies or letter in not_occupancies):
+        return False
+
+    return True
+
+
 def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.CheckResult:
     """Dispatch one rule to its checker. Returns a CheckResult."""
     t = rule.check.get("type")
@@ -109,6 +138,9 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
     # Optional fields the Surveyor may or may not populate yet.
     occupant_load = getattr(plan_data, "occupant_load", None)
     sprinklered = getattr(plan_data, "sprinklered", None)
+
+    if not _rule_applies(rule, plan_data, occ):
+        return ck.CheckResult("info", "Rule not applicable to this occupancy / plan type.")
 
     if t == "required_keyword":
         return _check_required_keyword(text, rule.check.get("patterns", []))
@@ -127,19 +159,52 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
                 else ck.CheckResult("warn", "Design occupant load not declared."))
 
     if t == "allowable_area_check":
-        # Per-story area is the right input for Table 506.2; fall back to the
-        # gross building area when per-story isn't broken out.
-        area = getattr(plan_data, "per_story_area", None) or plan_data.building_area
-        return ck.check_allowable_area(occ, ctype, area)
+        # Per-story area is the right input for Table 506.2. When only the
+        # gross building area is known on a multi-story building, estimate
+        # per-story as gross/stories — comparing a 2-story gross total against
+        # a PER-STORY table systematically over-flagged legal buildings.
+        area = getattr(plan_data, "per_story_area", None)
+        if area is None:
+            area = plan_data.building_area
+            if area and plan_data.stories and plan_data.stories > 1:
+                area = area / plan_data.stories
+        return ck.check_allowable_area(occ, ctype, area, sprinklered=sprinklered)
 
     if t == "stories_check":
         return ck.check_allowable_stories(occ, ctype, plan_data.stories, sprinklered)
+
+    if t == "height_check":
+        return ck.check_allowable_height(ctype, plan_data.building_height, sprinklered)
+
+    if t == "min_dimension_check":
+        dims = plan_data.dimensions or {}
+        raw = dims.get(rule.check.get("dim"))
+        if isinstance(raw, list):
+            if not raw:
+                raw = None
+            elif rule.check.get("agg") == "max":
+                raw = max(raw)
+            else:
+                raw = min(raw)
+        return ck.check_min_dimension(
+            raw,
+            rule.check["minimum"],
+            rule.check.get("unit", ""),
+            rule.check.get("label", "Dimension"),
+            rule.code_ref,
+        )
 
     if t == "high_rise_check":
         return ck.check_high_rise(plan_data.building_height, sprinklered)
 
     if t == "num_exits_check":
-        declared_exits = getattr(plan_data, "declared_exits", 0) or 0
+        declared_exits = getattr(plan_data, "declared_exits", None)
+        if declared_exits is None and text:
+            # Count distinct exit labels ("EXIT 1", "EXIT 2") on the plans —
+            # the same thing an examiner does on the egress sheet. No labels
+            # at all stays None (unknown), never 0.
+            labels = set(re.findall(r"\bEXIT\s+(\d+)", text, re.IGNORECASE))
+            declared_exits = len(labels) if labels else None
         return ck.check_min_exits(occupant_load, declared_exits)
 
     if t == "exit_capacity_check":

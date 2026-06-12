@@ -162,6 +162,12 @@ OUTPUT: Return ONLY valid JSON matching this schema:
                 plan_data.occupant_load = int(float(str(raw_ol).replace(",", ""))) if raw_ol is not None else None
             except (TypeError, ValueError):
                 pass
+        if plan_data.actual_wc is None:
+            wc = (plan_data.dimensions or {}).get("wc_count")
+            plan_data.actual_wc = int(wc) if isinstance(wc, (int, float)) else None
+        if plan_data.actual_lav is None:
+            lav = (plan_data.dimensions or {}).get("lav_count")
+            plan_data.actual_lav = int(lav) if isinstance(lav, (int, float)) else None
         if plan_data.sprinklered is None and vision_data:
             raw_spr = vision_data.get("sprinklered")
             if isinstance(raw_spr, bool):

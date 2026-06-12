@@ -96,6 +96,22 @@ _WUI_TEXT_CUE = re.compile(
     r"\bWUI\b|\bChapter\s+7A\b",
     re.IGNORECASE,
 )
+# Title sheets routinely DECLARE the negative — "NOT in a VHFHSZ per county
+# GIS" — and a bare keyword cue read that as a fire-zone hit, rejecting
+# in-scope projects. Strip negated mentions before the cue runs.
+_WUI_NEGATION = re.compile(
+    r"(?:\bnot\s+(?:located\s+|situated\s+)?(?:in|within)\b|\boutside\s+(?:of\s+)?)"
+    r"[^.\n]{0,60}?"
+    r"(?:VHFHSZ|WUI|very\s+high\s+fire\s+hazard\s+severity\s+zone|fire\s+hazard\s+severity\s+zone)",
+    re.IGNORECASE,
+)
+
+
+def _wui_cue(plan_text: str) -> bool:
+    """WUI text cue with negation awareness."""
+    if not plan_text:
+        return False
+    return bool(_WUI_TEXT_CUE.search(_WUI_NEGATION.sub(" ", plan_text)))
 _AG_TEXT_CUE = re.compile(
     r"\bagricultural\s+(building|structure|exempt)|\bA-E\b|\bAE-\d|"
     r"\bopen\s+space\s+agricultural\b",
@@ -115,6 +131,20 @@ _TI_CUES = re.compile(
     r"interior\s+remodel|\bsuite\s+\d",
     re.IGNORECASE,
 )
+# Plans declare the negative here too — "No tenant improvement — ground-up
+# new construction" — which the bare cue read as a TI hit, classifying new
+# construction as an in-scope TI (a false ACCEPT past the gate).
+_TI_NEGATION = re.compile(
+    r"\b(?:no|not\s+an?)\s+(?:tenant\s+improvement|interior\s+(?:alteration|remodel))",
+    re.IGNORECASE,
+)
+
+
+def _ti_cue(plan_text: str) -> bool:
+    """TI text cue with negation awareness."""
+    if not plan_text:
+        return False
+    return bool(_TI_CUES.search(_TI_NEGATION.sub(" ", plan_text)))
 _HILLSIDE_ZONING_CODE = re.compile(r"H$|HILLSIDE|\bBMO\b|\bBHO\b", re.IGNORECASE)
 # A plan that declares a detached single-family dwelling. R-3 occupancy and
 # Type V-B construction are the default for these, so this cue lets us classify
@@ -217,7 +247,7 @@ def classify_archetype(
         )
         return _finalize(ARCHETYPE_VENTURA_VHFHSZ_SFR, excluded, reasoning, pilot_archetypes)
 
-    if is_ventura and _WUI_TEXT_CUE.search(plan_text or ""):
+    if is_ventura and _wui_cue(plan_text or ""):
         excluded.append("Ventura VHFHSZ (plan-text cue)")
         reasoning.append("Plan text references Ventura County WUI / Very-High FHSZ")
         return _finalize(ARCHETYPE_VENTURA_VHFHSZ_SFR, excluded, reasoning, pilot_archetypes)
@@ -258,7 +288,7 @@ def classify_archetype(
         return _finalize(ARCHETYPE_HIGH_RISE_OR_MID_RISE, excluded, reasoning, pilot_archetypes)
 
     # ---- In-scope identification ---------------------------------------
-    has_ti_cue = bool(_TI_CUES.search(plan_text or ""))
+    has_ti_cue = _ti_cue(plan_text or "")
 
     occupancy = (getattr(scope, "occupancy_type", None) or "").upper().strip()
     construction = (getattr(scope, "construction_type", None) or "").upper().strip()

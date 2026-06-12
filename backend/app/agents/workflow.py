@@ -752,28 +752,54 @@ class PlanCheckerWorkflow:
                 f"Cross-model adversarial review on {len(critic_candidates)} top non_compliant finding(s)...",
                 data={"count": len(critic_candidates), "max": PIPELINE_GATES.critic_max_findings_per_run},
             )
-            plan_text_excerpt = "\n".join(pd.raw_text_by_page.values())[:4000] if pd.raw_text_by_page else None
-            downgraded = 0
-            disputed = 0
-            for f in critic_candidates:
-                try:
+            # Evidence parity: the critic gets the same domain-routed plan
+            # excerpt the PROPOSING department saw — it used to adjudicate
+            # from the first 4,000 chars (the title sheet) while its prompt
+            # asked whether items are "present elsewhere in the text", a
+            # question it could not answer. One shared client (not one per
+            # finding), the configured critic model, and the critiques run
+            # concurrently under the same semaphore as the reviewers.
+            critic_client = None
+            if settings.anthropic_api_key:
+                import anthropic as _anthropic
+                critic_client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+            critic_model = (
+                getattr(settings, "anthropic_model_critic", "") or settings.anthropic_model
+            )
+            dept_by_category = {d.category: d for d in self.departments}
+            fallback_excerpt = (
+                "\n".join(pd.raw_text_by_page.values())[:4000] if pd.raw_text_by_page else None
+            )
+
+            async def _critique_one(f: ComplianceFinding):
+                dept = dept_by_category.get(f.category)
+                excerpt = (dept._relevant_plan_text(pd) if dept else None) or fallback_excerpt
+                async with sem:
                     verdict = await critique_finding(
                         finding=f,
                         scope=pd,
-                        plan_text_excerpt=plan_text_excerpt,
+                        plan_text_excerpt=excerpt,
+                        critic_model=critic_model,
+                        client=critic_client,
                     )
-                    pre_status = f.status
-                    apply_critique(f, verdict)
-                    if not verdict.agrees:
-                        disputed += 1
-                        if f.status != pre_status:
-                            downgraded += 1
-                except Exception as critic_err:
-                    await emit(
-                        "Critic",
-                        f"Critique failed for {f.finding_id}: {critic_err}",
-                        level="warning",
-                    )
+                return f, verdict
+
+            critique_results = await asyncio.gather(
+                *(_critique_one(f) for f in critic_candidates), return_exceptions=True
+            )
+            downgraded = 0
+            disputed = 0
+            for res in critique_results:
+                if isinstance(res, BaseException):
+                    await emit("Critic", f"Critique failed: {res}", level="warning")
+                    continue
+                f, verdict = res
+                pre_status = f.status
+                apply_critique(f, verdict)
+                if not verdict.agrees:
+                    disputed += 1
+                    if f.status != pre_status:
+                        downgraded += 1
             await emit(
                 "Critic",
                 f"Critic run complete. {disputed} disputed, {downgraded} downgraded to needs_review.",
@@ -824,11 +850,35 @@ class PlanCheckerWorkflow:
                   "score": overall_summary.compliance_score},
         )
 
+        # Surface the run's LLM spend in the agent timeline — cost per run
+        # was previously invisible (usage discarded at the SDK boundary).
+        u = self.usage_summary()
+        if u["calls"]:
+            await emit(
+                "Coordinator",
+                f"LLM usage: {u['calls']} calls | {u['input_tokens']:,} in / "
+                f"{u['output_tokens']:,} out | cache {u['cache_read_input_tokens']:,} read / "
+                f"{u['cache_creation_input_tokens']:,} written",
+                data={"llm_usage": u},
+            )
+
         # Department names were appended in real time by _do_review, so we
         # only need to finalize progress and clear current_agent here.
         job.progress = 100
         job.current_agent = None
         return report
+
+    def usage_summary(self) -> Dict[str, int]:
+        """Cumulative token usage across every BaseAgent in this run
+        (Surveyor + 10 departments; the critic uses its own client and is
+        not yet counted)."""
+        totals = {"calls": 0, "input_tokens": 0, "output_tokens": 0,
+                  "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}
+        for agent in [self.surveyor, self.librarian, *self.departments]:
+            agent_usage = getattr(agent, "usage_totals", None) or {}
+            for k in totals:
+                totals[k] += int(agent_usage.get(k, 0))
+        return totals
 
     def _summarize(self, findings: List[ComplianceFinding]) -> ComplianceSummary:
         total = len(findings)

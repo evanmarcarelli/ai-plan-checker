@@ -1,18 +1,44 @@
 {
   "slug": "ventura-sfr-v5b-no-sprinkler-stories-violation",
-  "title": "Ventura County SFR — Type V-B, 3 stories non-sprinklered (exceeds Table 504.4)",
+  "title": "Ventura County SFR \u2014 Type V-B, 4 stories non-sprinklered (exceeds Table 504.4)",
   "jurisdiction_key": "CA:VENTURA_COUNTY",
-  "archetype": "ventura_sfr_typ_vb_ministerial",
+  "archetype": "unclassified",
   "project_address": "318 Sespe Creek Way, Fillmore, CA 93015",
   "source": "synthetic",
-  "notes": "Mirror of LA fixture — same physics, different jurisdiction. Tests stories_check + sprinkler negation in Ventura context.",
-  "plan_text": "PROJECT DATA - 318 SESPE CREEK WAY, VENTURA COUNTY (FILLMORE area)\nCODE ANALYSIS A-0.1\n2022 CBC + Ventura County Div. VIII\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 3\nBuilding height: 32 ft\nTotal building area: 3,000 sf\nPer-story area: 1,000 sf\nNon-sprinklered\nDesign occupant load: 10\nIECC: Title 24 Part 6\nElectrical service: 200 A main breaker\nWC 3, LAV 3\nEXIT 1 (front), EXIT 2 (rear)\nNFPA 72 smoke alarms",
+  "notes": "Tests stories_check: 2021 Table 504.4 R-3/V-B NS row allows 3 stories; 4 fails. (Previously authored as 3 stories against an inverted sprinkler model using the R-2 row.) (4-story SFD is outside the ministerial SFR archetype; gate correctly cannot bucket it.)",
+  "plan_text": "PROJECT DATA - 318 SESPE CREEK WAY, VENTURA COUNTY (FILLMORE area)\nCODE ANALYSIS A-0.1\n2022 CBC + Ventura County Div. VIII\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 4\nBuilding height: 42 ft\nTotal building area: 3,000 sf\nPer-story area: 1,000 sf\nNon-sprinklered\nDesign occupant load: 10\nIECC: Title 24 Part 6\nElectrical service: 200 A main breaker\nWC 3, LAV 3\nEXIT 1 (front), EXIT 2 (rear)\nNFPA 72 smoke alarms",
   "ground_truth": [
-    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "fail", "expected_severity": "critical", "rationale": "3 stories exceeds non-sprinklered allowable for R-3/V-B" },
-    { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "FLS-SPRINKLER",            "expected_status": "fail", "expected_severity": "critical", "rationale": "Non-sprinklered for a configuration requiring NFPA 13/13R" }
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "fail",
+      "expected_severity": "critical",
+      "rationale": "4 stories exceeds the 3-story NS limit for R-3/V-B (Table 504.4)"
+    },
+    {
+      "rule_id": "COM-HIGH-RISE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "EGR-OCCUPANT-LOAD",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "FLS-SPRINKLER",
+      "expected_status": "fail",
+      "expected_severity": "critical",
+      "rationale": "Non-sprinklered for a configuration requiring NFPA 13/13R"
+    }
   ]
 }

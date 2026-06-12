@@ -1,20 +1,53 @@
 {
   "slug": "la-sfr-v5b-missing-code-analysis",
-  "title": "LA SFR — Type V-B, missing code analysis sheet entirely",
+  "title": "LA SFR \u2014 Type V-B, missing code analysis sheet entirely",
   "jurisdiction_key": "CA:LOS_ANGELES",
   "archetype": "la_sfr_typ_vb_ministerial",
   "project_address": "789 Sunset Blvd, Los Angeles, CA 90028",
   "source": "synthetic",
-  "notes": "Classic bounceback. Title sheet only — no occupancy, construction type, area, OL.",
+  "notes": "Classic bounceback. Title sheet only \u2014 no occupancy, construction type, area, OL.",
   "plan_text": "ARCHITECTURAL PLANS - 789 SUNSET BLVD\nResidential addition\nOwner: John Smith\nArchitect: ABC Design\nSheet A-1.0 Floor Plan\nSheet A-2.0 Elevations\nSheet A-3.0 Sections\nScope: 400 sf addition to existing single-family residence.",
   "ground_truth": [
-    { "rule_id": "COM-OCCUPANCY-DECL",    "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "EGR-OCCUPANT-LOAD",     "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "GEN-CODE-ANALYSIS",     "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "FLS-SPRINKLER",         "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "FLS-ALARM",             "expected_status": "fail", "expected_severity": "critical" },
-    { "rule_id": "NEC-SERVICE-RATING",    "expected_status": "fail", "expected_severity": "major" },
-    { "rule_id": "ENR-IECC",              "expected_status": "fail", "expected_severity": "major" }
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "fail",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "fail",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "EGR-OCCUPANT-LOAD",
+      "expected_status": "warn",
+      "expected_severity": "critical",
+      "rationale": "Undeclared occupant load is a needs-review correction, not a hard violation"
+    },
+    {
+      "rule_id": "GEN-CODE-ANALYSIS",
+      "expected_status": "fail",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "FLS-SPRINKLER",
+      "expected_status": "fail",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "FLS-ALARM",
+      "expected_status": "fail",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "NEC-SERVICE-RATING",
+      "expected_status": "fail",
+      "expected_severity": "major"
+    },
+    {
+      "rule_id": "ENR-IECC",
+      "expected_status": "fail",
+      "expected_severity": "major"
+    }
   ]
 }
