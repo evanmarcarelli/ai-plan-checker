@@ -244,7 +244,13 @@ def chunk_section(section: RawSection, target: IngestTarget) -> List[Dict]:
 
     title = (section.title or "").strip() or section.section_number
     section_number = (section.section_number or "").strip() or "(unnumbered)"
-    category = classify_category(title, section.breadcrumb or [], body)
+    # force_category: when the whole source has one known discipline (ADA →
+    # accessibility), the keyword classifier is skipped — body sampling once
+    # routed 184 ADA chunks to the plumbing/fire/electrical reviewers.
+    category = (
+        getattr(target, "force_category", None)
+        or classify_category(title, section.breadcrumb or [], body)
+    )
     tags = _make_tags(section.breadcrumb, section.extra_tags)
 
     parts = _split_oversize(body)

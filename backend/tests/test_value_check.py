@@ -88,8 +88,8 @@ def test_t504_legitimate_range_passes():
     f = _finding(section="504.4", required_value=f"{tabular} stories")
     stats = cross_check_table_claims([f], _plan())
     assert stats.checked == 1 and stats.mismatched == 0
-    # Non-sprinklered footnote value is also legitimate.
-    f2 = _finding(section="504.4", required_value=f"{max(1, tabular - 1)} stories max")
+    # Sprinklered S-row value (NS base + 1 per IBC 504.2) is also legitimate.
+    f2 = _finding(section="504.4", required_value=f"{tabular + 1} stories max")
     assert cross_check_table_claims([f2], _plan()).mismatched == 0
 
 

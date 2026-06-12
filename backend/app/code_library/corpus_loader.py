@@ -129,6 +129,34 @@ class CodeCorpus:
         # Also index by section alone (so "404.2.3" finds it even without code prefix)
         self.by_section.setdefault(chunk.section.lower(), chunk)
 
+    @staticmethod
+    def _code_prefix(key: str) -> Optional[str]:
+        """The code token a citation starts with ('cbc 404.2.3' -> 'cbc'),
+        or None when the string is a bare section number."""
+        m = re.match(r"\s*([a-z][a-z0-9&]*)", key)
+        return m.group(1) if m else None
+
+    def _section_fallback(self, key: str) -> Optional[CodeChunk]:
+        """Bare-section lookup, guarded against cross-code matches.
+
+        'CBC 404.2.3' must NOT resolve to ADA 404.2.3 just because ADA loads
+        first and owns the bare number — a citation to a code we don't have
+        must fail closed (UNVERIFIED), not get 'verified' against an unrelated
+        code's text. The fallback only fires when the query has no code prefix
+        at all, or its prefix matches the found chunk's code_short.
+        """
+        m = re.search(r"\d+[a-z]?(?:\.\d+[a-z]?)*", key)
+        if not m:
+            return None
+        chunk = self.by_section.get(m.group(0))
+        if chunk is None:
+            return None
+        prefix = self._code_prefix(key)
+        if prefix is None:
+            return chunk
+        short = chunk.code_short.lower()
+        return chunk if (prefix in short or short in prefix) else None
+
     def has_section(self, citation_or_section: str) -> bool:
         """Verify a citation string actually exists in the corpus."""
         if not citation_or_section:
@@ -140,11 +168,7 @@ class CodeCorpus:
         normalized = key.replace("-", " ").replace("_", " ")
         if normalized in self.by_citation:
             return True
-        # Last resort: just the section number
-        m = re.search(r"\d+[a-z]?(?:\.\d+[a-z]?)*", key)
-        if m and m.group(0) in self.by_section:
-            return True
-        return False
+        return self._section_fallback(normalized) is not None
 
     def get(self, citation_or_section: str) -> Optional[CodeChunk]:
         key = citation_or_section.strip().lower()
@@ -153,10 +177,7 @@ class CodeCorpus:
         normalized = key.replace("-", " ").replace("_", " ")
         if normalized in self.by_citation:
             return self.by_citation[normalized]
-        m = re.search(r"\d+[a-z]?(?:\.\d+[a-z]?)*", key)
-        if m and m.group(0) in self.by_section:
-            return self.by_section[m.group(0)]
-        return None
+        return self._section_fallback(normalized)
 
 
 class CodeRetriever:

@@ -68,8 +68,15 @@ def create_job(
         extra["project_address"] = project_address
     try:
         res = admin().table("jobs").insert({**base, **extra}).execute()
-    except Exception:
-        # Pre-migration: a column may not exist. Fall back to the base insert.
+    except Exception as e:
+        # Pre-migration ONLY: retry without the newer columns when the error
+        # is specifically a missing column (PG 42703 / PostgREST PGRST204).
+        # A blanket retry here is dangerous: on a transient network error it
+        # could double-insert, and the surviving row would silently lack
+        # credit_charged — making the job's failure refund a permanent no-op.
+        msg = str(e)
+        if not any(tok in msg for tok in ("42703", "PGRST204", "credit_charged", "project_address")):
+            raise
         res = admin().table("jobs").insert(base).execute()
     return res.data[0]["id"]
 

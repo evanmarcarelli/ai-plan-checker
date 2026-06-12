@@ -77,6 +77,7 @@ def parse_lip_text(text: str, *, source_url: str = LIP_URL,
 
     sections: List[RawSection] = []
     chapter_crumb: Optional[str] = None
+    seen_numbers: set = set()
     for i, (pos, kind, number, title) in enumerate(markers):
         if kind == "chapter":
             chapter_crumb = f"LIP Chapter {number} — {title}"
@@ -87,6 +88,12 @@ def parse_lip_text(text: str, *, source_url: str = LIP_URL,
         if len(body) < 60:
             # TOC stragglers and bare cross-reference lines — not citable text.
             continue
+        if number in seen_numbers:
+            # A repeated section number (PDF numbering slip) would mint two
+            # chunks with the same citation — a cited id then resolves to the
+            # wrong text half the time. Keep the first; never invent labels.
+            continue
+        seen_numbers.add(number)
         sections.append(RawSection(
             breadcrumb=[c for c in ("Malibu LCP Local Implementation Plan", chapter_crumb) if c],
             section_number=number,

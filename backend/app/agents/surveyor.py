@@ -150,6 +150,29 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         )
         self._apply_vision_fields(plan_data, vision_data)
 
+        # Deterministic-engine inputs the extractors already find but used to
+        # drop on the floor: the regex extractor stores occupant load in the
+        # dimensions dict, and vision reads "sprinklered" off the title sheet —
+        # neither was copied to the schema fields the engine's egress and
+        # story-sprinkler math reads, leaving those checks permanently
+        # unevaluable.
+        if plan_data.occupant_load is None:
+            raw_ol = (plan_data.dimensions or {}).get("occupant_load")
+            try:
+                plan_data.occupant_load = int(float(str(raw_ol).replace(",", ""))) if raw_ol is not None else None
+            except (TypeError, ValueError):
+                pass
+        if plan_data.sprinklered is None and vision_data:
+            raw_spr = vision_data.get("sprinklered")
+            if isinstance(raw_spr, bool):
+                plan_data.sprinklered = raw_spr
+            elif isinstance(raw_spr, str):
+                low = raw_spr.strip().lower()
+                if low in ("yes", "true", "y", "sprinklered", "nfpa 13", "nfpa 13d", "nfpa 13r"):
+                    plan_data.sprinklered = True
+                elif low in ("no", "false", "n", "non-sprinklered", "unsprinklered"):
+                    plan_data.sprinklered = False
+
         # Round out the extraction audit trail with the vision outcome, so a
         # hollow report ("everything needs_review") is explainable later from
         # the persisted plan_data alone.
@@ -212,7 +235,11 @@ Total pages: {raw_data.get('page_count', 0)}
         # Build jurisdiction
         jurisdiction = Jurisdiction()
         if parsed and isinstance(parsed, dict):
-            jurisdiction.city = parsed.get("city") or plan_data.project_address
+            # No project_address fallback here: a street address is not a city,
+            # and this field keys the adoption resolver + corpus scope — a
+            # corrupted value silently produced a baseline/wrong code stack.
+            # Leave it None and let the heuristic/county path handle it.
+            jurisdiction.city = parsed.get("city")
             jurisdiction.county = parsed.get("county")
             jurisdiction.state = parsed.get("state")
             jurisdiction.state_code = parsed.get("state_code")
@@ -220,7 +247,10 @@ Total pages: {raw_data.get('page_count', 0)}
             jurisdiction.seismic_zone = parsed.get("seismic_zone")
             jurisdiction.wind_zone = parsed.get("wind_zone")
             jurisdiction.flood_zone = parsed.get("flood_zone")
-            jurisdiction.confidence = float(parsed.get("confidence", 0.5))
+            try:
+                jurisdiction.confidence = max(0.0, min(1.0, float(parsed.get("confidence", 0.5))))
+            except (TypeError, ValueError):
+                jurisdiction.confidence = 0.5
 
             if parsed.get("plan_type"):
                 try:

@@ -37,6 +37,11 @@ class IngestTarget:
     version: str                  # e.g. "2024-06"
     jurisdictions: List[str]      # e.g. ["CA:Pasadena"]
     output_filename: str          # e.g. "amlegal_pasadena_ca.jsonl"
+    # When the whole source has one known discipline (the ADA standard is
+    # accessibility, full stop), force it instead of keyword-classifying each
+    # section — body sampling routed 184 ADA chunks to plumbing/fire/electrical
+    # reviewers because their keywords are checked first.
+    force_category: Optional[str] = None
 
 
 class BaseIngester(ABC):

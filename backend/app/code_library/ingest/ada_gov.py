@@ -157,6 +157,10 @@ def ingest_ada_2010(max_sections: Optional[int] = None) -> int:
         version="2010",
         jurisdictions=["*"],
         output_filename="ada_gov_2010.jsonl",
+        # The ADA standard is accessibility, full stop — keyword-classifying
+        # each section routed drinking-fountain/urinal clearances to the
+        # plumbing reviewer and egress sections to fire.
+        force_category="accessibility",
     )
     chunks = []
     for c in chunk_many(sections, target):

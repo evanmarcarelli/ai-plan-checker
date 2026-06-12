@@ -48,8 +48,11 @@ _STATUS_MAP = {
 
 # IBC occupancy group token, e.g. "B", "A-2", "R-3", "S-1".
 _OCC_RE = re.compile(r"\b([ABEFHIMRS](?:-\d)?)\b")
-# Construction type token, e.g. "V-B", "II-A", "I-A".
-_CTYPE_RE = re.compile(r"\b(I{1,3}|IV|V)(?:-([AB]))?\b")
+# Construction type token, e.g. "V-B", "II-A", "I-A" — and the hyphenless
+# "VB" / "IIIA" forms extremely common on title sheets, which the previous
+# pattern could not match (the \b between V and B never held), silently
+# degrading every Table 506.2/504.4 check to "info".
+_CTYPE_RE = re.compile(r"\b(I{1,3}|IV|V)\s*-?\s*([AB])?\b")
 
 
 def normalize_occupancy(raw: Optional[str]) -> Optional[str]:

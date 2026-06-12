@@ -107,10 +107,14 @@ def check_allowable_stories(
         return _fail("Occupancy NOT PERMITTED in this construction type.")
     if lim is None:
         return _info(f"Type {construction_type} not in row for {occupancy_primary}.")
-    # Non-sprinklered: -1 floor from tabular (Table 504.4 footnote — simplified).
-    eff = max(1, lim - 1) if sprinklered is False else lim
+    # The stored table is the NON-SPRINKLERED (NS) row of Table 504.4.
+    # Sprinklering (NFPA 13 / IBC 504.2) ADDS a story over the NS base —
+    # the prior model subtracted one for non-sprinklered buildings from
+    # values that were already the NS row, failing legal 2-story NS
+    # buildings and legal 3-story sprinklered ones.
+    eff = lim + 1 if sprinklered is True else lim
     if stories_above > eff:
-        suffix = ", non-sprinklered" if sprinklered is False else ""
+        suffix = " + sprinkler increase" if sprinklered is True else " (NS row)"
         return _fail(f"{stories_above} stories exceeds {eff}-story limit (Table 504.4{suffix}).")
     return _pass(f"{stories_above} stories within {eff}-story limit.")
 

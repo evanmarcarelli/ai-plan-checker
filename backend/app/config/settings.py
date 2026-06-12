@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # judgment-heavy reviewers once credits allow — no code change needed.
     strong_review_categories: str = ""
 
+    # How many department reviewers run concurrently. 2 is the Render Free
+    # ceiling (see workflow.py for the empirical reasoning); bump via env
+    # DEPARTMENT_CONCURRENCY after a dyno upgrade — no code change needed.
+    department_concurrency: int = 2
+
     # Supabase
     supabase_url: str = ""
     supabase_anon_key: str = ""

@@ -244,14 +244,29 @@ async def start_review(
     # Enqueue: write a 'pending' job row (instant). The worker takes it from
     # here. credit_charged is persisted so the worker can refund idempotently
     # on failure without this request being in the loop.
-    job_id = db.create_job(
-        user_id=user["id"],
-        filename=body.filename,
-        file_size=body.file_size,
-        storage_path=body.storage_path,
-        credit_charged=charged,
-        project_address=(body.project_address or "").strip()[:250] or None,
-    )
+    try:
+        job_id = db.create_job(
+            user_id=user["id"],
+            filename=body.filename,
+            file_size=body.file_size,
+            storage_path=body.storage_path,
+            credit_charged=charged,
+            project_address=(body.project_address or "").strip()[:250] or None,
+        )
+    except Exception as e:
+        # The credit was already decremented above; without a job row there is
+        # no refund path (refund_job_credit is keyed off the row), so
+        # compensate here before surfacing the failure.
+        logger.error(f"create_job failed after credit charge for {user['id']}: {e}")
+        if charged:
+            try:
+                db.add_credits(user["id"], 1)
+            except Exception as refund_err:
+                logger.error(f"compensating credit refund ALSO failed for {user['id']}: {refund_err}")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not start the review — please try again. Your credit was not consumed.",
+        )
 
     logger.info(f"Job {job_id} enqueued for user {user['id']}: {body.filename} ({body.file_size:,} bytes)")
 

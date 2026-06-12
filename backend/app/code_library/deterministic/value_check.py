@@ -134,11 +134,13 @@ def cross_check_table_claims(
             claimed = _first_number(f.required_value)
             if isinstance(tabular, int) and claimed is not None:
                 stats.checked += 1
-                legitimate = {tabular, max(1, tabular - 1)}  # non-sprinklered footnote
+                # Stored value is the NS row; sprinklering adds a story
+                # (IBC 504.2), so the S-row value tabular+1 is also legitimate.
+                legitimate = {tabular, tabular + 1}
                 if int(claimed) not in legitimate:
                     _downgrade(
                         f, "IBC Table 504.4 story limit", claimed,
-                        f"{tabular} (or {max(1, tabular - 1)} non-sprinklered)",
+                        f"{tabular} NS (or {tabular + 1} sprinklered)",
                     )
                     stats.mismatched += 1
             continue

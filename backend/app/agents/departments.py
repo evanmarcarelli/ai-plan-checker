@@ -329,20 +329,27 @@ from the plan text + code provided, lower your confidence rather than asserting.
 
         # Build a code-requirements block that puts the VERBATIM code text
         # front and centre so the model is forced to ground in it rather than
-        # invent values. Each requirement is presented as:
-        #   [CITATION] Title
-        #   <verbatim code text>
-        req_block_parts = []
-        for r in requirements:
-            req_block_parts.append(
-                f"[{r.code_id}] {r.description}\n{r.full_text or '(no text available)'}"
-            )
+        # invent values. The corpus category can be far larger than the prompt
+        # budget, so requirements are RANKED against this plan before the cut:
+        # curated checklist items first (they are the examiner's actual list),
+        # then corpus chunks by lexical overlap with the plan text. Untreated,
+        # JSONL filename sort order decided which codes the model saw — and
+        # ~98% of a large category (e.g. accessibility) was silently dropped
+        # while the header still claimed every item was under review.
+        REQ_BUDGET_CHARS = 18000
+        ranked = self._rank_requirements(requirements, f"{plan_summary}\n{relevant_text}")
+        req_block_parts: List[str] = []
+        included: List[CodeRequirement] = []
+        total_chars = 0
+        for r in ranked:
+            part = f"[{r.code_id}] {r.description}\n{r.full_text or '(no text available)'}"
+            if included and total_chars + len(part) > REQ_BUDGET_CHARS:
+                break
+            req_block_parts.append(part)
+            included.append(r)
+            total_chars += len(part) + 2
         req_block = "\n\n".join(req_block_parts)
-        # Cap context (Sonnet handles big inputs fine but we still want to be
-        # lean). Raised to fit the standard-correction-list items now injected
-        # alongside the code requirements.
-        if len(req_block) > 18000:
-            req_block = req_block[:18000] + "\n... (truncated)"
+        excluded_count = len(requirements) - len(included)
 
         # ---- STABLE prefix (cached) ----
         # The verbatim code requirements for this department + jurisdiction do
@@ -350,7 +357,7 @@ from the plan text + code provided, lower your confidence rather than asserting.
         # prompt caching bills them at ~10% of the input rate on warm runs.
         # This is the bulk of the input tokens, so it is the bulk of the saving.
         code_block = (
-            f"CODE REQUIREMENTS TO REVIEW ({len(requirements)} items) — each shown "
+            f"CODE REQUIREMENTS TO REVIEW ({len(included)} items) — each shown "
             f"with its CITATION and verbatim code text:\n\n{req_block}"
         )
 
@@ -362,7 +369,7 @@ from the plan text + code provided, lower your confidence rather than asserting.
         # a hard violation. This protects the 90% precision target as the
         # injected corrections deepen coverage.
         has_completeness = any(
-            getattr(r, "requirement_type", None) == "completeness" for r in requirements
+            getattr(r, "requirement_type", None) == "completeness" for r in included
         )
         completeness_guidance = (
             "\n\nSTANDARD CORRECTION-LIST (COMPLETENESS) ITEMS: some requirements "
@@ -406,7 +413,7 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
             parsed = None
 
         findings: List[ComplianceFinding] = []
-        req_map = {r.code_id: r for r in requirements}
+        req_map = {r.code_id: r for r in included}
 
         corpus = get_corpus()
         if parsed and isinstance(parsed, list):
@@ -415,7 +422,7 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                 req = req_map.get(code_id)
                 if not req:
                     # try partial match
-                    for r in requirements:
+                    for r in included:
                         if code_id and (code_id in r.code_id or r.code_id in code_id):
                             req = r
                             break
@@ -464,9 +471,13 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                     source_citation=source_citation,
                 ))
 
-        # Fill in any requirement the LLM skipped with a needs_review finding
+        # Fill in any requirement the LLM skipped with a needs_review finding —
+        # but ONLY requirements that were actually in the prompt. Backfilling
+        # requirements the model never saw used to spawn ~1,300 filler
+        # "Manual review required" findings per run, burying real violations
+        # and dragging every department to "conditional".
         covered = {f.code_requirement.code_id for f in findings}
-        for req in requirements:
+        for req in included:
             if req.code_id not in covered:
                 findings.append(ComplianceFinding(
                     finding_id=str(uuid.uuid4())[:8],
@@ -478,7 +489,65 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                     category=req.category,
                 ))
 
+        # Requirements that didn't fit the prompt budget collapse into ONE
+        # informational line (NOT_APPLICABLE keeps it out of the compliance
+        # score) instead of a finding apiece — honest about coverage without
+        # drowning the report.
+        if excluded_count > 0:
+            findings.append(ComplianceFinding(
+                finding_id=str(uuid.uuid4())[:8],
+                code_requirement=CodeRequirement(
+                    code_id=f"COVERAGE-{self.department_code.upper()}",
+                    code_name="Review coverage note",
+                    section="coverage",
+                    description="Corpus requirements outside this run's prompt budget.",
+                    category=self.category,
+                    requirement_type="general",
+                    jurisdiction_specific=False,
+                ),
+                status=ComplianceStatus.NOT_APPLICABLE,
+                description=(
+                    f"{excluded_count} lower-relevance {self.department_name} corpus "
+                    f"requirement(s) were not individually evaluated this run "
+                    f"(ranked below the prompt budget for this plan)."
+                ),
+                severity="low",
+                category=self.category,
+            ))
+
         return findings
+
+    @staticmethod
+    def _rank_requirements(
+        requirements: List[CodeRequirement], plan_context: str
+    ) -> List[CodeRequirement]:
+        """Order requirements by relevance to THIS plan before the prompt cut.
+
+        Curated checklist/completeness items come first unconditionally — they
+        are the examiner's actual correction list, injected per department on
+        purpose. Corpus chunks follow, scored by token overlap between the
+        requirement text and the plan excerpt (length-normalized so a long
+        chunk can't win on bulk). Ties keep load order, so behavior is stable
+        when there is no plan text at all.
+        """
+        from app.code_library.corpus_loader import tokenize
+        plan_tokens = set(tokenize(plan_context or ""))
+
+        def overlap(r: CodeRequirement) -> float:
+            toks = set(tokenize(f"{r.description} {(r.full_text or '')[:1500]}"))
+            if not toks or not plan_tokens:
+                return 0.0
+            return len(toks & plan_tokens) / (len(toks) ** 0.5)
+
+        curated: List[CodeRequirement] = []
+        scored: List[tuple] = []
+        for i, r in enumerate(requirements):
+            if getattr(r, "requirement_type", None) == "completeness":
+                curated.append(r)
+            else:
+                scored.append((-overlap(r), i, r))
+        scored.sort(key=lambda t: (t[0], t[1]))
+        return curated + [r for _, _, r in scored]
 
     def _summarize(self, findings: List[ComplianceFinding]) -> ComplianceSummary:
         total = len(findings)

@@ -432,6 +432,19 @@ class PlanCheckerWorkflow:
         # is handed its verified findings as authoritative context — the LLM
         # never recomputes area/story/completeness math (where it silently
         # errs). The gated findings also surface as their own department below.
+        # GIS fire-hazard verdict → the engine's WUI input. Without this the
+        # entire CALFIRE_WUI_RULES family was unreachable (pd.wui_zone was
+        # never assigned anywhere), so a confirmed VHFHSZ rebuild produced
+        # ZERO deterministic Chapter 7A findings.
+        fire_overlay = ((state.get("site_context") or {}).get("overlays") or {}).get("fire_hazard") or {}
+        if fire_overlay.get("in_zone") and pd.wui_zone is None:
+            pd.wui_zone = (fire_overlay.get("severity") or "high").lower().replace(" ", "_")
+            await emit(
+                "Deterministic Code Check",
+                f"WUI tier set from GIS fire-hazard overlay: {pd.wui_zone} — "
+                f"CBC Chapter 7A rules will be evaluated.",
+            )
+
         det_overlays = resolved_stack.overlays if resolved_stack else None
         is_residential = (pd.plan_type and pd.plan_type.value in ("residential", "mixed_use"))
         det_ladbs_sfd = bool(
@@ -450,15 +463,21 @@ class PlanCheckerWorkflow:
 
         # Bounded concurrency: limit the parallel reviewers so Render Free
         # is not asked to juggle 10 simultaneous outbound HTTPS calls.
-        sem = asyncio.Semaphore(DEPARTMENT_CONCURRENCY)
+        # Env-overridable (DEPARTMENT_CONCURRENCY) so a dyno upgrade is a
+        # config change, not a code change.
+        sem = asyncio.Semaphore(
+            int(getattr(settings, "department_concurrency", DEPARTMENT_CONCURRENCY))
+        )
 
         async def run_one(dept: DepartmentReviewer) -> DepartmentReview:
             dept_codes = (
                 codes_by_category.get(dept.category, [])
                 + checklist_reqs.get(dept.department_code, [])
             )
-            await emit(dept.department_name, f"Starting review ({len(dept_codes)} codes)...")
             async with sem:
+                # Emit inside the semaphore so the agent timeline shows when
+                # this reviewer actually started, not when it joined the queue.
+                await emit(dept.department_name, f"Starting review ({len(dept_codes)} codes)...")
                 return await _do_review(dept, dept_codes)
 
         async def _do_review(dept: DepartmentReviewer, dept_codes: list) -> DepartmentReview:
@@ -524,6 +543,21 @@ class PlanCheckerWorkflow:
                 )
 
         reviews: List[DepartmentReview] = await asyncio.gather(*(run_one(d) for d in self.departments))
+
+        # ----- HOLLOW-REPORT GUARD -----
+        # A failed LLM call falls back to a mock response, which backfills the
+        # department as all-needs_review — indistinguishable in the report from
+        # a genuine conditional review. One or two failures are tolerable and
+        # visible in the agent log; when a third of the panel is hollow, the
+        # report is not worth a credit. Raising here routes through the
+        # worker's terminal-fail path, which refunds idempotently.
+        failed_depts = [d.department_name for d in self.departments if d.last_llm_error]
+        if len(failed_depts) >= 3:
+            raise RuntimeError(
+                f"{len(failed_depts)} of {len(self.departments)} department reviews "
+                f"failed at the LLM layer ({', '.join(failed_depts[:4])}) — failing this "
+                f"run (with refund) instead of shipping a hollow report."
+            )
 
         # ----- CITATION GATE (enrich the LLM findings) + DET DEPARTMENT -----
         # The deterministic findings were computed up front (above) and shared

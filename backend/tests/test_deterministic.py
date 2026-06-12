@@ -45,10 +45,16 @@ def test_area_missing_input_is_info():
     assert check_allowable_area(None, "V-B", 8000).status == "info"
 
 
-def test_stories_non_sprinklered_loses_a_floor():
-    # B/V-B tabular limit is 2; non-sprinklered drops to 1.
-    assert check_allowable_stories("B", "V-B", 2, sprinklered=False).status == "fail"
-    assert check_allowable_stories("B", "V-B", 2, sprinklered=True).status == "pass"
+def test_stories_sprinklered_gains_a_floor():
+    # The stored table is the NON-SPRINKLERED row of Table 504.4 (B/V-B = 2).
+    # Sprinklering ADDS a story (IBC 504.2): 2 stories NS is legal at the NS
+    # limit; 3 stories is legal only when sprinklered. (The previous model
+    # subtracted a story for NS buildings from values that were already the
+    # NS row — failing legal 2-story NS buildings.)
+    assert check_allowable_stories("B", "V-B", 2, sprinklered=False).status == "pass"
+    assert check_allowable_stories("B", "V-B", 3, sprinklered=False).status == "fail"
+    assert check_allowable_stories("B", "V-B", 3, sprinklered=True).status == "pass"
+    assert check_allowable_stories("B", "V-B", 4, sprinklered=True).status == "fail"
 
 
 def test_min_exits_thresholds():

@@ -70,20 +70,42 @@ async def run_job(job_id: str, worker_id: str, lease_sec: int) -> None:
     file_path = os.path.join(settings.upload_folder, f"{job_id}.pdf")
 
     # Lease keep-alive. Runs for the whole job; cancelled in finally.
+    # heartbeat_job returns False when the lease was reclaimed by another
+    # worker — ignoring that (as this used to) let two workers run the same
+    # job to completion: double LLM spend, duplicated findings, and the
+    # loser's terminal write clobbering the winner's. On loss, set the event;
+    # the pipeline race below aborts THIS run and leaves the job (and its
+    # storage file) entirely to the new owner.
+    lease_lost = asyncio.Event()
+
     async def _heartbeat() -> None:
         while True:
             await asyncio.sleep(HEARTBEAT_SEC)
             try:
-                await asyncio.to_thread(db.heartbeat_job, job_id, worker_id, lease_sec)
+                alive = await asyncio.to_thread(db.heartbeat_job, job_id, worker_id, lease_sec)
             except Exception:
-                pass
+                continue
+            if alive is False:
+                logger.error(
+                    f"Job {job_id}: lease lost to another worker — aborting this run"
+                )
+                lease_lost.set()
+                return
 
     heartbeat_task = asyncio.create_task(_heartbeat())
 
     try:
-        # 1. Download from Supabase Storage (network I/O → thread).
+        # 1. Download from Supabase Storage (network I/O → thread). Bounded:
+        # a wedged download used to run forever under an immortal heartbeat,
+        # pinning the only worker and halting the whole queue.
         try:
-            content = await asyncio.to_thread(db.download_plan, storage_path)
+            content = await asyncio.wait_for(
+                asyncio.to_thread(db.download_plan, storage_path), timeout=180,
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Job {job_id}: storage download timed out")
+            _terminal_fail(job_id, "Could not download the uploaded file (timeout).")
+            return
         except Exception as e:
             logger.error(f"Job {job_id}: storage download failed: {e}")
             _terminal_fail(job_id, "Uploaded file not found in storage.")
@@ -100,17 +122,35 @@ async def run_job(job_id: str, worker_id: str, lease_sec: int) -> None:
             await f.write(content)
         del content
 
-        # 4. Lossless compression (best-effort, CPU-bound → thread).
+        # 4. Lossless compression (best-effort, CPU-bound → thread). Bounded
+        # for the same reason as the download — best-effort must not be
+        # allowed to wedge the worker.
         try:
-            _, before_b, after_b = await asyncio.to_thread(compress_pdf, file_path)
+            _, before_b, after_b = await asyncio.wait_for(
+                asyncio.to_thread(compress_pdf, file_path), timeout=180,
+            )
             if after_b < before_b:
                 saved = (1 - after_b / before_b) * 100
                 logger.info(f"Job {job_id}: compressed {before_b:,} -> {after_b:,} bytes (-{saved:.1f}%)")
         except Exception as e:
             logger.warning(f"Job {job_id}: compression skipped ({e})")
 
-        # 5. Run the multi-agent pipeline + persist results.
-        await _run_pipeline(job_id, file_path, row)
+        # 5. Run the multi-agent pipeline + persist results — racing the
+        # lease. If another worker reclaims the job mid-run, abandon ours
+        # WITHOUT touching the job row or the storage file (the new owner
+        # still needs both); whatever it spent is sunk, but it can't corrupt
+        # the winner's result.
+        pipeline_task = asyncio.create_task(_run_pipeline(job_id, file_path, row))
+        lost_waiter = asyncio.create_task(lease_lost.wait())
+        done, _ = await asyncio.wait(
+            {pipeline_task, lost_waiter}, return_when=asyncio.FIRST_COMPLETED
+        )
+        if lost_waiter in done and pipeline_task not in done:
+            pipeline_task.cancel()
+            logger.error(f"Job {job_id}: abandoned mid-pipeline after lease loss")
+            return
+        lost_waiter.cancel()
+        await pipeline_task  # propagate result / exception
 
     finally:
         heartbeat_task.cancel()
@@ -119,8 +159,9 @@ async def run_job(job_id: str, worker_id: str, lease_sec: int) -> None:
                 os.remove(file_path)
         except Exception:
             pass
-        # The original upload is no longer needed once processed.
-        if storage_path:
+        # The original upload is no longer needed once processed — unless the
+        # job now belongs to another worker that still has to download it.
+        if storage_path and not lease_lost.is_set():
             db.delete_plan(storage_path)
 
 

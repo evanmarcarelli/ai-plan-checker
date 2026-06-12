@@ -25,6 +25,14 @@ jobs:
           OPENAI_API_KEY: sk-test-dummy
           SECRET_KEY: test-secret-key-32-characters-long
           DATABASE_URL: sqlite+aiosqlite:///./test.db
+      # Deterministic-engine accuracy floor. Runs fully offline (no API keys).
+      # The floor sits just under the current measured F1 so accuracy can only
+      # ratchet UP from here; raise it as eval-case false positives are
+      # triaged, toward PILOT_TARGETS (precision 0.90 / recall 0.85) in
+      # app/config/pilot.py. Before this gate existed, the eval was failing
+      # its own targets (F1 ~0.70) and nothing noticed.
+      - name: Deterministic-engine accuracy floor
+        run: python -m scripts.eval.run_eval --min-f1 0.65
 
   frontend-lint:
     runs-on: ubuntu-latest

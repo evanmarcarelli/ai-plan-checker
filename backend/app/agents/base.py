@@ -117,6 +117,15 @@ class BaseAgent(ABC):
                 )
                 # Success — clear any stale error state from a previous retry.
                 self.last_llm_error = None
+                if getattr(response, "stop_reason", None) == "max_tokens":
+                    # Output was cut mid-stream. Don't fail the call — the
+                    # JSON salvage in _parse_json_response recovers the
+                    # complete prefix — but make the truncation visible.
+                    logger.warning(
+                        f"[{self.name}] response truncated at max_tokens="
+                        f"{max_tokens or settings.anthropic_max_tokens}; "
+                        f"parsing will salvage the complete prefix"
+                    )
                 return response.content[0].text if response.content else ""
             except _RETRIABLE_LLM_ERRORS as e:
                 last_error = e
@@ -166,5 +175,53 @@ class BaseAgent(ABC):
                 except Exception:
                     continue
 
+        salvaged = self._salvage_truncated_array(text)
+        if salvaged is not None:
+            logger.warning(
+                f"[{self.name}] salvaged {len(salvaged)} complete object(s) from a "
+                f"truncated JSON array (likely max_tokens cut)"
+            )
+            return salvaged
+
         logger.warning(f"[{self.name}] Could not parse JSON from response: {text[:200]}")
         return None
+
+    @staticmethod
+    def _salvage_truncated_array(text: str) -> Optional[list]:
+        """Recover the complete objects from a JSON array whose tail was cut
+        off (max_tokens). A truncated array used to discard the ENTIRE
+        response — every real finding a department produced — and trigger the
+        all-needs_review backfill. Brace-depth scan, string-aware; returns
+        None when no complete object exists."""
+        start = text.find("[")
+        if start == -1:
+            return None
+        depth = 0
+        in_string = False
+        escaped = False
+        last_complete = None
+        for i in range(start + 1, len(text)):
+            ch = text[i]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            if ch == '"':
+                in_string = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    last_complete = i
+        if last_complete is None:
+            return None
+        try:
+            result = json.loads(text[start : last_complete + 1] + "]")
+            return result if isinstance(result, list) and result else None
+        except Exception:
+            return None
