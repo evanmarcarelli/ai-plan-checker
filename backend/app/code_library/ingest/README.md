@@ -16,6 +16,7 @@ shape the retriever loads.
 | **Licensed code PDFs** | `licensed_pdf.py` | local files (ICC purchase, state-published editions) | IBC / IFC / CBC / CRC / any ICC-style code the operator holds a license for |
 | **CA Legislature** | `ca_leginfo.py` | leginfo.legislature.ca.gov | Curated statutes the rules cite: Gov. Code §§51175–51189 (VHFSZ / defensible space), §§66310/66314/66333 (ADU law), PRC §4291 — official state publication, public domain, **no Cloudflare** |
 | **Ventura County Building Code** | `vcbc.py` | local file (county-published Ord. 4655 PDF) | Unincorporated Ventura County: the compiled VCBC — adoption of the 2025 Title 24 parts plus county amendments to CBC/CRC/CEC/CMC/CPC/CWUIC/CalGreen/IPMC/ISPSC and county-original articles (post-disaster, mobile homes, limited-density dwellings) — county edict, public domain |
+| **California Energy Code** | `energy_code.py` | local file (CEC's own published PDF, free) | Statewide (CA): the adopted 2025 Energy Code (Title 24, Part 6, CEC-400-2025-010-F) — §§100.0–180.4, all occupancies + single-family + multifamily — California state edict, public domain. **Do not** ingest the CEC "Restructured … For Information Only" draft (renumbered, non-adopted). |
 | **ADA 2010 Standards** | `ada_gov.py` | ada.gov | The complete 2010 ADA Standards for Accessible Design (~1,100 provisions) — US government work, public domain, **no Cloudflare** |
 
 > **Neighborhoods of Los Angeles** (Hollywood, Venice, Silver Lake, Echo Park,
@@ -166,6 +167,30 @@ ARTICLE headers and namespaces each article's chunks by the code it amends
 cd backend
 python -m app.code_library.ingest vcbc --pdf ~/codes/vcbc_ord4655.pdf
 ```
+
+## California Energy Code (Title 24, Part 6)
+
+`energy_code.py` ingests the **adopted** CA Energy Code from the California
+Energy Commission's own published PDF — a state edict (public domain), free to
+download, so no license is needed. The Energy Code is not ICC-shaped: sections
+are numbered 100.0–180.4 (globally unique) under SUBCHAPTER divisions, with the
+front-matter TOC and bundled back-matter reference appendices both carrying
+section-number-shaped lines that the parser slices out. Section-level chunks
+are forced to the `energy` category (the whole part is the energy reviewer's
+domain) and scoped to `CA`:
+
+```bash
+cd backend
+python -m app.code_library.ingest energy-code \
+    --pdf ~/codes/CEC-400-2025-010-F.pdf      # the ADOPTED edition
+```
+
+**Get the right PDF.** Download "2025 Building Energy Efficiency Standards …
+Title 24, Part 6" (publication **CEC-400-2025-010-F**) from energy.ca.gov.
+**Do not** use the CEC's "Restructured 2025 Energy Code — For Information Only"
+PDF: it renumbers every section and is explicitly *not* the adopted code, so
+its citations would not match enforcement. The ingester refuses it (it carries
+the phrase "not been formally adopted").
 
 ## Current blocker: Cloudflare (as of 2026-06)
 

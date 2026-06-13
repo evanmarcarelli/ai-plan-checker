@@ -269,6 +269,16 @@ def cmd_vcbc(args: argparse.Namespace) -> int:
     return 0 if written else 4
 
 
+def cmd_energy_code(args: argparse.Namespace) -> int:
+    """Ingest the adopted California Energy Code (Title 24, Part 6) from the
+    CEC's own published PDF (state edict — CEC-400-2025-010-F)."""
+    from app.code_library.ingest.energy_code import ingest_energy_code
+
+    written = ingest_energy_code(args.pdf, max_sections=args.max)
+    logger.info(f"[energy-code] wrote {written} chunks")
+    return 0 if written else 4
+
+
 def cmd_ladbs_local(args: argparse.Namespace) -> int:
     import glob as _glob
     from app.code_library.ingest.ladbs import ingest_ladbs_files
@@ -493,6 +503,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_vc.add_argument("--pdf", required=True, help="local VCBC ordinance PDF path")
     p_vc.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
     p_vc.set_defaults(func=cmd_vcbc)
+
+    p_en = sub.add_parser(
+        "energy-code",
+        help="ingest the adopted CA Energy Code (Title 24, Part 6) from the "
+             "CEC's published PDF (state edict, free, public domain), scoped CA",
+    )
+    p_en.add_argument("--pdf", required=True,
+                      help="adopted CEC Energy Code PDF (CEC-400-2025-010-F)")
+    p_en.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_en.set_defaults(func=cmd_energy_code)
 
     p_ll = sub.add_parser(
         "ladbs-local", help="ingest hand-downloaded LADBS bulletin PDFs (no scraping)"
