@@ -32,22 +32,30 @@ export default function ScrollBuildingHero() {
   // The tagline stays anchored above the scene the entire scroll — it's the
   // narrative spine — so no time-based fade. Only the small wordmark and the
   // trusted-by row fade in/out by phase.
-  const wordmarkOpacity = useTransform(scrollYProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
-  const trustedOpacity  = useTransform(scrollYProgress, [0.86, 0.97],       [0, 1]);
-  const trustedY        = useTransform(scrollYProgress, [0.86, 0.97],       [12, 0]);
+  const wordmarkOpacity = useTransform(scrollYProgress, [0.00, 0.12, 0.21], [1, 1, 0]);
+  // Trusted-by rises in at the "final form" hold, then clears as the fly-in
+  // begins so it isn't left floating while the camera dives into the building.
+  const trustedOpacity  = useTransform(scrollYProgress, [0.55, 0.64, 0.69, 0.75], [0, 1, 1, 0]);
+  const trustedY        = useTransform(scrollYProgress, [0.55, 0.64],             [12, 0]);
+  // Bright-interior bloom: a quick veil to the page colour as the camera pushes
+  // through the doors, handing straight off to the <Hero/> section below.
+  const bloomOpacity    = useTransform(scrollYProgress, [0.92, 1.0],              [0, 1]);
 
   // Tagline vertical position: starts higher (above the plan set in the
   // lower half of the frame), then eases down once the plan fades and the
   // building rises so the line sits closer to the city skyline.
-  const taglineTop = useTransform(scrollYProgress, [0.0, 0.45, 1.0], ["22vh", "32vh", "32vh"]);
+  const taglineTop     = useTransform(scrollYProgress, [0.0, 0.30, 0.673], ["22vh", "32vh", "32vh"]);
+  // Tagline holds through the intro / final form, then fades as the dive begins.
+  const taglineOpacity = useTransform(scrollYProgress, [0.67, 0.75], [1, 0]);
 
   return (
     <section
       ref={containerRef}
-      // 350vh of scroll runway — three viewport-heights to play through the
-      // full extrusion sequence without feeling rushed or interminable.
+      // 520vh of scroll runway: the first ~350vh plays the blueprint→city
+      // extrusion, the final ~170vh flies the camera through the front doors
+      // into a bright lobby that hands off to the section below.
       className="relative w-full"
-      style={{ height: "350vh", background: "#FFFFFF" }}
+      style={{ height: "520vh", background: "#FFFFFF" }}
       aria-label="Architechtura: from blueprint to building"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
@@ -66,7 +74,6 @@ export default function ScrollBuildingHero() {
               className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.025em]"
               style={{ color: "#0B1220", fontFamily: "var(--font-display)" }}
             >
-              {/* Wordmark — "Architechtura" followed by the northeast arrow */}
               Architechtura
             </span>
             <ArrowUpRight
@@ -82,7 +89,7 @@ export default function ScrollBuildingHero() {
             then eases down as the building rises so the line lives closer
             to the skyline at the end of the scroll. */}
         <motion.div
-          style={{ top: taglineTop }}
+          style={{ top: taglineTop, opacity: taglineOpacity }}
           className="pointer-events-none absolute left-0 right-0 px-6"
         >
           <div className="max-w-3xl mx-auto text-center">
@@ -143,6 +150,13 @@ export default function ScrollBuildingHero() {
             />
           </div>
         </motion.div>
+
+        {/* Bright-interior bloom — final veil that carries the eye out of the
+            3D scene and into the page as the camera passes through the doors. */}
+        <motion.div
+          style={{ opacity: bloomOpacity, background: "var(--bg)" }}
+          className="pointer-events-none absolute inset-0 z-10"
+        />
       </div>
     </section>
   );

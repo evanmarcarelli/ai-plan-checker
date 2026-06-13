@@ -401,7 +401,7 @@ export default function Dashboard() {
           className="hidden lg:flex flex-col flex-shrink-0 w-[264px] sticky top-16 self-start border-r"
           style={{ height: "calc(100vh - 4rem)", borderColor: "var(--border)", background: "var(--bg-card)" }}
         >
-          <RecentsRail jobs={recentJobs} activeJobId={jobId} onSelect={openReport} loading={recentsLoading} />
+          <RecentsRail jobs={recentJobs} activeJobId={jobId} onSelect={openReport} onNew={handleReset} loading={recentsLoading} />
         </aside>
 
         {/* ── Recent reports drawer (mobile) ── */}
@@ -414,6 +414,7 @@ export default function Dashboard() {
                 jobs={recentJobs}
                 activeJobId={jobId}
                 onSelect={(id) => { openReport(id); setRecentsOpen(false); }}
+                onNew={() => { handleReset(); setRecentsOpen(false); }}
                 loading={recentsLoading}
               />
             </aside>
