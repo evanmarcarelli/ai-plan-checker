@@ -122,12 +122,19 @@ class CodeCorpus:
         self.chunks: List[CodeChunk] = []
         self.by_citation: Dict[str, CodeChunk] = {}
         self.by_section: Dict[str, CodeChunk] = {}
+        # All chunks sharing a bare section number. Section numbers collide
+        # across codes (IBC, CEBC, CBC, CRC all have a "506.2"), so a single
+        # by_section entry can't answer a code-prefixed citation correctly —
+        # the prefixed fallback searches this list for the matching code.
+        self.by_section_all: Dict[str, List[CodeChunk]] = {}
 
     def add(self, chunk: CodeChunk) -> None:
         self.chunks.append(chunk)
         self.by_citation[chunk.citation.lower()] = chunk
         # Also index by section alone (so "404.2.3" finds it even without code prefix)
-        self.by_section.setdefault(chunk.section.lower(), chunk)
+        sec = chunk.section.lower()
+        self.by_section.setdefault(sec, chunk)
+        self.by_section_all.setdefault(sec, []).append(chunk)
 
     @staticmethod
     def _code_prefix(key: str) -> Optional[str]:
@@ -148,14 +155,25 @@ class CodeCorpus:
         m = re.search(r"\d+[a-z]?(?:\.\d+[a-z]?)*", key)
         if not m:
             return None
-        chunk = self.by_section.get(m.group(0))
-        if chunk is None:
+        candidates = self.by_section_all.get(m.group(0))
+        if not candidates:
             return None
         prefix = self._code_prefix(key)
         if prefix is None:
-            return chunk
-        short = chunk.code_short.lower()
-        return chunk if (prefix in short or short in prefix) else None
+            # Bare section number, no code named: any code that has it answers.
+            return candidates[0]
+        # Code-prefixed citation: only a chunk from THAT code verifies it, even
+        # when several codes share the bare number. "table"/"section" lead-ins
+        # ("IBC Table 506.2") aren't code tokens, so a prefix that matches no
+        # candidate's code_short falls back to matching any (the bare number is
+        # still real) rather than failing closed on the lead-in word.
+        for c in candidates:
+            short = c.code_short.lower()
+            if prefix in short or short in prefix:
+                return c
+        if prefix in {"table", "section", "sections", "chapter", "appendix", "figure"}:
+            return candidates[0]
+        return None
 
     def has_section(self, citation_or_section: str) -> bool:
         """Verify a citation string actually exists in the corpus."""

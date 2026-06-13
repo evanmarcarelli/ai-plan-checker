@@ -38,6 +38,7 @@ records:
       mechanical:    { code: CMC,        part: "T24 Pt 4",    edition: "2025", base_model: "2024 UMC" }   # [verify] UMC year
       plumbing:      { code: CPC,        part: "T24 Pt 5",    edition: "2025", base_model: "2024 UPC" }   # [verify] UPC year
       energy:        { code: "Energy Code", part: "T24 Pt 6", edition: "2025", corpus_short: "T24-P6" }   # [confirmed] ingested: corpus/ca_energy_code_2025.jsonl (CEC-400-2025-010-F)
+      existing:      { code: CEBC,       part: "T24 Pt 10",   edition: "2025", base_model: "2024 IEBC", corpus_short: "CEBC" }   # [confirmed] ingested: corpus/ca_cebc_2025.jsonl (incl. Jan 2026 erratum); licensed
       fire:          { code: CFC,        part: "T24 Pt 9",    edition: "2025", base_model: "2024 IFC" }   # [verify]
       green:         { code: CALGreen,   part: "T24 Pt 11",   edition: "2025" }
       accessibility: { code: "CBC Ch 11A/11B", part: "T24 Pt 2", edition: "2025" }

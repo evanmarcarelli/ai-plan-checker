@@ -81,6 +81,15 @@ _FURNITURE_RES = [
     re.compile(r"^\s*\d{4}\s+(?:INTERNATIONAL|CALIFORNIA)[^\n]*$",     # ed. footer
                re.MULTILINE | re.IGNORECASE),
     re.compile(r"^\s*Copyright\s*©[^\n]*$", re.MULTILINE | re.IGNORECASE),
+    # Public.Resource.Org / ICC licensed-copy watermark furniture (one per
+    # page): a bare order/transaction number too long to be a page number, the
+    # colored page-tab marker, and the effective-date running header. These are
+    # common to ICC PDFs purchased through that channel (CEBC, CBC, CRC, …).
+    re.compile(r"^\s*\d{5,}\s*$", re.MULTILINE),                       # bare order #
+    re.compile(r"^\s*(?:BUFF|BLUE|TAN)\s*$", re.MULTILINE),            # page-tab color
+    re.compile(r"^\s*(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|"
+               r"AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{1,2},?\s+\d{4}\s*$",
+               re.MULTILINE | re.IGNORECASE),                          # eff.-date header
 ]
 
 

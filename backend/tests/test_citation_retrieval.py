@@ -95,6 +95,30 @@ def test_parent_section(section, expected):
     assert _parent_section(section) == expected
 
 
+def test_has_section_resolves_cross_code_collisions_by_prefix():
+    """Section numbers collide across codes (IBC, CEBC, CBC, CRC all have a
+    "506.2"). A code-prefixed citation must resolve to a chunk of THAT code,
+    not whichever loaded first — otherwise ingesting one code regresses
+    another's citation verification (this happened when CEBC shadowed IBC
+    506.2 in the single-entry by_section map)."""
+    c = CodeCorpus()
+    common = dict(code_name="x", version="2025", title="t",
+                  category="building_safety", jurisdictions=["*"], text="body", tags=[])
+    # CEBC loads first (alphabetical corpus filename), shadowing the old map.
+    c.add(CodeChunk(chunk_id="cebc-506.2", code_short="CEBC", section="506.2", **common))
+    c.add(CodeChunk(chunk_id="ibc-506.2", code_short="IBC", section="506.2", **common))
+
+    assert c.has_section("IBC Table 506.2")    # the regressed case
+    assert c.has_section("IBC 506.2")
+    assert c.has_section("CEBC 506.2")
+    assert c.get("IBC 506.2").code_short == "IBC"
+    assert c.get("CEBC 506.2").code_short == "CEBC"
+    # A code we don't have must still fail closed, not match a sibling code.
+    assert not c.has_section("CRC 506.2")
+    # A bare number (no code named) resolves to any code that has it.
+    assert c.has_section("506.2")
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # Quote extraction
 # ─────────────────────────────────────────────────────────────────────────
