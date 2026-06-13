@@ -269,6 +269,47 @@ def cmd_vcbc(args: argparse.Namespace) -> int:
     return 0 if written else 4
 
 
+def cmd_gov_fetch(args: argparse.Namespace) -> int:
+    """Auto-fetch + ingest FREE government-published code sources (the Energy
+    Code, ADA, leginfo statutes, Coastal Act, Malibu LIP). Licensed ICC/IAPMO
+    codes are shown by --list but must be ingested from a local copy."""
+    from app.code_library.ingest.gov_sources import (
+        REGISTRY, KNOWN_LICENSED, fetch_and_ingest, get_source,
+    )
+
+    if args.list or (not args.key and not args.all):
+        print("Free, auto-fetchable government sources (gov-fetch --key <key>):")
+        for s in REGISTRY:
+            print(f"  {s.key:14s} [{s.scope:11s}] {s.name}")
+            if s.note:
+                print(f"  {'':14s}  └─ {s.note}")
+        print("\nLicensed codes — NOT auto-fetchable; ingest from a purchased/")
+        print("licensed local copy with the listed command:")
+        for short, name, pub, cmd in KNOWN_LICENSED:
+            print(f"  {short:6s} ({pub:6s}) {name:46s} → {cmd}")
+        return 0
+
+    keys = [s.key for s in REGISTRY] if args.all else [args.key]
+    total, ok = 0, 0
+    for k in keys:
+        if get_source(k) is None:
+            logger.error(f"[gov-fetch] unknown source {k!r}")
+            if not args.all:
+                return 2
+            continue
+        try:
+            written = fetch_and_ingest(k, force=args.force, max_sections=args.max)
+            logger.info(f"[gov-fetch] {k}: wrote {written} chunks")
+            total += written
+            ok += 1
+        except Exception as e:
+            logger.error(f"[gov-fetch] {k} failed: {e}")
+            if not args.all:
+                return 4
+    logger.info(f"[gov-fetch] done: {ok}/{len(keys)} source(s), {total} chunks total")
+    return 0 if ok else 4
+
+
 def cmd_energy_code(args: argparse.Namespace) -> int:
     """Ingest the adopted California Energy Code (Title 24, Part 6) from the
     CEC's own published PDF (state edict — CEC-400-2025-010-F)."""
@@ -503,6 +544,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_vc.add_argument("--pdf", required=True, help="local VCBC ordinance PDF path")
     p_vc.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
     p_vc.set_defaults(func=cmd_vcbc)
+
+    p_gf = sub.add_parser(
+        "gov-fetch",
+        help="auto-fetch + ingest FREE government code sources (Energy Code, "
+             "ADA, leginfo, Coastal Act, Malibu LIP); --list shows all",
+    )
+    p_gf.add_argument("--key", help="one source key (see --list)")
+    p_gf.add_argument("--all", action="store_true", help="fetch every free source")
+    p_gf.add_argument("--list", action="store_true", help="list sources (free + licensed) and exit")
+    p_gf.add_argument("--force", action="store_true", help="re-download even if cached")
+    p_gf.add_argument("--max", type=int, default=None, help="cap sections (test runs)")
+    p_gf.set_defaults(func=cmd_gov_fetch)
 
     p_en = sub.add_parser(
         "energy-code",

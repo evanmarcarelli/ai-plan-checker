@@ -24,6 +24,29 @@ shape the retriever loads.
 > City of LA and are governed by the LAMC plus LADBS bulletins. They do not
 > need separate ingester entries.
 
+## Auto-fetch registry (free government sources)
+
+`gov_sources.py` is the "go to the site that hosts the free copy and pull it
+in" path, scoped to sources that are genuinely free to download and
+republish — government works / state edicts (public domain). It downloads to
+the shared `code-pdfs/` cache (idempotent, validated) and dispatches to the
+right ingester:
+
+```bash
+cd backend
+python -m app.code_library.ingest gov-fetch --list           # free + licensed map
+python -m app.code_library.ingest gov-fetch --key energy-code # fetch + ingest one
+python -m app.code_library.ingest gov-fetch --all             # every free source
+python -m app.code_library.ingest gov-fetch --key energy-code --force  # re-download
+```
+
+Free sources: `energy-code` (CEC Energy Code PDF), `ada-2010`, `ca-leginfo`,
+`ca-coastal`, `malibu-lip`. **Licensed ICC/IAPMO codes (CBC, CRC, CEBC, CFC,
+CPC, CMC) are deliberately NOT auto-fetchable** — they're copyrighted and
+Cloudflare/paywall-gated; ingest a purchased/licensed local copy via
+`licensed-pdf` (or `vcbc` for the county ordinance). `gov-fetch --list` prints
+both lists so the free-vs-buy picture is in one place.
+
 ## Run it
 
 ```bash
