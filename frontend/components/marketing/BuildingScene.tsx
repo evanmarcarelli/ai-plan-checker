@@ -28,9 +28,10 @@ const smoothstep = (e0: number, e1: number, x: number) => {
 };
 
 // ────────────────── Building footprint (single source of truth) ───────────────
-// A multi-use mixed-tower highrise: a wide podium, a main residential tower with
-// a stepped setback at mid-height, a secondary office tower, and a mechanical
-// crown. Each block is a stacked Box. World units are meters (informally).
+// A slender glass tower in the "56 Leonard / Jenga" style: smooth shaft segments
+// punctuated by MULTIPLE clusters of stacked, cantilevered boxes that jut in
+// alternating directions — subtle low, more dramatic toward the top. Each block
+// is a Box; world units are meters.
 type Block = {
   x: number; z: number;
   w: number; d: number; h: number;
@@ -42,18 +43,31 @@ type Block = {
   color?: string;
 };
 const BLOCKS: Block[] = [
-  // Podium (mixed-use retail + lobby base — wide footprint, low height)
-  { x:  0,   z:  0,   w: 9,   d: 6.5, h: 2.5, greenRoof: true                                          },
-  // Main residential tower — sits on the podium, runs tall
-  { x: -1.2, z:  0,   w: 4.6, d: 4.2, h: 13.5, baseY: 2.5, color: "#E8F1FF"                            },
-  // Setback at mid-height (visual interest, smaller floorplate above)
-  { x: -1.2, z:  0,   w: 3.6, d: 3.4, h: 4.5,  baseY: 16.0, color: "#DAE8FA"                           },
-  // Mechanical crown / penthouse cap
-  { x: -1.2, z:  0,   w: 2.8, d: 2.6, h: 1.6,  baseY: 20.5, color: "#C9D8EE", greenRoof: true          },
-  // Secondary office tower (shorter, offset to one side of the podium)
-  { x:  3.0, z:  0.6, w: 2.8, d: 3.2, h: 9.5,  baseY: 2.5, color: "#E1ECFB"                            },
-  // Cap on secondary tower
-  { x:  3.0, z:  0.6, w: 2.0, d: 2.4, h: 1.2,  baseY: 12.0, color: "#C9D8EE", greenRoof: true          },
+  // Base the tower rises from
+  { x: 0, z: 0, w: 6,   d: 5,   h: 2,   color: "#DCE8FA" },
+  // Lower smooth glass shaft
+  { x: 0, z: 0, w: 4,   d: 3.6, h: 4,   baseY: 2,   color: "#E8F1FF" },
+
+  // ── Jenga cluster A (lower, subtle offsets) ──
+  { x:  0.7, z:  0.3, w: 4.0, d: 3.6, h: 1.3, baseY:  6.0, color: "#E1ECFB" },
+  { x: -0.6, z: -0.4, w: 4.0, d: 3.8, h: 1.3, baseY:  7.3, color: "#DAE8FA" },
+  { x:  0.5, z:  0.5, w: 3.8, d: 3.4, h: 1.4, baseY:  8.6, color: "#E8F1FF" },
+
+  // Mid smooth shaft
+  { x: 0, z: 0, w: 3.8, d: 3.4, h: 2.5, baseY: 10.0, color: "#E8F1FF" },
+
+  // ── Jenga cluster B (mid, medium offsets) ──
+  { x: -0.9, z:  0.5, w: 4.0, d: 3.6, h: 1.3, baseY: 12.5, color: "#E1ECFB" },
+  { x:  1.0, z: -0.6, w: 4.0, d: 3.8, h: 1.3, baseY: 13.8, color: "#DAE8FA" },
+  { x: -0.6, z:  0.7, w: 3.8, d: 3.6, h: 1.4, baseY: 15.1, color: "#C9D8EE" },
+
+  // Short smooth setback
+  { x: 0, z: 0, w: 3.4, d: 3.0, h: 1.0, baseY: 16.5, color: "#E8F1FF" },
+
+  // ── Jenga crown (top, most dramatic offsets) ──
+  { x:  1.2, z:  0.6, w: 3.8, d: 3.2, h: 1.2, baseY: 17.5, color: "#E1ECFB" },
+  { x: -1.1, z: -0.7, w: 3.6, d: 3.4, h: 1.2, baseY: 18.7, color: "#DAE8FA" },
+  { x:  1.2, z:  0.6, w: 3.2, d: 2.8, h: 1.1, baseY: 19.9, color: "#C9D8EE" }, // top cap — aligned over the 3rd-from-top block (x:1.2, z:0.6)
 ];
 
 // ────────────────── Blueprint texture (procedural canvas) ────────────────────
@@ -68,7 +82,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Sheet — pure white, no vignette
+  // Sheet — pure white; black ink + a black border are drawn on top below
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, W, H);
 
@@ -83,7 +97,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "#000000";
   ctx.font = 'bold 24px "Inter", system-ui, sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText("MIXED-USE HIGHRISE — TYPICAL FLOOR PLAN", W / 2, 92);
+  ctx.fillText("RESIDENTIAL TOWER — TYPICAL FLOOR PLAN", W / 2, 92);
   ctx.font = '11px "DM Mono", monospace';
   ctx.fillText("SHEET: A2.01   ·   SCALE 1:200   ·   23-STORY TOWER   ·   ARCHITECHTURA PLAN REVIEW", W / 2, 112);
 
@@ -97,125 +111,219 @@ function createBlueprintTexture(): THREE.CanvasTexture {
     ctx.beginPath(); ctx.moveTo(64, y); ctx.lineTo(W - 64, y); ctx.stroke();
   }
 
-  // World → canvas mapping. Plane is 14u × 10u, centered. Scale = 64 px/u so
-  // the larger highrise footprint still fits inside the parchment.
-  const SC = 64;
-  const CX = W / 2, CY = H / 2;
-  const wx = (x: number) => CX + x * SC;
-  const wz = (z: number) => CY + z * SC;
+  // ───────────────── Detailed residential floor plate (canvas px) ───────────
+  // A luxury full-floor plate drawn directly in canvas pixels: a chamfered,
+  // articulated perimeter; a dense central core (3 elevators + 2 egress stairs
+  // + service shafts) wrapped by a corridor ring; and four corner residences
+  // with kitchens, baths and bedrooms — detailed enough to read as a real sheet.
+  const L = 215, T = 178, R = 812, B = 702;
+  const MX = (L + R) / 2, MY = (T + B) / 2;
+  const ch = 44;   // perimeter corner chamfer
+  const iw = 7;    // exterior wall cavity (double-line)
 
-  // ── Heavy outer outlines for every ground-level block (podium edge + the
-  //    tower core footprints projected onto the plan). Black ink.
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 2.5;
-  GROUND_BLOCKS.forEach(b => {
-    ctx.strokeRect(wx(b.x - b.w / 2), wz(b.z - b.d / 2), b.w * SC, b.d * SC);
-  });
+  // ── drawing helpers ──
+  const poly = (pts: number[][], close = false) => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    if (close) ctx.closePath();
+    ctx.stroke();
+  };
+  const seg = (x1: number, y1: number, x2: number, y2: number) => poly([[x1, y1], [x2, y2]]);
+  const sq = (x: number, y: number, s: number) => ctx.fillRect(x - s / 2, y - s / 2, s, s);
+  const tub = (x: number, y: number, w: number, h: number) => {
+    ctx.strokeRect(x, y, w, h);
+    ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2 - 4, h / 2 - 4, 0, 0, Math.PI * 2); ctx.stroke();
+  };
+  const wc = (x: number, y: number) => {
+    ctx.strokeRect(x, y, 12, 7);
+    ctx.beginPath(); ctx.ellipse(x + 6, y + 14, 7, 9, 0, 0, Math.PI * 2); ctx.stroke();
+  };
+  const basin = (x: number, y: number, w = 18, h = 11) => {
+    ctx.strokeRect(x, y, w, h);
+    ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2 - 3, h / 2 - 3, 0, 0, Math.PI * 2); ctx.stroke();
+  };
+  const stair = (sx: number, sy: number, sw: number, sh: number, n: number) => {
+    ctx.strokeRect(sx, sy, sw, sh);
+    for (let i = 1; i < n; i++) seg(sx, sy + (sh / n) * i, sx + sw, sy + (sh / n) * i);
+    seg(sx + sw / 2, sy, sx + sw / 2, sy + sh);
+  };
+  const shaft = (x: number, y: number, s: number) => { ctx.strokeRect(x, y, s, s); seg(x, y, x + s, y + s); };
 
-  // Tower-core footprints (dashed) — show the columns rising above
-  ctx.save();
-  ctx.setLineDash([6, 4]);
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.lineWidth = 1.2;
-  // Main residential tower outline (x:-1.2, w:4.6, d:4.2)
-  ctx.strokeRect(wx(-1.2 - 2.3), wz(-2.1), 4.6 * SC, 4.2 * SC);
-  // Secondary office tower outline (x:3.0, z:0.6, w:2.8, d:3.2)
-  ctx.strokeRect(wx(3.0 - 1.4), wz(0.6 - 1.6), 2.8 * SC, 3.2 * SC);
-  ctx.restore();
+  // ── Structural grid: faint lines + lettered/numbered bubbles + columns ──
+  const gx = [L + 96, L + 232, MX, R - 232, R - 96];
+  const gy = [T + 86, MY - 56, MY + 56, B - 86];
+  ctx.strokeStyle = "rgba(0,0,0,0.16)"; ctx.lineWidth = 0.6;
+  gx.forEach((x) => seg(x, T - 30, x, B + 6));
+  gy.forEach((y) => seg(L - 30, y, R + 6, y));
+  ctx.strokeStyle = "#000000"; ctx.fillStyle = "#000000"; ctx.lineWidth = 0.8;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = '9px "DM Mono", monospace';
+  gx.forEach((x, i) => { ctx.beginPath(); ctx.arc(x, T - 40, 9, 0, Math.PI * 2); ctx.stroke(); ctx.fillText(String.fromCharCode(65 + i), x, T - 40); });
+  gy.forEach((y, i) => { ctx.beginPath(); ctx.arc(L - 40, y, 9, 0, Math.PI * 2); ctx.stroke(); ctx.fillText(String(i + 1), L - 40, y); });
+  ctx.textBaseline = "alphabetic";
+  gx.forEach((x) => gy.forEach((y) => sq(x, y, 8)));
 
-  // ── Interior partitions / corridor / structural columns ─────────────────
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+  // ── Exterior wall — chamfered perimeter, drawn as a double line ──
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 4.5;
+  poly([[L + ch, T], [R - ch, T], [R, T + ch], [R, B - ch], [R - ch, B], [L + ch, B], [L, B - ch], [L, T + ch]], true);
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  // Main tower — unit partitions (4 quadrants + central core)
-  ctx.moveTo(wx(-1.2), wz(-2.1)); ctx.lineTo(wx(-1.2), wz(2.1));
-  ctx.moveTo(wx(-3.5), wz(0));    ctx.lineTo(wx(1.1),  wz(0));
-  // Elevator + stair core (inner box in main tower)
-  ctx.strokeRect(wx(-1.9), wz(-0.65), 1.4 * SC, 1.3 * SC);
-  // Secondary tower partitions
-  ctx.moveTo(wx(3.0), wz(-1.0)); ctx.lineTo(wx(3.0), wz(2.2));
-  ctx.moveTo(wx(1.6), wz(0.6));  ctx.lineTo(wx(4.4), wz(0.6));
-  // Podium corridor / lobby spine running between the towers
-  ctx.moveTo(wx(-4.5), wz(2.6)); ctx.lineTo(wx(4.5), wz(2.6));
-  ctx.moveTo(wx(-4.5), wz(-2.6)); ctx.lineTo(wx(4.5), wz(-2.6));
-  ctx.stroke();
+  const cc = ch - iw * 0.5;
+  poly([[L + iw + cc, T + iw], [R - iw - cc, T + iw], [R - iw, T + iw + cc], [R - iw, B - iw - cc], [R - iw - cc, B - iw], [L + iw + cc, B - iw], [L + iw, B - iw - cc], [L + iw, T + iw + cc]], true);
 
-  // Column grid (filled dots on a regular pitch) — black
-  ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-  for (let cx = -4; cx <= 4; cx += 2) {
-    for (let cz = -3; cz <= 3; cz += 2) {
-      ctx.beginPath();
-      ctx.arc(wx(cx), wz(cz), 2.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  // ── Central core: corridor ring, walls, elevators, stairs, shafts ──
+  const cL = MX - 104, cR = MX + 104, cT = MY - 88, cB = MY + 88;
+  ctx.strokeStyle = "rgba(0,0,0,0.4)"; ctx.lineWidth = 1;
+  ctx.strokeRect(cL - 30, cT - 30, (cR - cL) + 60, (cB - cT) + 60);
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.6;
+  ctx.strokeRect(cL, cT, cR - cL, cB - cT);
+  ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 1;
+  seg(cL, MY, cR, MY);
+  // elevators (3 cabs, upper core, each with an X)
+  const bank = (cR - cL) - 16;
+  for (let i = 0; i < 3; i++) {
+    const ew = bank / 3 - 5, ex = cL + 8 + i * (bank / 3);
+    ctx.strokeRect(ex, cT + 10, ew, 58);
+    seg(ex, cT + 10, ex + ew, cT + 68); seg(ex + ew, cT + 10, ex, cT + 68);
   }
+  // egress stairs (lower core)
+  stair(cL + 8, MY + 14, 60, 62, 9);
+  stair(cR - 68, MY + 14, 60, 62, 9);
+  // service shafts between the stairs
+  shaft(MX - 18, MY + 22, 15); shaft(MX + 3, MY + 22, 15);
+  shaft(MX - 18, MY + 46, 15); shaft(MX + 3, MY + 46, 15);
 
-  // ── Dimension line — top ─────────────────────────────────────────────
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 1;
-  ctx.font = '11px "DM Mono", monospace';
-  ctx.fillStyle = "#000000";
-  const dyTop = 180;
-  ctx.beginPath();
-  ctx.moveTo(wx(-4.5), dyTop); ctx.lineTo(wx(4.5), dyTop);
-  [-4.5, -1.2, 1.6, 4.5].forEach(x => {
-    ctx.moveTo(wx(x), dyTop - 5); ctx.lineTo(wx(x), dyTop + 5);
+  // ── Demising walls — split the perimeter ring into four residences ──
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 1.8;
+  seg(MX, T + iw, MX, cT - 30); seg(MX, cB + 30, MX, B - iw);
+  seg(L + iw, MY, cL - 30, MY); seg(cR + 30, MY, R - iw, MY);
+
+  // ── Interior partitions (bedroom / kitchen separations) ──
+  ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 1.1;
+  seg(L + iw, T + 138, cL - 30, T + 138); seg(R - iw, T + 138, cR + 30, T + 138);
+  seg(L + iw, B - 138, cL - 30, B - 138); seg(R - iw, B - 138, cR + 30, B - 138);
+  seg(L + 150, T + iw, L + 150, T + 138); seg(R - 150, T + iw, R - 150, T + 138);
+  seg(L + 150, B - 138, L + 150, B - iw); seg(R - 150, B - 138, R - 150, B - iw);
+
+  // ── Fixtures: bathrooms beside the core + kitchen islands ──
+  ctx.strokeStyle = "rgba(0,0,0,0.78)"; ctx.lineWidth = 1.1;
+  tub(cL - 100, cT + 2, 62, 28);  wc(cL - 116, cT + 2);  basin(cL - 118, cT + 32);
+  tub(cR + 38,  cT + 2, 62, 28);  wc(cR + 100, cT + 2);  basin(cR + 100, cT + 32);
+  tub(cL - 100, cB - 30, 62, 28); wc(cL - 116, cB - 6);  basin(cL - 118, cB - 40);
+  tub(cR + 38,  cB - 30, 62, 28); wc(cR + 100, cB - 6);  basin(cR + 100, cB - 40);
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(L + 64, T + 62, 92, 26); ctx.strokeRect(R - 156, T + 62, 92, 26);
+  ctx.strokeRect(L + 64, B - 88, 92, 26); ctx.strokeRect(R - 156, B - 88, 92, 26);
+
+  // ── Overall dimension string (top) ──
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.fillStyle = "#000000";
+  ctx.font = '10px "DM Mono", monospace'; ctx.textAlign = "center";
+  const dY = T - 16;
+  seg(L, dY, R, dY);
+  [L, MX, R].forEach((x) => seg(x, dY - 4, x, dY + 4));
+  ctx.fillText('48\'-0"', (L + MX) / 2, dY - 6);
+  ctx.fillText('48\'-0"', (MX + R) / 2, dY - 6);
+
+  // ── Room labels ──
+  ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.font = '9px "DM Mono", monospace'; ctx.textAlign = "center";
+  ctx.fillText("RESIDENCE A", L + 132, T + 116);
+  ctx.fillText("RESIDENCE B", R - 132, T + 116);
+  ctx.fillText("RESIDENCE C", L + 132, B - 108);
+  ctx.fillText("RESIDENCE D", R - 132, B - 108);
+  ctx.fillText("ELEV. LOBBY", MX, cT - 12);
+  ctx.font = '8px "DM Mono", monospace'; ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillText("STAIR 1", cL + 38, MY + 84); ctx.fillText("STAIR 2", cR - 38, MY + 84);
+
+  // ─────────────── M/E/P overlay — subtle navy (mech / elec / plumb) ────────
+  const navy = "rgba(26, 52, 104, 0.7)";
+  ctx.strokeStyle = navy;
+  // Mechanical: supply-air trunk-duct loop around the core (double line)
+  ctx.lineWidth = 2;
+  const dl = cL - 50, dr = cR + 50, dt = cT - 50, db = cB + 50;
+  ctx.strokeRect(dl, dt, dr - dl, db - dt);
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(dl + 5, dt + 5, dr - dl - 10, db - dt - 10);
+  // branch ducts out to each residence, ending in a ceiling diffuser
+  const diffuser = (x: number, y: number) => {
+    ctx.strokeRect(x - 7, y - 7, 14, 14);
+    seg(x - 7, y - 7, x + 7, y + 7); seg(x + 7, y - 7, x - 7, y + 7);
+  };
+  ctx.lineWidth = 1.4;
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+    const bx = MX + sx * 150, by = MY + sy * 108;
+    seg(MX + sx * 56, MY + sy * 56, bx, by);
+    diffuser(bx, by);
   });
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillText('66\'-0"',  wx(-2.85), dyTop - 8);
-  ctx.fillText('56\'-0"',  wx( 0.2),  dyTop - 8);
-  ctx.fillText('58\'-0"',  wx( 3.05), dyTop - 8);
+  // Plumbing: stacked risers (circle + slash) at the wet walls
+  ctx.lineWidth = 1.1;
+  const riser = (x: number, y: number) => { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke(); seg(x - 3.5, y - 3.5, x + 3.5, y + 3.5); };
+  [[cL - 30, cT + 14], [cR + 30, cT + 14], [cL - 30, cB - 14], [cR + 30, cB - 14],
+   [L + 116, T + 78], [R - 116, T + 78], [L + 116, B - 78], [R - 116, B - 78]].forEach(([x, y]) => riser(x, y));
+  // Electrical: light fixtures (circle + cross) + a panel on the core wall
+  const light = (x: number, y: number) => { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke(); seg(x - 5, y, x + 5, y); seg(x, y - 5, x, y + 5); };
+  [[-1.7, -1], [1.7, -1], [-1.7, 1], [1.7, 1]].forEach(([sx, sy]) => light(MX + sx * 86, MY + sy * 92));
+  ctx.lineWidth = 1.2; ctx.strokeRect(cR + 2, cT + 28, 9, 22); seg(cR + 2, cT + 28, cR + 11, cT + 50);
 
-  // Dimension line — left
-  const dxLeft = 180;
-  ctx.beginPath();
-  ctx.moveTo(dxLeft, wz(-3.25)); ctx.lineTo(dxLeft, wz(3.25));
-  [-3.25, 0, 3.25].forEach(z => {
-    ctx.moveTo(dxLeft - 5, wz(z)); ctx.lineTo(dxLeft + 5, wz(z));
-  });
-  ctx.stroke();
-  ctx.save();
-  ctx.translate(dxLeft - 16, wz(0));
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = "center";
-  ctx.fillText('130\'-0"', 0, 0);
+  // ─────────────── Layered dimension strings (left margin) ──────────────────
+  ctx.strokeStyle = "#000000"; ctx.fillStyle = "#000000"; ctx.font = '9px "DM Mono", monospace';
+  ctx.lineWidth = 1; const dXo = 150;            // outer: overall depth
+  seg(dXo, T, dXo, B); [T, MY, B].forEach((y) => seg(dXo - 4, y, dXo + 4, y));
+  [(T + MY) / 2, (MY + B) / 2].forEach((yy) => { ctx.save(); ctx.translate(dXo - 8, yy); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText('39\'-0"', 0, 0); ctx.restore(); });
+  ctx.lineWidth = 0.9; const dXi = 196;          // inner: bay dims, ticked to grid
+  seg(dXi, T, dXi, B); [T, ...gy, B].forEach((y) => seg(dXi - 3, y, dXi + 3, y));
+
+  // ─────────────── Section callout — dash-dot cut line + bugs ───────────────
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 1.2;
+  ctx.setLineDash([12, 4, 3, 4]);
+  const secY = T + 152;
+  seg(206, secY, 802, secY);
+  ctx.setLineDash([]);
+  const bug = (x: number, y: number, n: string, sheet: string) => {
+    ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.stroke(); seg(x - 12, y, x + 12, y);
+    ctx.fillStyle = "#000000"; ctx.textAlign = "center";
+    ctx.font = 'bold 9px "DM Mono", monospace'; ctx.fillText(n, x, y - 2);
+    ctx.font = '7px "DM Mono", monospace'; ctx.fillText(sheet, x, y + 9);
+  };
+  bug(206, secY, "A", "A4"); bug(802, secY, "A", "A4");
+
+  // ─────────────── Spot elevations ───────────────
+  const spot = (x: number, y: number, t: string) => {
+    ctx.strokeStyle = "#000000"; ctx.lineWidth = 1;
+    seg(x - 6, y, x + 6, y); seg(x, y - 6, x, y + 6);
+    ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x - 5, y + 11); ctx.lineTo(x + 5, y + 11); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.font = '7px "DM Mono", monospace'; ctx.textAlign = "left"; ctx.fillText(t, x + 9, y + 2);
+  };
+  spot(L + 150, B - 150, 'FFL +312\'-6"'); spot(R - 150, T + 200, 'FFL +312\'-6"');
+
+  // ─────────────── Title block (right edge) ───────────────
+  const tbX = 822, tbW = 146, tbY = 286, tbH = 418;
+  ctx.strokeStyle = "#000000"; ctx.lineWidth = 1.5;
+  ctx.strokeRect(tbX, tbY, tbW, tbH);
+  ctx.lineWidth = 0.8;
+  [tbY + 70, tbY + 110, tbY + 150, tbY + 190, tbY + 300].forEach((y) => seg(tbX, y, tbX + tbW, y));
+  // north arrow (top cell)
+  ctx.save(); ctx.translate(tbX + tbW / 2, tbY + 42); ctx.strokeStyle = "#000000"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(-7, 8); ctx.lineTo(0, 3); ctx.lineTo(7, 8); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = "#000000"; ctx.font = 'bold 10px "DM Mono", monospace'; ctx.textAlign = "center"; ctx.fillText("N", 0, -22);
   ctx.restore();
-
-  // ── Room labels ─────────────────────────────────────────────────────
-  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-  ctx.font = '10px "DM Mono", monospace';
+  // fields
+  const fld = (y: number, label: string, value: string, vFont = '9px "DM Mono", monospace', vx = tbX + 8) => {
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.font = '7px "DM Mono", monospace'; ctx.fillText(label, vx, y);
+    ctx.fillStyle = "#000000"; ctx.font = vFont; ctx.fillText(value, vx, y + 13);
+  };
+  fld(tbY + 84, "PROJECT", "MIXED-USE TOWER");
+  fld(tbY + 124, "SHEET TITLE", "TYPICAL FLOOR PLAN");
+  fld(tbY + 164, "SCALE", "1:200");
+  fld(tbY + 164, "DATE", "2026-06-14", '9px "DM Mono", monospace', tbX + 78);
+  ctx.textAlign = "left"; ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.font = '7px "DM Mono", monospace';
+  ctx.fillText("REV DATE    DESCRIPTION", tbX + 8, tbY + 206);
+  ctx.fillStyle = "rgba(0,0,0,0.72)";
+  ctx.fillText("01  06-06  ISSUED FOR REVIEW", tbX + 8, tbY + 220);
+  ctx.fillText("02  06-14  M/E/P COORDINATION", tbX + 8, tbY + 232);
+  ctx.fillText("03  06-14  HYPER-DETAIL SET", tbX + 8, tbY + 244);
   ctx.textAlign = "center";
-  ctx.fillText("RESIDENTIAL TOWER CORE", wx(-1.2), wz(-1.4));
-  ctx.fillText("CORE / EGRESS",          wx(-1.2), wz( 0.05));
-  ctx.fillText("AMENITY",                wx(-1.2), wz( 1.4));
-  ctx.fillText("OFFICE TOWER",           wx( 3.0), wz(-0.4));
-  ctx.fillText("OFFICE FLOOR",           wx( 3.0), wz( 1.4));
-  ctx.font = '9px "DM Mono", monospace';
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.fillText("PODIUM — RETAIL / LOBBY / PARKING",  wx(0), wz(-2.95));
-  ctx.fillText("LOADING & SERVICE CORRIDOR",         wx(0), wz( 2.95));
-
-  // North arrow (bottom right)
-  ctx.save();
-  ctx.translate(W - 110, H - 110);
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0, -22); ctx.lineTo(-9, 9); ctx.lineTo(0, 3); ctx.lineTo(9, 9);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fillStyle = "#000000";
-  ctx.font = 'bold 11px "DM Mono", monospace';
-  ctx.textAlign = "center";
-  ctx.fillText("N", 0, -28);
-  ctx.restore();
-
-  // Footer stamp
-  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-  ctx.font = '10px "DM Mono", monospace';
-  ctx.textAlign = "left";
-  ctx.fillText("DRAWN: ARCHITECHTURA AI   ·   REV 01   ·   2026-06-06", 70, H - 64);
+  ctx.fillStyle = "#000000"; ctx.font = 'bold 14px "Inter", sans-serif'; ctx.fillText("Architechtura", tbX + tbW / 2, tbY + 326);
+  ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.font = '7px "DM Mono", monospace'; ctx.fillText("SHEET", tbX + tbW / 2, tbY + 346);
+  ctx.fillStyle = "#000000"; ctx.font = 'bold 34px "Inter", sans-serif'; ctx.fillText("A2.01", tbX + tbW / 2, tbY + 390);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -266,7 +374,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   useEffect(() => () => blueprintTex.dispose(), [blueprintTex]);
 
   const blueprintRef = useRef<THREE.Mesh>(null);
-  const blueprintMat = useRef<THREE.MeshStandardMaterial>(null);
+  const blueprintMat = useRef<THREE.MeshBasicMaterial>(null);
 
   // ─── Beams (one per corner per ground-level block) ───
   // Beams shoot up from the plan footprint, so only the ground-baseline blocks
@@ -504,12 +612,11 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         receiveShadow
       >
         <planeGeometry args={[14, 10]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           ref={blueprintMat}
           map={blueprintTex}
-          roughness={0.95}
-          metalness={0}
           transparent
+          toneMapped={false}
         />
       </mesh>
 
@@ -522,8 +629,8 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         >
           <cylinderGeometry args={[0.04, 0.04, 1, 8, 1, true]} />
           <meshStandardMaterial
-            color="#7DB0FF"
-            emissive="#3B82F6"
+            color="#5C82FF"
+            emissive="#2F5BFF"
             emissiveIntensity={2.5}
             transparent
             opacity={0}
