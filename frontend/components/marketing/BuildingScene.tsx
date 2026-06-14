@@ -10,10 +10,6 @@
 //              staggered buildings, taller toward the back for a skyline)
 //   0.85–1.00  Building fully solid; scene reaches final stable composition
 //
-// The phases above run over the first ~67% of scroll (the "intro"); the final
-// stretch is a fly-in that dollies the camera through the building's front
-// doors into a bright lobby. See INTRO_END / `fly` in useFrame.
-//
 // The scene reads progress every frame via .get() on the MotionValue, so React
 // never re-renders on scroll — only the GPU does work.
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -87,7 +83,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "#000000";
   ctx.font = 'bold 24px "Inter", system-ui, sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText("MIXED-USE HIGHRISE · TYPICAL FLOOR PLAN", W / 2, 92);
+  ctx.fillText("MIXED-USE HIGHRISE — TYPICAL FLOOR PLAN", W / 2, 92);
   ctx.font = '11px "DM Mono", monospace';
   ctx.fillText("SHEET: A2.01   ·   SCALE 1:200   ·   23-STORY TOWER   ·   ARCHITECHTURA PLAN REVIEW", W / 2, 112);
 
@@ -197,7 +193,7 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.fillText("OFFICE FLOOR",           wx( 3.0), wz( 1.4));
   ctx.font = '9px "DM Mono", monospace';
   ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.fillText("PODIUM · RETAIL / LOBBY / PARKING",  wx(0), wz(-2.95));
+  ctx.fillText("PODIUM — RETAIL / LOBBY / PARKING",  wx(0), wz(-2.95));
   ctx.fillText("LOADING & SERVICE CORRIDOR",         wx(0), wz( 2.95));
 
   // North arrow (bottom right)
@@ -311,10 +307,6 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const groundMat = useRef<THREE.MeshStandardMaterial>(null);
   const cityRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-  // ─── Front-door entrance (fly-in target) ───
-  const entranceRef = useRef<THREE.Group>(null);
-  const glowMatRef = useRef<THREE.MeshStandardMaterial>(null);
-
   // Tileable street-grid ground texture
   const groundTex = useMemo(() => createCityGroundTexture(), []);
   useEffect(() => () => groundTex.dispose(), [groundTex]);
@@ -333,14 +325,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const fogColor = useRef(new THREE.Color());
 
   useFrame(() => {
-    const pRaw = progress.get();
-    // The blueprint→city sequence now plays over the first ~350vh of a 520vh
-    // runway; the final ~170vh is a camera fly-in through the front doors.
-    // Remap so every existing phase below still reads `p ∈ [0,1]` exactly as
-    // it did before the runway was extended.
-    const INTRO_END = 0.673;                       // 350 / 520
-    const p = clamp01(pRaw / INTRO_END);
-    const fly = smoothstep(INTRO_END, 1, pRaw);    // 0 during intro, 0→1 on fly-in
+    const p = progress.get();
 
     // ─── Camera path: high-angle drafting view → 3/4 view ───
     // Start pulled WAY back and looking at a point ahead of the plan so the
@@ -353,34 +338,6 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
     // Looking at a point ahead of the plan (negative Z = toward the back of
     // the world) shifts the sheet visually downward in the frame.
     camera.lookAt(0, lerp(0, 8.0, camT), lerp(-3.5, 0, camT));
-
-    // ─── Fly-in: dolly through the front doors into a bright lobby ───
-    // A quadratic-bezier swoop: from the 3/4 hold, descend to eye level and
-    // push straight through the podium doors (front face at z=3.25) so the
-    // viewer is carried "inside" before the bright-interior bloom takes over.
-    const cam = camera as THREE.PerspectiveCamera;
-    if (fly > 0) {
-      const f = fly, omf = 1 - f;
-      // Cubic bézier so the camera drops to door height EARLY, then glides in
-      // level and dead-centre — under the canopy and straight through the
-      // middle of the doors (x:-1.2), instead of diving over the roof slab.
-      const b0 = omf*omf*omf, b1 = 3*omf*omf*f, b2 = 3*omf*f*f, b3 = f*f*f;
-      // position: start → drop-in (low, on axis) → level approach → inside
-      cam.position.x = b0*15  + b1*(-1.2) + b2*(-1.2) + b3*(-1.2);
-      cam.position.y = b0*12  + b1*2.0    + b2*1.15   + b3*1.1;
-      cam.position.z = b0*18  + b1*12.0   + b2*5.5    + b3*1.2;
-      // keep the gaze locked on the door centre, then deeper into the lobby
-      cam.lookAt(
-        b0*0   + b1*(-1.2) + b2*(-1.2) + b3*(-1.2),
-        b0*8.0 + b1*1.2    + b2*1.15   + b3*1.05,
-        b0*0   + b1*3.37   + b2*0.0    + b3*(-8.0),
-      );
-      // Widen the lens past the threshold for an immersive "step inside" push.
-      const fov = lerp(35, 48, smoothstep(0.55, 1, f));
-      if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
-    } else if (Math.abs(cam.fov - 35) > 0.01) {
-      cam.fov = 35; cam.updateProjectionMatrix();
-    }
 
     // ─── Background + fog crossfade (pure white → soft warm-grey mist) ───
     const sceneT = smoothstep(0.55, 0.85, p);
@@ -482,26 +439,6 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         if (mat && "opacity" in mat) { mat.transparent = true; mat.opacity = t; }
       });
     });
-
-    // ─── Front-door entrance: fades in with the podium; the lobby light blooms
-    //     brighter as the camera approaches and pushes through. ───
-    const entranceIn = smoothstep(0.50, 0.72, p);
-    if (entranceRef.current) {
-      entranceRef.current.visible = entranceIn > 0.001;
-      entranceRef.current.traverse((o) => {
-        const mat = (o as THREE.Mesh).material as
-          | (THREE.Material & { opacity: number })
-          | undefined;
-        if (mat && "opacity" in mat) { mat.transparent = true; mat.opacity = entranceIn; }
-      });
-    }
-    if (glowMatRef.current) {
-      glowMatRef.current.opacity = entranceIn;
-      // Keep the lobby light subtle through the approach so the doors stay
-      // readable as you come in; only let it bloom near the very end (the HTML
-      // veil finishes the white-out once the camera crosses the threshold).
-      glowMatRef.current.emissiveIntensity = lerp(0.3, 1.3, smoothstep(0.7, 1.0, fly));
-    }
   });
 
   // ─── Surrounding city buildings ───
@@ -516,8 +453,8 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       x: number; z: number; w: number; d: number; h: number;
       color: string; glass: boolean; delay: number;
     }[] = [];
-    for (let gx = -40; gx <= 40; gx += 6.5) {
-      for (let gz = -46; gz <= 8; gz += 6.5) {
+    for (let gx = -28; gx <= 28; gx += 6.5) {
+      for (let gz = -34; gz <= 8; gz += 6.5) {
         const x = gx + (rand() - 0.5) * 3.2;
         const z = gz + (rand() - 0.5) * 3.2;
         // Keep the hero footprint clear (with margin)
@@ -528,7 +465,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         if (rand() < 0.22) continue;
         const w = 2.2 + rand() * 2.8;
         const d = 2.2 + rand() * 2.8;
-        const depth = clamp01((8 - z) / 52);           // 0 near .. 1 far back
+        const depth = clamp01((8 - z) / 42);           // 0 near .. 1 far back
         const h = lerp(2.4, 9.5, depth) * (0.7 + rand() * 0.6);
         const glass = rand() > 0.45;
         const color = glass
@@ -644,55 +581,6 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
           </group>
         );
       })}
-
-      {/* Front-door entrance — glass doors + canopy on the podium face, with a
-          lit lobby just inside. The camera flies through this at the end of the
-          scroll; everything fades in with the podium. Centered on the main
-          tower axis (x:-1.2); the podium's front face is at z:3.25. */}
-      <group ref={entranceRef} position={[-1.2, 0, 3.25]} visible={false}>
-        {/* Entry canopy — thin slab cantilevered out over the doors */}
-        <mesh position={[0, 2.28, 0.9]} castShadow>
-          <boxGeometry args={[3.8, 0.16, 1.8]} />
-          <meshStandardMaterial color="#D9DDE3" roughness={0.7} metalness={0.1} transparent opacity={0} />
-          <Edges threshold={15} color="#2F5BFF" />
-        </mesh>
-        {/* Door surround */}
-        <mesh position={[0, 1.05, 0.04]}>
-          <boxGeometry args={[3.2, 2.1, 0.12]} />
-          <meshStandardMaterial color="#3A4660" roughness={0.5} metalness={0.3} transparent opacity={0} />
-        </mesh>
-        {/* Two glass door leaves, slightly proud of the surround */}
-        {[-0.78, 0.78].map((dx) => (
-          <mesh key={dx} position={[dx, 1.0, 0.12]}>
-            <boxGeometry args={[1.4, 1.9, 0.06]} />
-            <meshStandardMaterial color="#AFC6E4" roughness={0.12} metalness={0.5} transparent opacity={0} />
-            <Edges threshold={15} color="#2F5BFF" />
-          </mesh>
-        ))}
-        {/* Center mullion */}
-        <mesh position={[0, 1.05, 0.14]}>
-          <boxGeometry args={[0.12, 2.0, 0.06]} />
-          <meshStandardMaterial color="#3A4660" roughness={0.5} metalness={0.3} transparent opacity={0} />
-        </mesh>
-      </group>
-
-      {/* Lobby light — warm emissive plane set just inside the doorway. Fades in
-          with the entrance, then blooms bright as the camera pushes through. */}
-      <mesh position={[-1.2, 1.3, 0.3]}>
-        <planeGeometry args={[8, 5]} />
-        <meshStandardMaterial
-          ref={glowMatRef}
-          color="#FFF3DE"
-          emissive="#FFE6BE"
-          emissiveIntensity={0.4}
-          roughness={1}
-          metalness={0}
-          transparent
-          opacity={0}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
 
       {/* Ground — concrete plane with a tileable street grid */}
       <mesh
