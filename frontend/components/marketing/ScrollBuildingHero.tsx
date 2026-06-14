@@ -6,7 +6,7 @@
 // the R3F scene — overlays react via useTransform without React re-renders.
 //
 // Sits ABOVE the existing <Hero/> on the marketing page.
-import { useRef } from "react";
+import { Component, useRef, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
@@ -16,6 +16,23 @@ const BuildingScene = dynamic(() => import("./BuildingScene"), {
   ssr: false,
   loading: () => <div style={{ position: "absolute", inset: 0, background: "#FFFFFF" }} />,
 });
+
+// A WebGL context can fail to initialize (GPU limits, a blocked/exhausted
+// context, or low-end devices). The 3D hero is purely decorative, so catch any
+// failure and fall back to a plain white backdrop instead of letting the throw
+// take down the entire marketing page. The HTML overlays render either way.
+class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (this.state.failed) {
+      return <div style={{ position: "absolute", inset: 0, background: "#FFFFFF" }} />;
+    }
+    return this.props.children;
+  }
+}
 
 const TRUSTED_BY = ["SKANSKA", "AECOM", "PROCORE", "AUTODESK", "GENSLER", "JACOBS"];
 
@@ -51,8 +68,10 @@ export default function ScrollBuildingHero() {
       aria-label="Architechtura: from blueprint to building"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* 3D scene fills the viewport */}
-        <BuildingScene progress={scrollYProgress} />
+        {/* 3D scene fills the viewport (gracefully degrades if WebGL fails) */}
+        <SceneBoundary>
+          <BuildingScene progress={scrollYProgress} />
+        </SceneBoundary>
 
         {/* Architechtura wordmark — the site's primary logo treatment. Sits above
             the tagline through the parchment phase, then fades as the scene
