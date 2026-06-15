@@ -151,6 +151,11 @@ export default function Dashboard() {
   // True once the job reaches completed/failed — gates the WS→polling
   // fallback so a clean completion-close doesn't kick off needless polling.
   const terminalRef = useRef(false);
+  // WS silent-stall guard: a long-lived socket can have its TCP dropped by a
+  // proxy WITHOUT firing onclose (the UI then freezes mid-review). We stamp
+  // the last message time and fall back to polling if the socket goes quiet.
+  const lastMsgRef = useRef(0);
+  const watchdogRef = useRef<NodeJS.Timeout | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>("");
@@ -208,12 +213,14 @@ export default function Dashboard() {
     return () => {
       wsRef.current?.close();
       if (pollRef.current) clearInterval(pollRef.current);
+      if (watchdogRef.current) clearInterval(watchdogRef.current);
     };
   }, []);
 
   const markTerminal = (status: JobStatus) => {
     terminalRef.current = true;
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (watchdogRef.current) { clearInterval(watchdogRef.current); watchdogRef.current = null; }
     if (status.status === "completed") setActiveTab("report");
   };
 
@@ -225,12 +232,32 @@ export default function Dashboard() {
     try {
       const ws = createWebSocket(id);
       wsRef.current = ws;
-      ws.onopen = () => { opened = true; setWsConnected(true); };
+      ws.onopen = () => {
+        opened = true;
+        setWsConnected(true);
+        lastMsgRef.current = Date.now();
+        // Silent-stall watchdog: the backend pushes a status every ~1s, so if
+        // the socket goes quiet for 12s while the job is still running, the TCP
+        // was dropped without an onclose — fall back to polling so the UI
+        // reconciles to completion instead of freezing mid-review.
+        if (watchdogRef.current) clearInterval(watchdogRef.current);
+        watchdogRef.current = setInterval(() => {
+          if (terminalRef.current) return;
+          if (Date.now() - lastMsgRef.current > 12000) {
+            if (watchdogRef.current) { clearInterval(watchdogRef.current); watchdogRef.current = null; }
+            try { ws.close(); } catch {}
+            setWsConnected(false);
+            startPolling(id);
+          }
+        }, 4000);
+      };
       ws.onclose = () => {
         setWsConnected(false);
+        if (watchdogRef.current) { clearInterval(watchdogRef.current); watchdogRef.current = null; }
         if (!terminalRef.current) startPolling(id); // dropped mid-review → fall back
       };
       ws.onmessage = (e) => {
+        lastMsgRef.current = Date.now();
         try {
           const msg = JSON.parse(e.data);
           if (msg.type === "log" && msg.data) addLog(msg.data as AgentLog);
