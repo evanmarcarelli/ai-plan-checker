@@ -166,7 +166,7 @@ BASELINE_RULES: List[Rule] = [
          "Fire alarm system per NFPA 72 where required.",
          "critical", {"type": "required_keyword",
                       "patterns": [r"NFPA\s*72", r"fire\s+alarm"]}, requires_citation=False,
-         # SFDs use CRC R314 smoke alarms, not NFPA 72 systems (see CRC pack).
+         # SFDs use CRC R310 smoke alarms, not NFPA 72 systems (see CRC pack).
          applies={"not_occupancies": ["R-3", "U"]}),
     Rule("NEC-SERVICE-RATING", "Electrical", "NEC 230.42",
          "Service entrance ampacity shall be specified.",
@@ -242,39 +242,44 @@ BASELINE_RULES: List[Rule] = [
          applies={"not_occupancies": ["R-3", "U"]}),
 
     # ---- CRC R-3 dwelling scalar pack ----
+    # Section numbers follow the 2025 CRC (Title 24 Pt 2.5, based on the 2024
+    # IRC), which heavily renumbered Chapter 3 vs the 2022 CRC: ceiling height
+    # R305->R313, stairways/egress door R311->R318, EERO R310->R319, sprinklers
+    # R313->R309, smoke/CO alarms R314/R315->R310/R311. Cites are verified
+    # against corpus/ca_crc_2025.jsonl via corpus_loader.has_section().
     # The product's main workload is SFD review, but the engine had ZERO CRC
     # numeric checks — all residential math was delegated to LLM checklist
     # review. These compare dimensions the extractor already pulls into
     # plan_data.dimensions; a missing dimension warns, never false-fails.
-    Rule("CRC-CEILING-HT", "Architectural", "CRC R305.1",
+    Rule("CRC-CEILING-HT", "Architectural", "CRC R313.1",
          "Habitable rooms: minimum ceiling height 7 feet.",
          "major", {"type": "min_dimension_check", "dim": "ceiling_height",
                    "minimum": 7.0, "unit": " ft", "label": "Ceiling height"},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
-    Rule("CRC-STAIR-WIDTH", "Architectural", "CRC R311.7.1",
+    Rule("CRC-STAIR-WIDTH", "Architectural", "CRC R318.7.1",
          "Stairways: minimum clear width 36 inches.",
          "major", {"type": "min_dimension_check", "dim": "stair_width",
                    "minimum": 36.0, "unit": " in", "label": "Stair width"},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
-    Rule("CRC-EGRESS-DOOR", "Architectural", "CRC R311.2",
+    Rule("CRC-EGRESS-DOOR", "Architectural", "CRC R318.2",
          "At least one egress door: minimum 32-inch clear width.",
          "major", {"type": "min_dimension_check", "dim": "door_widths",
                    "minimum": 32.0, "unit": " in", "label": "Widest door",
-                   # max: at least ONE door must satisfy R311.2 — closet doors
+                   # max: at least ONE door must satisfy R318.2 — closet doors
                    # are legitimately narrower, so min() would false-fail.
                    "agg": "max"},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
-    Rule("CRC-EGRESS-WINDOW", "Architectural", "CRC R310.1",
+    Rule("CRC-EGRESS-WINDOW", "Architectural", "CRC R319.1",
          "Sleeping rooms: emergency escape and rescue openings (egress windows) required.",
          "major", {"type": "required_keyword",
                    "patterns": [r"egress\s+window", r"emergency\s+escape\s+and\s+rescue",
-                                r"\bR310\b"]},
+                                r"\bR319\b"]},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
-    Rule("CRC-SMOKE-CO", "Fire & Life Safety", "CRC R314 · R315",
-         "Smoke alarms (R314) and carbon monoxide alarms (R315) shall be shown.",
+    Rule("CRC-SMOKE-CO", "Fire & Life Safety", "CRC R310 · R311",
+         "Smoke alarms (R310) and carbon monoxide alarms (R311) shall be shown.",
          "critical", {"type": "required_keyword",
                       "patterns": [r"smoke\s+(?:alarm|detector)", r"carbon\s+monoxide",
-                                   r"\bCO\s+alarm", r"\bR31[45]\b"]},
+                                   r"\bCO\s+alarm", r"\bR31[01]\b"]},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
 ]
 

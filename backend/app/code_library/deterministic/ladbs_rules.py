@@ -69,7 +69,7 @@ LADBS_SFD_RULES: List[Rule] = [
          requires_citation=False),
 
     # ---- Fire rebuild / WUI (Palisades = Very High FHSZ) ----
-    Rule("LADBS-SFD-SPRINKLER", "Fire & Life Safety", "CRC R313 / LADBS",
+    Rule("LADBS-SFD-SPRINKLER", "Fire & Life Safety", "CRC R309.2 / LADBS",
          "Fire sprinklers shall be included in the SFD scope of work (NFPA 13D).",
          "critical", {"type": "required_keyword",
                       "patterns": [r"fire\s+sprinkler", r"NFPA\s*13D", r"sprinkler.{0,10}scope"]},
