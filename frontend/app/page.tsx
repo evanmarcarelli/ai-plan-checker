@@ -59,6 +59,7 @@ export default function MarketingHome() {
       <Nav isAuthed={isAuthed} />
       <ScrollBuildingHero />
       <Hero />
+      <StatBand />
       <AutoplayReel />
       <DemoSection />
       <HowItWorks />
@@ -192,6 +193,47 @@ function Hero() {
             </p>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────── Stat band (problem framing) ───────────────────────
+
+function StatBand() {
+  return (
+    <section className="px-6 py-20" style={{ background: "var(--bg-elevated)" }}>
+      <div className="max-w-5xl mx-auto">
+        <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          <div className="lg:col-span-5">
+            <div
+              className="text-[72px] sm:text-[88px] lg:text-[104px] font-semibold leading-[0.95] tracking-[-0.04em]"
+              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
+            >
+              40%
+            </div>
+            <div
+              className="mt-2 text-[11px] font-semibold tracking-[0.18em] uppercase"
+              style={{ color: "var(--accent)" }}
+            >
+              of total time-to-build
+            </div>
+          </div>
+          <div className="lg:col-span-7">
+            <h2
+              className="text-2xl sm:text-3xl font-bold tracking-tight leading-snug mb-4"
+              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
+            >
+              Time-to-permit eats roughly 40% of the entire time-to-build.
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              Plan review and corrections stall projects for months before a single shovel hits the
+              ground, while carrying cost, idle crews, and financing burn the whole way. Architechtura
+              is built to collapse that bottleneck so you catch the corrections up front, clear review
+              faster, and start building sooner.
+            </p>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
