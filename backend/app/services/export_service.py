@@ -195,12 +195,61 @@ class ExportService:
 
         story.append(Spacer(1, 20))
 
-        # ---- Recommendations ----
-        if report.recommendations:
-            story.append(Paragraph("RECOMMENDATIONS", heading_style))
+        # ---- Corrections Required (full, itemized, per-finding) ----
+        # The findings table above is a compact overview. Contractors need the
+        # COMPLETE list of what to fix, with the specific correction for each
+        # item — that's the whole point of the export. We list every finding
+        # that isn't already compliant/not-applicable, untruncated, and never
+        # cap the count.
+        actionable = [
+            f for f in report.findings
+            if f.status.value in ("non_compliant", "needs_review")
+        ]
+        if actionable:
+            correction_head_style = ParagraphStyle(
+                "CorrectionHead",
+                parent=body_style,
+                fontSize=10,
+                fontName="Helvetica-Bold",
+                textColor=colors.HexColor("#1e293b"),
+                spaceBefore=6,
+                spaceAfter=2,
+            )
+            story.append(Paragraph(
+                f"CORRECTIONS REQUIRED ({len(actionable)})", heading_style
+            ))
             story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0")))
             story.append(Spacer(1, 8))
-            for rec in report.recommendations[:15]:
+            for idx, f in enumerate(actionable, 1):
+                req = f.code_requirement
+                ref = req.section or req.code_id or "—"
+                sev = (f.severity or "").upper()
+                status_text = f.status.value.replace("_", " ").title()
+                story.append(Paragraph(
+                    f"{idx}. [{sev}] {ref} — {status_text}", correction_head_style
+                ))
+                if f.description:
+                    story.append(Paragraph(f.description, body_style))
+                if f.plan_value or f.required_value:
+                    story.append(Paragraph(
+                        f"<b>Plan shows:</b> {f.plan_value or '—'} &nbsp;&nbsp;"
+                        f"<b>Required:</b> {f.required_value or '—'}",
+                        small_style,
+                    ))
+                if f.recommendation:
+                    story.append(Paragraph(f"<b>Correction:</b> {f.recommendation}", body_style))
+                story.append(Spacer(1, 6))
+            story.append(Spacer(1, 14))
+
+        # ---- Additional Recommendations ----
+        # Report-level recommendations beyond the per-finding corrections above.
+        # No longer capped at 15 — the prior [:15] slice silently dropped
+        # corrections off the end of the document.
+        if report.recommendations:
+            story.append(Paragraph("ADDITIONAL RECOMMENDATIONS", heading_style))
+            story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0")))
+            story.append(Spacer(1, 8))
+            for rec in report.recommendations:
                 story.append(Paragraph(f"• {rec}", body_style))
 
         story.append(Spacer(1, 20))
@@ -312,6 +361,15 @@ class ExportService:
                 f.description,
                 f.recommendation or "",
             ])
+
+        # Report-level recommendations, so the CSV carries the same complete
+        # set of corrections as the PDF (the per-finding Recommendation column
+        # above already covers item-by-item fixes).
+        if report.recommendations:
+            writer.writerow([])
+            writer.writerow(["RECOMMENDATIONS"])
+            for rec in report.recommendations:
+                writer.writerow([rec])
 
         return output.getvalue()
 

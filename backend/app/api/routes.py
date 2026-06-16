@@ -517,6 +517,52 @@ async def get_me(user: Dict[str, Any] = Depends(get_current_user)):
 # Exports
 # ============================================================
 
+def _build_export_report(row: Dict[str, Any]) -> ComplianceReport:
+    """Reconstruct a full ComplianceReport (INCLUDING findings) from a job row
+    for PDF/CSV export.
+
+    Findings live in their own table, so they must be loaded explicitly — the
+    previous export built the report straight off the job row and never called
+    list_findings_for_job(), so every exported PDF/CSV listed zero findings and
+    therefore zero corrections. The finding mapping here mirrors
+    _job_row_to_response() so the exported document matches the dashboard."""
+    finding_rows = db.list_findings_for_job(row["id"])
+    findings = [
+        {
+            "finding_id": (fr.get("id") or "")[:8],
+            "code_requirement": {
+                "code_id": fr.get("code_id") or "",
+                "code_name": fr.get("code_name") or "",
+                "section": fr.get("code_section") or "",
+                "description": fr.get("description") or "",
+                "category": fr.get("category") or "general",
+            },
+            "status": fr.get("status") or "needs_review",
+            "plan_value": fr.get("plan_value"),
+            "required_value": fr.get("required_value"),
+            "description": fr.get("description") or "",
+            "recommendation": fr.get("recommendation"),
+            "severity": fr.get("severity") or "medium",
+            "page_references": fr.get("page_references") or [],
+            "category": fr.get("category") or "general",
+        }
+        for fr in finding_rows
+    ]
+    return ComplianceReport(
+        report_id=row["id"],
+        job_id=row["id"],
+        generated_at=datetime.fromisoformat(row["completed_at"]) if row.get("completed_at") else datetime.utcnow(),
+        jurisdiction=row.get("jurisdiction"),
+        plan_data=row.get("plan_data"),
+        summary=row.get("summary") or {},
+        findings=findings,
+        recommendations=row.get("recommendations") or [],
+        code_versions=row.get("code_versions") or {},
+        sources_used=row.get("sources_used") or [],
+        auditor_notes=row.get("notes"),
+    )
+
+
 @router.get("/jobs/{job_id}/export/pdf")
 async def export_report_pdf(
     job_id: str,
@@ -527,24 +573,35 @@ async def export_report_pdf(
         raise HTTPException(status_code=404, detail="Job not found")
     if row["status"] != "completed":
         raise HTTPException(status_code=400, detail="Job not completed")
-    # Rebuild a ComplianceReport-like object for the export
-    report = ComplianceReport(
-        report_id=row["id"],
-        job_id=row["id"],
-        generated_at=datetime.fromisoformat(row["completed_at"]) if row.get("completed_at") else datetime.utcnow(),
-        jurisdiction=row.get("jurisdiction"),
-        plan_data=row.get("plan_data"),
-        summary=row.get("summary") or {},
-        recommendations=row.get("recommendations") or [],
-        code_versions=row.get("code_versions") or {},
-        sources_used=row.get("sources_used") or [],
-        auditor_notes=row.get("notes"),
-    )
+    report = _build_export_report(row)
     pdf_bytes = export_service.export_pdf(report)
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="compliance-report-{job_id[:8]}.pdf"'},
+    )
+
+
+@router.get("/jobs/{job_id}/export/csv")
+async def export_report_csv(
+    job_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """CSV export. This route was documented in the README and called by the
+    frontend (getExportUrl(..., 'csv')) but never actually registered, so CSV
+    downloads 404'd. It shares the finding-loading path with the PDF export so
+    the two stay in lockstep."""
+    row = db.get_job_for_user(job_id, user["id"])
+    if not row:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if row["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Job not completed")
+    report = _build_export_report(row)
+    csv_text = export_service.export_csv(report)
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="compliance-report-{job_id[:8]}.csv"'},
     )
 
 
