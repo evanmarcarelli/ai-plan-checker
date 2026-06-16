@@ -6,6 +6,7 @@ producing a wrong code stack downstream.
 """
 from __future__ import annotations
 
+from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -35,6 +36,47 @@ class AmendmentSource(BaseModel):
     access: str
 
 
+class AmendmentRelationship(str, Enum):
+    """How a local amendment relates to the base code it modifies.
+
+    This is the precedence signal the resolver needs to answer "which law
+    governs": standards default to the more-restrictive provision, zoning is
+    local-unless-preempted, overlays stack on top.
+    """
+    MORE_RESTRICTIVE = "more_restrictive"      # standards: stricter of base vs local governs (H&S 17958.5)
+    REPLACES = "replaces"                       # local text supersedes base for this jurisdiction
+    ADDS = "adds"                               # local adds requirements on top of base (union)
+    PREEMPTED_BY_STATE = "preempted_by_state"   # local overridden by a state statute (zoning carve-outs)
+    OVERLAY = "overlay"                          # additive overlay layer; stacks, never replaces
+
+
+class AmendmentRelation(BaseModel):
+    """Structured sibling of the prose `local_amendments` label.
+
+    `label` carries the same human string the prose field has (kept for
+    back-compat); the rest is machine-readable precedence data.
+    """
+    label: str
+    relationship: AmendmentRelationship = AmendmentRelationship.MORE_RESTRICTIVE
+    preempted_by: List[str] = Field(default_factory=list)   # carve-out ids (e.g. ["adu","sb9"])
+    base_path: Optional[str] = None                          # v2 provision pointer (ltree); unused by v1 logic
+    ordinance_cite: Optional[str] = None
+
+
+class PreemptionCarveout(BaseModel):
+    """A state statute that preempts conflicting local (usually zoning) law."""
+    id: str                                # "adu" | "sb9" | "density_bonus" | "coastal_act"
+    statute: str                           # "Gov. Code 66310 et seq."
+    topic: str = "zoning"                  # the topic this carve-out governs
+    summary: str = ""
+    applies_when: Optional[str] = None     # human note on the trigger condition
+
+
+class PrecedenceConfig(BaseModel):
+    """Top-level `precedence:` block in adoption_map.yaml."""
+    carveouts: List[PreemptionCarveout] = Field(default_factory=list)
+
+
 class AdoptionRecord(BaseModel):
     id: str
     level: str                             # state | county | city
@@ -47,6 +89,10 @@ class AdoptionRecord(BaseModel):
     prior_effective_until: Optional[str] = None
     adopts: Dict[str, DisciplineAdoption] = Field(default_factory=dict)
     local_amendments: Dict[str, str] = Field(default_factory=dict)
+    # Structured precedence siblings (back-compatible; default empty). The
+    # resolver folds these down the inheritance chain alongside local_amendments.
+    amendment_relations: Dict[str, AmendmentRelation] = Field(default_factory=dict)
+    adopts_by_reference: List[str] = Field(default_factory=list)   # other record ids (Malibu -> LA County)
     overlays: List[str] = Field(default_factory=list)
     corpus_layer_keys: List[str] = Field(default_factory=list)
     sources: List[AmendmentSource] = Field(default_factory=list)

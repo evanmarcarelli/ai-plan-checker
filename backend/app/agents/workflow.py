@@ -401,6 +401,39 @@ class PlanCheckerWorkflow:
             # CA:Coastal from the GIS sweep) that a fresh resolve would drop.
             layer_keys=(list(resolved_stack.corpus_layer_keys) if resolved_stack else None),
         )
+
+        # ----- PRECEDENCE RESOLUTION -----
+        # Decide WHICH layer governs each topic when base/state/local/overlay
+        # provisions conflict (more-restrictive for standards; state preemption
+        # for zoning; overlays stack). Enrichment only — wrapped so a failure
+        # never blocks the review. prec_by_codeid lets each reviewer (and the
+        # finding provenance) state which law was applied and why.
+        precedence_decisions: List = []
+        prec_by_codeid: Dict[str, object] = {}
+        try:
+            from app.code_library.precedence import (
+                build_policy, resolve_precedence, index_by_code_id, summarize,
+            )
+            policy = build_policy(
+                resolved_stack, state=j.state_code,
+                site_context=state.get("site_context"), plan_data=pd,
+            )
+            precedence_decisions = resolve_precedence(
+                full_codes, policy, plan_data=pd,
+                adoption_id=(resolved_stack.matched_id if resolved_stack else None),
+            )
+            prec_by_codeid = index_by_code_id(precedence_decisions)
+            psum = summarize(precedence_decisions)
+            await emit(
+                "Precedence",
+                f"Resolved governing law across {psum['topics']} topic(s): "
+                f"{psum['conflicts']} cross-layer conflict(s) decided, "
+                f"{psum['needs_review']} flagged needs-review.",
+                data=psum,
+            )
+        except Exception as e:
+            await emit("Precedence", f"Precedence resolution skipped: {e}", level="warning")
+
         codes_by_category: Dict[str, List] = {}
         for c in full_codes:
             codes_by_category.setdefault(c.category, []).append(c)
@@ -452,6 +485,31 @@ class PlanCheckerWorkflow:
         )
         det_findings = evaluate_plan(pd, overlays=det_overlays, ladbs_sfd=det_ladbs_sfd)
         det_gate = apply_citation_gate(det_findings, self.code_db, enforce=True)
+
+        # Stamp precedence provenance on the deterministic findings. They come
+        # from jurisdiction-specific rules, so they're single-layer by
+        # construction (the most-specific resolved layer governs) unless a
+        # precedence decision already covers their citation. Cosmetic provenance
+        # only — wrapped so it can never break the run.
+        try:
+            local_layer = "*"
+            if resolved_stack and resolved_stack.corpus_layer_keys:
+                local_layer = resolved_stack.corpus_layer_keys[-1]
+            for f in det_findings:
+                if f.governing_layer is not None:
+                    continue
+                d = prec_by_codeid.get(f.code_requirement.code_id)
+                if d is not None:
+                    f.governing_layer = d.governing_layer
+                    f.governing_basis = d.basis
+                    f.governing_rationale = d.rationale
+                    f.superseded_layers = list(d.superseded_layers)
+                else:
+                    f.governing_layer = local_layer
+                    f.governing_basis = "single_layer"
+        except Exception as e:
+            await emit("Precedence", f"Deterministic provenance stamping skipped: {e}",
+                       level="warning")
         await emit(
             "Deterministic Code Check",
             f"Computed {len(det_findings)} code-math finding(s) up front; citation gate "
@@ -482,9 +540,14 @@ class PlanCheckerWorkflow:
 
         async def _do_review(dept: DepartmentReviewer, dept_codes: list) -> DepartmentReview:
             try:
+                dept_index = {
+                    c.code_id: prec_by_codeid[c.code_id]
+                    for c in dept_codes if c.code_id in prec_by_codeid
+                }
                 review = await dept.review(
                     pd, dept_codes, amendments, code_version,
                     deterministic_findings=det_findings,
+                    precedence_index=dept_index,
                 )
                 s = review.summary
                 # If the LLM call failed silently and we fell back to the

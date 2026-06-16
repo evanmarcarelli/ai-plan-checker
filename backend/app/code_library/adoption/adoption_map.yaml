@@ -18,6 +18,33 @@
 # records. The ICC model base text is the only buy-license layer.
 # =====================================================================
 
+# Precedence carve-outs: state statutes that PREEMPT conflicting local
+# (zoning/land-use) law. When a project triggers one of these, the state rule
+# governs over the municipal zoning ordinance. Referenced by a discipline's
+# `preempted_by` list in the amendment_relations blocks below.
+precedence:
+  carveouts:
+    - id: adu
+      statute: "Gov. Code 66310 et seq."
+      topic: zoning
+      summary: "State ADU law preempts local zoning that would preclude a conforming ADU/JADU."
+      applies_when: "project includes an ADU or JADU"
+    - id: sb9
+      statute: "Gov. Code 65852.21 / 66411.7"
+      topic: zoning
+      summary: "SB 9 urban lot split / two-unit ministerial approval preempts conflicting local standards."
+      applies_when: "project is an SB 9 lot split or two-unit development"
+    - id: density_bonus
+      statute: "Gov. Code 65915"
+      topic: zoning
+      summary: "State Density Bonus Law concessions/waivers override local development standards."
+      applies_when: "project requests a density bonus"
+    - id: coastal_act
+      statute: "Pub. Res. Code 30000 et seq."
+      topic: zoning
+      summary: "Coastal Act / certified LCP governs coastal-zone land use; a CDP is required."
+      applies_when: "site is inside the Coastal Zone"
+
 records:
   # ---------------------------------------------------------------
   # California state base — inherited by every CA jurisdiction
@@ -73,6 +100,17 @@ records:
       fire:        "LAFC — LAMC Ch. V, Art. 7"         # [verify]
       green:       "LA Green Building Code — LAMC Ch. IX, Art. 9" # [verify]
       zoning:      "LAMC Chapter I (Planning & Zoning)"
+    # Structured precedence: standards are more-restrictive-governs (H&S
+    # 17958.5); zoning is local-governs EXCEPT where a state statute preempts.
+    amendment_relations:
+      building:    { label: "LABC — LAMC Ch. IX, Art. 1",          relationship: more_restrictive }
+      residential: { label: "LARC — LAMC Ch. IX, Art. 1.5",        relationship: more_restrictive }
+      electrical:  { label: "LAEC — LAMC Ch. IX, Art. 3",          relationship: more_restrictive }
+      mechanical:  { label: "LA Mechanical — LAMC Ch. IX, Art. 5", relationship: more_restrictive }
+      plumbing:    { label: "LAPC — LAMC Ch. IX, Art. 4",          relationship: more_restrictive }
+      fire:        { label: "LAFC — LAMC Ch. V, Art. 7",           relationship: more_restrictive }
+      green:       { label: "LA Green Building Code — LAMC Ch. IX, Art. 9", relationship: more_restrictive }
+      zoning:      { label: "LAMC Chapter I (Planning & Zoning)",   relationship: replaces, preempted_by: [adu, sb9, density_bonus] }
     overlays: [very_high_fhsz, hillside, hpoz, methane_zone, liquefaction, coastal, fema_flood]
     corpus_layer_keys: ["*", "CA", "CA:Los Angeles"]
     sources:
@@ -122,6 +160,19 @@ records:
       green:       "MMC Ch. 15.24 — Green Building Standards Code"           # [confirmed]
       zoning:      "Malibu LCP — Land Use Plan + Local Implementation Plan (certified 2002-09-13)"
       coastal:     "Malibu LIP — CDP procedures (Ch. 13), ESHA (Ch. 4), hazards/bluff (Ch. 9-10)"
+    # Malibu adopts the LA COUNTY versions of the state codes by reference
+    # (MMC Title 15) — now structured data, not just the prose comment above.
+    adopts_by_reference: [ca_los_angeles_county]
+    amendment_relations:
+      building:    { label: "MMC Ch. 15.04 — adopts LA County Title 26 (CBC) + city amendments, Ord. 531", relationship: more_restrictive }
+      residential: { label: "MMC Title 15 — LA County residential code by reference + city amendments",     relationship: more_restrictive }
+      electrical:  { label: "MMC Title 15 — LA County electrical code by reference", relationship: more_restrictive }
+      plumbing:    { label: "MMC Title 15 — LA County plumbing code by reference",   relationship: more_restrictive }
+      mechanical:  { label: "MMC Title 15 — LA County mechanical code by reference", relationship: more_restrictive }
+      fire:        { label: "MMC Title 15 — fire code w/ VHFHSZ amendments",         relationship: more_restrictive }
+      green:       { label: "MMC Ch. 15.24 — Green Building Standards Code",          relationship: more_restrictive }
+      zoning:      { label: "Malibu LCP — Land Use Plan + Local Implementation Plan", relationship: replaces, preempted_by: [coastal_act] }
+      coastal:     { label: "Malibu LIP — CDP procedures, ESHA, hazards/bluff",       relationship: overlay }
     overlays: [coastal, very_high_fhsz, fema_flood, liquefaction]
     corpus_layer_keys: ["*", "CA", "CA:Los Angeles County", "CA:Malibu", "CA:Coastal"]
     sources:

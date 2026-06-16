@@ -138,7 +138,12 @@ OUTPUT — return ONLY a JSON array, no prose:
 
 CONFIDENCE: be honest. A non_compliant finding you are unsure about is more
 harmful than a needs_review — if you cannot clearly demonstrate the violation
-from the plan text + code provided, lower your confidence rather than asserting."""
+from the plan text + code provided, lower your confidence rather than asserting.
+
+GOVERNING LAW: when a GOVERNING LAW note is provided for a requirement, treat
+that layer's provision as controlling — the precedence question (which
+jurisdiction's rule wins) is already decided. If the note flags the topic for
+review, surface BOTH provisions and use status="needs_review"."""
 
     async def review(
         self,
@@ -147,6 +152,7 @@ from the plan text + code provided, lower your confidence rather than asserting.
         jurisdiction_amendments: List[str],
         code_version: str,
         deterministic_findings: Optional[List[ComplianceFinding]] = None,
+        precedence_index: Optional[Dict[str, Any]] = None,
     ) -> DepartmentReview:
         """Run this department's review and return a DepartmentReview.
 
@@ -170,7 +176,8 @@ from the plan text + code provided, lower your confidence rather than asserting.
             )
 
         findings = await self._call_reviewer(
-            plan_data, requirements, jurisdiction_amendments, deterministic_findings
+            plan_data, requirements, jurisdiction_amendments, deterministic_findings,
+            precedence_index,
         )
         # #5 — Confidence gate: an uncertain reviewer must not hard-block a
         # permit. Low-confidence NON_COMPLIANT findings become NEEDS_REVIEW.
@@ -307,6 +314,7 @@ from the plan text + code provided, lower your confidence rather than asserting.
         requirements: List[CodeRequirement],
         jurisdiction_amendments: List[str],
         deterministic_findings: Optional[List[ComplianceFinding]] = None,
+        precedence_index: Optional[Dict[str, Any]] = None,
     ) -> List[ComplianceFinding]:
         # Build plan summary
         plan_summary = "No plan data extracted."
@@ -360,6 +368,12 @@ from the plan text + code provided, lower your confidence rather than asserting.
             f"CODE REQUIREMENTS TO REVIEW ({len(included)} items) — each shown "
             f"with its CITATION and verbatim code text:\n\n{req_block}"
         )
+        # Governing-law notes ride in the CACHED prefix (stable per
+        # jurisdiction+plan, like code_block itself) so the reviewer is told
+        # which layer controls without busting prompt caching.
+        gov_block = self._governing_law_block(included, precedence_index)
+        if gov_block:
+            code_block = f"{code_block}\n\n{gov_block}"
 
         # Standard-correction-list items are completeness checks ("Provide X",
         # "Show Y on plans", "Add note Z"). They are easy to over-flag: the
@@ -461,6 +475,7 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                 )
                 source_citation = source_chunk.citation if source_chunk else req.code_id
 
+                gd = precedence_index.get(req.code_id) if precedence_index else None
                 findings.append(ComplianceFinding(
                     finding_id=str(uuid.uuid4())[:8],
                     code_requirement=req,
@@ -476,6 +491,10 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                     verified=verified,
                     source_text=source_text,
                     source_citation=source_citation,
+                    governing_layer=getattr(gd, "governing_layer", None),
+                    governing_basis=getattr(gd, "basis", None),
+                    governing_rationale=getattr(gd, "rationale", None),
+                    superseded_layers=list(getattr(gd, "superseded_layers", []) or []),
                 ))
 
         # Fill in any requirement the LLM skipped with a needs_review finding —
@@ -486,6 +505,7 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
         covered = {f.code_requirement.code_id for f in findings}
         for req in included:
             if req.code_id not in covered:
+                gd = precedence_index.get(req.code_id) if precedence_index else None
                 findings.append(ComplianceFinding(
                     finding_id=str(uuid.uuid4())[:8],
                     code_requirement=req,
@@ -494,6 +514,10 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
                     recommendation=f"Reviewer to verify {req.section} - {req.description}",
                     severity="medium",
                     category=req.category,
+                    governing_layer=getattr(gd, "governing_layer", None),
+                    governing_basis=getattr(gd, "basis", None),
+                    governing_rationale=getattr(gd, "rationale", None),
+                    superseded_layers=list(getattr(gd, "superseded_layers", []) or []),
                 ))
 
         # Requirements that didn't fit the prompt budget collapse into ONE
@@ -523,6 +547,38 @@ applicable to this plan, use status="not_applicable". Return JSON findings array
             ))
 
         return findings
+
+    @staticmethod
+    def _governing_law_block(
+        included: List[CodeRequirement], precedence_index: Optional[Dict[str, Any]]
+    ) -> str:
+        """Tell the reviewer which jurisdiction layer GOVERNS each requirement so
+        it stops guessing which code controls. Emits a line only for requirements
+        with a real precedence decision (basis != single_layer); trivial
+        single-layer topics need no note.
+
+        Precedence is enrichment — this is wrapped so a bug here can NEVER fail a
+        department review; worst case the reviewer just doesn't get the hint."""
+        if not precedence_index:
+            return ""
+        try:
+            from app.code_library.precedence import governing_note
+            lines: List[str] = []
+            for r in included:
+                d = precedence_index.get(r.code_id)
+                if d is not None and getattr(d, "basis", "") and d.basis != "single_layer":
+                    lines.append(f"- [{r.code_id}] {governing_note(d)}")
+                if len(lines) >= 80:           # bound the prefix; never blow up the prompt
+                    break
+            if not lines:
+                return ""
+            return (
+                "GOVERNING LAW (precedence already resolved — apply THIS layer's "
+                "provision; do not re-litigate which jurisdiction controls):\n"
+                + "\n".join(lines)
+            )
+        except Exception:
+            return ""
 
     @staticmethod
     def _rank_requirements(

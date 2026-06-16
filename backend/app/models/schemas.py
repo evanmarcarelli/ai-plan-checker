@@ -156,6 +156,11 @@ class CodeRequirement(BaseModel):
     jurisdiction_specific: bool = False
     full_text: Optional[str] = None
     source: str = "mock_database"
+    # Most-specific corpus jurisdiction tag this requirement came from
+    # ("*" = base, "CA" = state, "CA:Los Angeles" = city). Set by the adapter
+    # from the chunk's jurisdictions; read by the precedence resolver to decide
+    # which layer governs. None until populated.
+    layer_key: Optional[str] = None
 
 
 # ==================== Compliance Finding ====================
@@ -182,6 +187,17 @@ class ComplianceFinding(BaseModel):
     verified: bool = False
     source_text: Optional[str] = None
     source_citation: Optional[str] = None  # canonical e.g. "ADA 404.2.3"
+    # ---- precedence provenance (which law governs + why) ----
+    # Stamped by the precedence resolver: the jurisdiction layer that governs
+    # this requirement's topic ("CA:Los Angeles"), the basis for that call
+    # ("more_restrictive" | "local_replaces" | "state_preempts_local" |
+    # "overlay_stacks" | "ada_independent" | "single_layer"), a human rationale,
+    # and the layers that were superseded. All optional so legacy callers and
+    # serialization are unaffected.
+    governing_layer: Optional[str] = None
+    governing_basis: Optional[str] = None
+    governing_rationale: Optional[str] = None
+    superseded_layers: List[str] = []
 
 
 # ==================== Compliance Report ====================

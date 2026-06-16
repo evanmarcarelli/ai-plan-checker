@@ -124,6 +124,28 @@ def adoption_id_for_chunk(jurisdictions: Optional[Sequence[str]]) -> Optional[st
     return (specific or ids)[0]
 
 
+def most_specific_layer(jurisdictions: Optional[Sequence[str]]) -> str:
+    """Pick the single most-specific RAW corpus layer tag for a chunk.
+
+    Mirrors adoption_id_for_chunk but returns the raw tag used in
+    corpus_layer_keys (NOT the normalized adoption id), because the precedence
+    resolver orders provisions by those raw tags:
+
+        ['*']                       -> '*'
+        ['*', 'CA']                 -> 'CA'
+        ['CA', 'CA:Los Angeles']    -> 'CA:Los Angeles'
+        []                          -> '*'   (base / applies everywhere)
+    """
+    tags = [j for j in (jurisdictions or []) if j]
+    if not tags:
+        return "*"
+    specific = [t for t in tags if ":" in t]
+    if specific:
+        return specific[0]
+    non_star = [t for t in tags if t != "*"]
+    return (non_star or tags)[0]
+
+
 def build_context_header(
     code_short: str,
     version: str,

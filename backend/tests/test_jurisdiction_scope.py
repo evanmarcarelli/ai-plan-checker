@@ -83,3 +83,15 @@ def test_corpus_source_scopes_la_vs_other_city():
     assert not (la_only & other_ids), "LA-only items must not leak into another city"
     # Base + state codes are shared (non-empty intersection).
     assert la_ids & other_ids, "base/state codes should apply to both"
+
+
+# ── layer_key bridge: adapter tags each requirement with its layer ───
+
+def test_chunk_to_requirement_sets_layer_key():
+    from app.code_library.adapter import chunk_to_requirement
+    la = chunk_to_requirement(_chunk("x", ["CA:Los Angeles"]))
+    assert la.layer_key == "CA:Los Angeles"
+    state = chunk_to_requirement(_chunk("s", ["*", "CA"]))
+    assert state.layer_key == "CA"
+    base = chunk_to_requirement(_chunk("b", ["*"]))
+    assert base.layer_key == "*"

@@ -140,3 +140,12 @@ def test_headline_code_version_shape(resolver):
     s = resolver.resolve("CA", "Los Angeles", "Los Angeles")
     hv = s.headline_code_version()
     assert "2025 CBC" in hv and "Energy" in hv
+
+
+def test_amendment_relations_backcompat(resolver):
+    """The new structured precedence field is present AND the legacy prose
+    `amendments` label is still a string (no caller breaks)."""
+    s = resolver.resolve("CA", "Los Angeles", "Los Angeles")
+    assert s.amendment_relations.get("building") == "more_restrictive"
+    assert isinstance(s.amendments["building"], str)
+    assert "LABC" in s.amendments["building"]

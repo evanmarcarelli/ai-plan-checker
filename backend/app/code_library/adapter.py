@@ -8,6 +8,7 @@ code requirement now comes from the JSONL corpus + BM25 retriever.
 from typing import List, Optional
 
 from app.code_library.corpus_loader import CodeChunk, get_corpus, get_retriever
+from app.code_library.structure import most_specific_layer
 from app.models.schemas import CodeRequirement
 from app.utils.logger import get_logger
 
@@ -26,6 +27,7 @@ def chunk_to_requirement(chunk: CodeChunk) -> CodeRequirement:
         jurisdiction_specific=("*" not in chunk.jurisdictions),
         full_text=chunk.text,             # VERBATIM code text — the grounding
         source=f"code_library:{chunk.code_short.lower()}-{chunk.version}",
+        layer_key=most_specific_layer(chunk.jurisdictions),
     )
 
 

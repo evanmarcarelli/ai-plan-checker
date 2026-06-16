@@ -20,7 +20,11 @@ from typing import Dict, List, Optional
 import yaml
 from pydantic import BaseModel
 
-from app.code_library.adoption.schema import AdoptionRecord
+from app.code_library.adoption.schema import (
+    AdoptionRecord,
+    PreemptionCarveout,
+    PrecedenceConfig,
+)
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,6 +46,13 @@ class ResolvedStack(BaseModel):
     code_versions: Dict[str, str] = {}
     # discipline -> local amendment label
     amendments: Dict[str, str] = {}
+    # discipline -> precedence relationship ("more_restrictive" | "replaces" |
+    # "adds" | "overlay" | "preempted_by_state"). Folded child-wins like
+    # `amendments`. Drives the precedence resolver's "which law governs" call.
+    amendment_relations: Dict[str, str] = {}
+    # carve-out id -> {statute, topic, summary, applies_when}: the state
+    # statutes that can preempt this jurisdiction's local zoning.
+    preemptions: Dict[str, Dict[str, str]] = {}
     overlays: List[str] = []
     corpus_layer_keys: List[str] = []
     # access flags so callers know what still needs a license/feed
@@ -58,9 +69,14 @@ class ResolvedStack(BaseModel):
 
 
 class AdoptionResolver:
-    def __init__(self, records: List[AdoptionRecord]):
+    def __init__(
+        self,
+        records: List[AdoptionRecord],
+        carveouts: Optional[List[PreemptionCarveout]] = None,
+    ):
         self.records = records
         self.by_id = {r.id: r for r in records}
+        self.carveouts = {c.id: c for c in (carveouts or [])}
 
     # ---- loading ----
 
@@ -70,8 +86,12 @@ class AdoptionResolver:
             cfg = yaml.safe_load(f) or {}
         raw = cfg.get("records", [])
         records = [AdoptionRecord(**r) for r in raw]   # validate-on-load
-        logger.info(f"[adoption] loaded {len(records)} adoption record(s) from {path.name}")
-        return cls(records)
+        precedence = PrecedenceConfig(**(cfg.get("precedence") or {}))
+        logger.info(
+            f"[adoption] loaded {len(records)} adoption record(s) and "
+            f"{len(precedence.carveouts)} preemption carve-out(s) from {path.name}"
+        )
+        return cls(records, carveouts=precedence.carveouts)
 
     # ---- resolution ----
 
@@ -132,6 +152,27 @@ class AdoptionResolver:
         for r in reversed(chain):                 # state(none) -> city
             amendments.update(r.local_amendments)
 
+        # amendment_relations: same child-wins fold. Collect the precedence
+        # relationship per discipline and the carve-out ids any discipline
+        # declares it can be preempted by.
+        amendment_relations: Dict[str, str] = {}
+        referenced_carveouts: set = set()
+        for r in reversed(chain):                 # state -> city, child wins
+            for disc, rel in r.amendment_relations.items():
+                amendment_relations[disc] = rel.relationship.value
+                referenced_carveouts.update(rel.preempted_by)
+        # preemptions: resolve referenced carve-out ids to their metadata.
+        preemptions: Dict[str, Dict[str, str]] = {}
+        for cid in referenced_carveouts:
+            c = self.carveouts.get(cid)
+            if c:
+                preemptions[cid] = {
+                    "statute": c.statute,
+                    "topic": c.topic,
+                    "summary": c.summary,
+                    "applies_when": c.applies_when or "",
+                }
+
         # overlays: union across the chain.
         overlays: List[str] = []
         for r in chain:
@@ -165,6 +206,8 @@ class AdoptionResolver:
             permit_date_note=permit_date_note,
             code_versions=code_versions,
             amendments=amendments,
+            amendment_relations=amendment_relations,
+            preemptions=preemptions,
             overlays=overlays,
             corpus_layer_keys=corpus_layer_keys,
             buy_license_layers=buy,
