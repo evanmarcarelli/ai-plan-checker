@@ -319,6 +319,30 @@ function createBlueprintTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.font = '7px "DM Mono", monospace'; ctx.fillText("SHEET", tbX + tbW / 2, tbY + 346);
   ctx.fillStyle = "#000000"; ctx.font = 'bold 34px "Inter", sans-serif'; ctx.fillText("A2.01", tbX + tbW / 2, tbY + 390);
 
+  // ── Convert to a classic faded-blue blueprint ────────────────────────────
+  // Remap by luminance: the white sheet becomes blue, the black ink becomes
+  // white. A subtle vertical gradient (lighter top → deeper bottom) matches a
+  // real cyanotype/blueprint print.
+  const img = ctx.getImageData(0, 0, W, H);
+  const px = img.data;
+  const INK = [238, 245, 255];                 // near-white ink
+  const TOP = [92, 156, 214];                  // #5C9CD6 lighter blue (top)
+  const BOT = [54, 112, 189];                  // #3670BD deeper blue (bottom)
+  for (let y = 0; y < H; y++) {
+    const gy = y / H;
+    const bgR = TOP[0] + (BOT[0] - TOP[0]) * gy;
+    const bgG = TOP[1] + (BOT[1] - TOP[1]) * gy;
+    const bgB = TOP[2] + (BOT[2] - TOP[2]) * gy;
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const L = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) / 255;
+      px[i]     = INK[0] + (bgR - INK[0]) * L;
+      px[i + 1] = INK[1] + (bgG - INK[1]) * L;
+      px[i + 2] = INK[2] + (bgB - INK[2]) * L;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
@@ -433,8 +457,10 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
 
   // ─── City context ───
   const groundMat = useRef<THREE.MeshStandardMaterial>(null);
+  const groundMeshRef = useRef<THREE.Mesh>(null);
   const cityRefs = useRef<(THREE.Mesh | null)[]>([]);
   const propsRef = useRef<THREE.Group>(null);   // trees / people / cars
+  const contactRef = useRef<THREE.Group>(null); // contact-shadow plane
 
   // Tileable street-grid ground texture
   const groundTex = useMemo(() => createCityGroundTexture(), []);
@@ -529,6 +555,10 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
 
     // ─── City context: ground fades in, buildings rise + fade in waves ───
     const landT = smoothstep(0.55, 0.88, p);
+    // Hide the ground entirely during the blueprint phase so the start stays
+    // pure white (an opacity-0 ground still renders a faint fogged grey).
+    if (groundMeshRef.current) groundMeshRef.current.visible = landT > 0.001;
+    if (contactRef.current) contactRef.current.visible = landT > 0.001;
     if (groundMat.current) {
       groundMat.current.opacity = landT;
       groundMat.current.transparent = true;
@@ -635,6 +665,24 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
     }
     return { trees, people, cars };
   }, [cityBuildings]);
+
+  // ─── Entrance garden — shrubs + flowers planted in the two beds that flank
+  // the walkway leading up to the tower. (Structural pieces are placed inline.)
+  const garden = useMemo(() => {
+    const rand = mulberry32(91);
+    const shrubs: { x: number; z: number; s: number }[] = [];
+    const flowers: { x: number; z: number; c: string }[] = [];
+    const FLOWERC = ["#d98a8a", "#e6c86a", "#e8e2ea", "#c98ad9"];
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 9; k++) {
+        shrubs.push({ x: side * (1.7 + rand() * 1.4), z: 4.6 + rand() * 4.6, s: 0.5 + rand() * 0.5 });
+      }
+      for (let k = 0; k < 14; k++) {
+        flowers.push({ x: side * (1.6 + rand() * 1.6), z: 4.6 + rand() * 4.6, c: FLOWERC[Math.floor(rand() * FLOWERC.length)] });
+      }
+    }
+    return { shrubs, flowers };
+  }, []);
 
   return (
     <>
@@ -780,7 +828,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
 
       {/* Ground — concrete plane with a tileable street grid (no hard receiveShadow;
           ContactShadows below does the soft grounding instead) */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
+      <mesh ref={groundMeshRef} rotation-x={-Math.PI / 2} position={[0, 0, 0]} visible={false}>
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial
           ref={groundMat}
@@ -795,6 +843,8 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
 
       {/* Soft contact shadow grounding the tower + city in the plaza */}
       <ContactShadows
+        ref={contactRef}
+        visible={false}
         position={[0, 0.04, 0]}
         scale={64}
         far={28}
@@ -874,6 +924,83 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
             </mesh>
           </group>
         ))}
+
+        {/* ── Entrance: a garden walkway with a water fountain leading up to
+            the tower (front, +Z, facing the camera) ── */}
+        {/* Stone walkway from the front plaza to the tower entrance */}
+        <mesh position={[0, 0.03, 6.7]} receiveShadow>
+          <boxGeometry args={[2.2, 0.06, 6.2]} />
+          <meshStandardMaterial color="#dde1e6" roughness={0.85} metalness={0.02} />
+        </mesh>
+        {/* Garden beds flanking the walkway */}
+        {[-1, 1].map((s) => (
+          <mesh key={`bed${s}`} position={[s * 2.5, 0.05, 6.9]} receiveShadow>
+            <boxGeometry args={[2.0, 0.1, 5.6]} />
+            <meshStandardMaterial color="#86a368" roughness={0.95} />
+          </mesh>
+        ))}
+        {/* Low clipped hedges lining the walkway */}
+        {[-1, 1].map((s) => (
+          <mesh key={`hedge${s}`} position={[s * 1.28, 0.18, 6.9]} castShadow receiveShadow>
+            <boxGeometry args={[0.22, 0.34, 5.6]} />
+            <meshStandardMaterial color="#5f7d52" roughness={0.9} flatShading />
+          </mesh>
+        ))}
+        {/* Shrubs + flowers planted in the beds */}
+        {garden.shrubs.map((b, i) => (
+          <mesh key={`sh${i}`} position={[b.x, 0.18, b.z]} scale={b.s} castShadow>
+            <icosahedronGeometry args={[0.34, 0]} />
+            <meshStandardMaterial color="#6f9159" roughness={0.9} flatShading />
+          </mesh>
+        ))}
+        {garden.flowers.map((f, i) => (
+          <mesh key={`fl${i}`} position={[f.x, 0.16, f.z]}>
+            <sphereGeometry args={[0.05, 6, 6]} />
+            <meshStandardMaterial color={f.c} roughness={0.7} />
+          </mesh>
+        ))}
+        {/* Formal trees flanking the approach */}
+        {[[-2.5, 5.2], [2.5, 5.2], [-2.5, 8.8], [2.5, 8.8]].map(([tx, tz], i) => (
+          <group key={`ft${i}`} position={[tx, 0, tz]} scale={1.15}>
+            <mesh position={[0, 0.34, 0]} castShadow>
+              <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
+              <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
+            </mesh>
+            <mesh position={[0, 0.98, 0]} castShadow>
+              <icosahedronGeometry args={[0.5, 0]} />
+              <meshStandardMaterial color="#7f9b6e" roughness={0.85} flatShading />
+            </mesh>
+          </group>
+        ))}
+        {/* Water fountain centerpiece on the walkway */}
+        <group position={[0, 0, 7.0]}>
+          <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[1.05, 1.18, 0.32, 28]} />
+            <meshStandardMaterial color="#cdd2d8" roughness={0.8} metalness={0.05} />
+          </mesh>
+          {/* Water surface */}
+          <mesh position={[0, 0.3, 0]}>
+            <cylinderGeometry args={[0.92, 0.92, 0.06, 28]} />
+            <meshPhysicalMaterial color="#9fcdec" roughness={0.12} metalness={0} transmission={0.4} transparent opacity={0.85} envMapIntensity={1.6} clearcoat={1} />
+          </mesh>
+          {/* Center pedestal + upper bowl + jet */}
+          <mesh position={[0, 0.5, 0]} castShadow>
+            <cylinderGeometry args={[0.13, 0.18, 0.5, 16]} />
+            <meshStandardMaterial color="#cdd2d8" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.78, 0]} castShadow>
+            <cylinderGeometry args={[0.4, 0.32, 0.1, 20]} />
+            <meshStandardMaterial color="#cdd2d8" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.84, 0]}>
+            <cylinderGeometry args={[0.34, 0.34, 0.04, 20]} />
+            <meshPhysicalMaterial color="#9fcdec" roughness={0.12} transmission={0.4} transparent opacity={0.85} envMapIntensity={1.6} />
+          </mesh>
+          <mesh position={[0, 1.0, 0]}>
+            <cylinderGeometry args={[0.03, 0.05, 0.42, 8]} />
+            <meshStandardMaterial color="#cfe6f6" transparent opacity={0.6} roughness={0.1} />
+          </mesh>
+        </group>
       </group>
     </>
   );
