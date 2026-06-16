@@ -13,7 +13,7 @@
 // The scene reads progress every frame via .get() on the MotionValue, so React
 // never re-renders on scroll — only the GPU does work.
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges } from "@react-three/drei";
+import { Edges, Environment, Lightformer, ContactShadows } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { MotionValue } from "framer-motion";
@@ -27,54 +27,48 @@ const smoothstep = (e0: number, e1: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-// ────────────────── Building footprint (single source of truth) ───────────────
-// A slender glass tower in the "56 Leonard / Jenga" style: smooth shaft segments
-// punctuated by MULTIPLE clusters of stacked, cantilevered boxes that jut in
-// alternating directions — subtle low, more dramatic toward the top. Each block
-// is a Box; world units are meters.
-type Block = {
-  x: number; z: number;
-  w: number; d: number; h: number;
-  greenRoof?: boolean;
-  // Optional vertical offset (in world units) — used to stack blocks above
-  // the podium without re-baselining them to ground level.
-  baseY?: number;
-  // Tint override so the tower body and crown can read differently.
-  color?: string;
-};
-const BLOCKS: Block[] = [
-  // Base the tower rises from
-  { x: 0, z: 0, w: 6,   d: 5,   h: 2,   color: "#DCE8FA" },
-  // Lower smooth glass shaft
-  { x: 0, z: 0, w: 4,   d: 3.6, h: 4,   baseY: 2,   color: "#E8F1FF" },
+// ────────────────── Slender glass tower (single source of truth) ───────────────
+// A clean, classical supertall: a slender stack of floor-by-floor glass plates,
+// each glass band capped by a thin concrete slab edge — the horizontal floor
+// lines that make it read as real stacked floors. NO cantilevers/offsets: a
+// straight, elegant shaft with just a whisper of taper and a slightly inset
+// crown cap. World units are meters-ish.
+const FLOOR_H = 0.45;          // story height
+const N_FLOORS = 42;           // tower height in floors
+// Footprint matches the building outline on the blueprint plan (~48'+48' wide ×
+// ~39'+39' deep on the 14×10 plan sheet), so the extruded tower fills the plate.
+const TOWER_W = 7.8;           // base plate width  (E–W)
+const TOWER_D = 6.5;           // base plate depth  (N–S)
+const PODIUM_W = 8.8;
+const PODIUM_D = 7.4;
+const PODIUM_H = 1.6;          // plaza level the shaft rises from
+const GLASS_FRAC = 0.93;       // glass band height as a fraction of the floor (thin floor lines)
+const TOWER_TOP = PODIUM_H + N_FLOORS * FLOOR_H;
 
-  // ── Jenga cluster A (lower, subtle offsets) ──
-  { x:  0.7, z:  0.3, w: 4.0, d: 3.6, h: 1.3, baseY:  6.0, color: "#E1ECFB" },
-  { x: -0.6, z: -0.4, w: 4.0, d: 3.8, h: 1.3, baseY:  7.3, color: "#DAE8FA" },
-  { x:  0.5, z:  0.5, w: 3.8, d: 3.4, h: 1.4, baseY:  8.6, color: "#E8F1FF" },
+type Floor = { i: number; baseY: number; x: number; z: number; w: number; d: number };
 
-  // Mid smooth shaft
-  { x: 0, z: 0, w: 3.8, d: 3.4, h: 2.5, baseY: 10.0, color: "#E8F1FF" },
+// Per-floor plate size. Aligned, straight tower — no lateral offsets. A gentle
+// taper up the shaft plus a slightly inset crown cap keep it from reading as a
+// plain extruded box while staying classical and "normal."
+function floorOffset(i: number, n: number): { x: number; z: number; w: number; d: number } {
+  const frac = i / (n - 1);
+  let s = lerp(1.0, 0.9, frac * frac);   // whisper of taper toward the top
+  if (frac > 0.93) s *= 0.9;             // small inset mechanical crown cap
+  return { x: 0, z: 0, w: TOWER_W * s, d: TOWER_D * s };
+}
 
-  // ── Jenga cluster B (mid, medium offsets) ──
-  { x: -0.9, z:  0.5, w: 4.0, d: 3.6, h: 1.3, baseY: 12.5, color: "#E1ECFB" },
-  { x:  1.0, z: -0.6, w: 4.0, d: 3.8, h: 1.3, baseY: 13.8, color: "#DAE8FA" },
-  { x: -0.6, z:  0.7, w: 3.8, d: 3.6, h: 1.4, baseY: 15.1, color: "#C9D8EE" },
+const FLOORS: Floor[] = Array.from({ length: N_FLOORS }, (_, i) => {
+  const o = floorOffset(i, N_FLOORS);
+  return { i, baseY: PODIUM_H + i * FLOOR_H, x: o.x, z: o.z, w: o.w, d: o.d };
+});
 
-  // Short smooth setback
-  { x: 0, z: 0, w: 3.4, d: 3.0, h: 1.0, baseY: 16.5, color: "#E8F1FF" },
-
-  // ── Jenga crown (top, most dramatic offsets) ──
-  { x:  1.2, z:  0.6, w: 3.8, d: 3.2, h: 1.2, baseY: 17.5, color: "#E1ECFB" },
-  { x: -1.1, z: -0.7, w: 3.6, d: 3.4, h: 1.2, baseY: 18.7, color: "#DAE8FA" },
-  { x:  1.2, z:  0.6, w: 3.2, d: 2.8, h: 1.1, baseY: 19.9, color: "#C9D8EE" }, // top cap — aligned over the 3rd-from-top block (x:1.2, z:0.6)
-];
+// The four podium footprint corners — where the holographic beams originate.
+const FOOTPRINT_CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => ({
+  x: (sx * PODIUM_W) / 2,
+  z: (sz * PODIUM_D) / 2,
+}));
 
 // ────────────────── Blueprint texture (procedural canvas) ────────────────────
-
-// Returns only the ground-level (baseY undefined or 0) blocks — the ones that
-// appear in plan view and originate beams from the ground footprint.
-const GROUND_BLOCKS = BLOCKS.filter((b) => !b.baseY);
 
 function createBlueprintTexture(): THREE.CanvasTexture {
   const W = 1024, H = 768;
@@ -364,10 +358,57 @@ function createCityGroundTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+// ────────────────── Curtain-wall facade texture (city buildings) ───────────────
+// A light, tintable glass-office facade: stacked floor bands (spandrel lines +
+// glass), vertical mullions and a window grid. Drawn light so each building's
+// material `color` tints it to a muted grey/cream/taupe. One shared texture
+// gives every surrounding building the same floor-by-floor detail as the hero
+// without thousands of meshes.
+function createFacadeTexture(): THREE.CanvasTexture {
+  const W = 256, H = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  // Light base with a faint vertical sheen so glass reads top-lit
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#fbfcfe");
+  g.addColorStop(0.5, "#eef1f6");
+  g.addColorStop(1, "#f4f6f9");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const floors = 18;          // floor bands down the texture
+  const cols = 9;             // window columns
+  const fh = H / floors, cw = W / cols;
+
+  // Window panes — subtle per-pane tonal variation for life
+  for (let r = 0; r < floors; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = ((r * 7 + c * 13) % 5) / 5;           // deterministic 0..0.8
+      ctx.fillStyle = `rgba(${150 + v * 40 | 0}, ${165 + v * 40 | 0}, ${185 + v * 35 | 0}, ${0.10 + v * 0.10})`;
+      ctx.fillRect(c * cw + 1.5, r * fh + 2.5, cw - 3, fh - 4);
+    }
+  }
+  // Floor spandrel lines (the strong horizontal read)
+  ctx.fillStyle = "rgba(40, 50, 66, 0.20)";
+  for (let r = 0; r <= floors; r++) ctx.fillRect(0, r * fh - 1, W, 2);
+  // Vertical mullions (lighter)
+  ctx.fillStyle = "rgba(40, 50, 66, 0.10)";
+  for (let c = 0; c <= cols; c++) ctx.fillRect(c * cw - 0.5, 0, 1, H);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 // ────────────────── Scene contents (inside Canvas) ────────────────────────────
 
 function SceneContents({ progress }: { progress: MotionValue<number> }) {
-  const { scene, camera } = useThree();
+  const { scene, camera, gl } = useThree();
 
   // ─── Blueprint plane ───
   const blueprintTex = useMemo(() => createBlueprintTexture(), []);
@@ -376,61 +417,45 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const blueprintRef = useRef<THREE.Mesh>(null);
   const blueprintMat = useRef<THREE.MeshBasicMaterial>(null);
 
-  // ─── Beams (one per corner per ground-level block) ───
-  // Beams shoot up from the plan footprint, so only the ground-baseline blocks
-  // produce them — and each beam runs to the total stacked height at that
-  // tower's footprint, not just to its own block's roof.
-  const beamPositions = useMemo(() => {
-    // Total stack height per (x, z) tower footprint
-    const stackHeight = (b: Block) => {
-      let top = (b.baseY ?? 0) + b.h;
-      BLOCKS.forEach((other) => {
-        if (other === b) return;
-        // any block whose footprint overlaps significantly with `b`
-        const overlap =
-          Math.abs(other.x - b.x) < (b.w + other.w) / 2 - 0.1 &&
-          Math.abs(other.z - b.z) < (b.d + other.d) / 2 - 0.1;
-        if (overlap) top = Math.max(top, (other.baseY ?? 0) + other.h);
-      });
-      return top;
-    };
-    const out: { x: number; z: number; h: number; key: string }[] = [];
-    GROUND_BLOCKS.forEach((b, i) => {
-      const hx = b.w / 2, hz = b.d / 2;
-      const fullH = stackHeight(b);
-      [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz], j) => {
-        out.push({ x: b.x + sx * hx, z: b.z + sz * hz, h: fullH, key: `${i}-${j}` });
-      });
-    });
-    return out;
-  }, []);
+  // ─── Beams (one per podium footprint corner) ───
+  // Holographic beams shoot up from the plan footprint corners to the full
+  // height of the finished tower, tracing the volume before it fills in.
+  const beamPositions = useMemo(
+    () => FOOTPRINT_CORNERS.map((c, i) => ({ x: c.x, z: c.z, h: TOWER_TOP, key: `beam-${i}` })),
+    []
+  );
   const beamRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-  // ─── Building blocks ───
-  const blockRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const blockMats = useRef<(THREE.MeshPhysicalMaterial | null)[]>([]);
-  const roofRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // ─── Building: one group per floor (glass plate + concrete slab edge) ───
+  const floorRefs = useRef<(THREE.Group | null)[]>([]);
+  const podiumRef = useRef<THREE.Group>(null);
+  const beanRef = useRef<THREE.Group>(null);
 
   // ─── City context ───
   const groundMat = useRef<THREE.MeshStandardMaterial>(null);
   const cityRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const propsRef = useRef<THREE.Group>(null);   // trees / people / cars
 
   // Tileable street-grid ground texture
   const groundTex = useMemo(() => createCityGroundTexture(), []);
   useEffect(() => () => groundTex.dispose(), [groundTex]);
 
-  // ─── Scene fog/background (animated) ───
-  // Pure white → faint warm-grey mist. Keeps the whole composition black & white.
-  const fog = useMemo(() => new THREE.Fog("#F2F2F2", 28, 55), []);
+  // Shared glass-facade texture for the surrounding city buildings
+  const facadeTex = useMemo(() => createFacadeTexture(), []);
+  useEffect(() => () => facadeTex.dispose(), [facadeTex]);
+
+  // ─── Scene fog/background ───
+  // Pure WHITE. NOTE: a scene.background Color gets darkened to grey by the
+  // renderer's ACES tone mapping — that was the grey start screen. Using the
+  // raw clear color (NOT tone-mapped) and leaving background null guarantees a
+  // truly white page behind everything. Fog (also white) fades the far city.
+  const fog = useMemo(() => new THREE.Fog("#FFFFFF", 38, 82), []);
   useEffect(() => {
     scene.fog = fog;
-    scene.background = new THREE.Color("#FFFFFF");
+    scene.background = null;
+    gl.setClearColor(new THREE.Color("#FFFFFF"), 1);
     return () => { scene.fog = null; };
-  }, [scene, fog]);
-
-  // Pre-built color buffers to avoid GC every frame
-  const bgColor = useRef(new THREE.Color());
-  const fogColor = useRef(new THREE.Color());
+  }, [scene, fog, gl]);
 
   useFrame(() => {
     const p = progress.get();
@@ -440,23 +465,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
     // sheet sits in the LOWER half of the viewport — leaves the top half for
     // the tagline. End farther back / higher so the 22u tall highrise reads.
     const camT = smoothstep(0.05, 0.55, p);
-    camera.position.x = lerp(0,  15, camT);
-    camera.position.y = lerp(26, 12, camT);
-    camera.position.z = lerp(6,  18, camT);
-    // Looking at a point ahead of the plan (negative Z = toward the back of
-    // the world) shifts the sheet visually downward in the frame.
-    camera.lookAt(0, lerp(0, 8.0, camT), lerp(-3.5, 0, camT));
+    camera.position.x = lerp(0,  24, camT);
+    camera.position.y = lerp(26, 15, camT);
+    camera.position.z = lerp(6,  30, camT);
+    // Same close, low 3/4 angle as the live site — just enough distance for the
+    // now-wider (plan-matching) tower to fill the frame, top near the edge.
+    // Looking at a point ahead of the plan keeps the sheet low early.
+    camera.lookAt(0, lerp(0, 8.5, camT), lerp(-3.5, 0, camT));
 
-    // ─── Background + fog crossfade (pure white → soft warm-grey mist) ───
+    // ─── Fog stays pure WHITE — the far city dissolves into a clean white
+    // haze for depth; the tower + near city stay crisp. Background is the white
+    // clear color set once (above), untouched by tone mapping.
     const sceneT = smoothstep(0.55, 0.85, p);
-    const WHITE = new THREE.Color("#FFFFFF");
-    const GREY  = new THREE.Color("#F2F2F2");
-    bgColor.current.copy(WHITE).lerp(GREY, sceneT);
-    if (scene.background instanceof THREE.Color) scene.background.copy(bgColor.current);
-    fogColor.current.copy(WHITE).lerp(GREY, sceneT);
-    fog.color.copy(fogColor.current);
-    fog.near = lerp(40, 22, sceneT);
-    fog.far  = lerp(90, 58, sceneT);
+    fog.color.set("#FFFFFF");
+    fog.near = lerp(40, 36, sceneT);
+    fog.far  = lerp(86, 76, sceneT);
 
     // ─── Blueprint plane: fully opaque until building takes over ───
     if (blueprintMat.current) {
@@ -477,52 +500,32 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       mat.emissiveIntensity = lerp(2.5, 0.0, beamFade);
     });
 
-    // ─── Building blocks: extrude + glass-to-solid ───
-    // Stacked blocks rise in tiers — a block at baseY=N only starts extruding
-    // once the blocks below have largely formed. This gives the highrise a
-    // real bottom-up construction feel instead of every floor materializing
-    // simultaneously.
-    const solidT = smoothstep(0.68, 0.92, p);
-    // Tier boundaries based on how high each block sits. Tallest stack is ~22u.
-    const STACK_MAX = 22;
-    blockRefs.current.forEach((m, i) => {
-      if (!m) return;
-      const b = BLOCKS[i];
-      const baseY = b.baseY ?? 0;
-      // Per-tier delay: ground blocks fade in first, crown last.
-      const tierFrac = baseY / STACK_MAX;          // 0..1
-      const start = 0.35 + tierFrac * 0.30;        // ground=0.35, crown≈0.65
-      const tierT = smoothstep(start, start + 0.16, p);
-      const sy = Math.max(0.0001, tierT);
-      m.scale.y = sy;
-      m.position.y = baseY + (b.h * sy) / 2;
-      // Hide block entirely until its tier begins extruding — otherwise the
-      // flattened glass slab reads as a stray white panel on the blueprint.
-      m.visible = tierT > 0.001;
-      const mat = blockMats.current[i];
-      if (mat) {
-        // Glass: high transmission early, drops to a more solid facade later.
-        // Multiply by tierT so the block's opacity ramps with its extrusion.
-        mat.transmission = lerp(0.85, 0.25, solidT);
-        mat.opacity = lerp(0.35, 0.95, solidT) * tierT;
-        mat.roughness = lerp(0.08, 0.22, solidT);
-      }
+    // ─── Tower: floors rise bottom-to-top like real construction ───
+    // Each floor plate pops up from its base in sequence — lowest floors form
+    // first (~0.34), the cantilevered crown last (~0.86) — so the tower visibly
+    // builds itself as you scroll instead of materializing all at once.
+    const RISE_LO = 0.34, RISE_HI = 0.86, RISE_WIN = 0.14;
+    if (podiumRef.current) {
+      const t = smoothstep(RISE_LO - 0.05, RISE_LO + 0.09, p);
+      podiumRef.current.visible = t > 0.001;
+      podiumRef.current.scale.y = Math.max(0.0001, t);
+    }
+    floorRefs.current.forEach((g, i) => {
+      if (!g) return;
+      const frac = FLOORS[i].baseY / TOWER_TOP;           // 0..1 up the tower
+      const start = lerp(RISE_LO, RISE_HI - RISE_WIN, frac);
+      const t = smoothstep(start, start + RISE_WIN, p);
+      g.visible = t > 0.001;
+      g.scale.y = Math.max(0.0001, t);
+      // Ease each plate up from just below its resting height for a soft pop.
+      g.position.y = FLOORS[i].baseY - (1 - t) * 0.22;
     });
-    roofRefs.current.forEach((m, i) => {
-      if (!m) return;
-      const b = BLOCKS[i];
-      if (!b.greenRoof) return;
-      const baseY = b.baseY ?? 0;
-      const tierFrac = baseY / STACK_MAX;
-      const start = 0.35 + tierFrac * 0.30;
-      const tierT = smoothstep(start, start + 0.16, p);
-      const sy = Math.max(0.0001, tierT);
-      m.position.y = baseY + b.h * sy + 0.06;
-      m.visible = tierT > 0.001;
-      const mat = m.material as THREE.MeshStandardMaterial;
-      mat.opacity = solidT * tierT;
-      mat.transparent = true;
-    });
+    // Anish Kapoor mirror "bean" settles into the plaza once the tower stands.
+    if (beanRef.current) {
+      const t = smoothstep(0.7, 0.86, p);
+      beanRef.current.visible = t > 0.001;
+      beanRef.current.scale.setScalar(Math.max(0.0001, t));
+    }
 
     // ─── City context: ground fades in, buildings rise + fade in waves ───
     const landT = smoothstep(0.55, 0.88, p);
@@ -547,61 +550,136 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         if (mat && "opacity" in mat) { mat.transparent = true; mat.opacity = t; }
       });
     });
+
+    // Street props (trees / people / cars) appear once the city ground is in.
+    if (propsRef.current) propsRef.current.visible = landT > 0.02;
   });
 
   // ─── Surrounding city buildings ───
-  // Scatter on a jittered grid around the hero. Skip its footprint and the
-  // camera→hero foreground sightline. Taller toward the back for a skyline.
-  // Each building carries a `delay` so the city rises in staggered waves.
+  // Scatter on a jittered grid around the hero — denser and wider than before
+  // for a real skyline. Skip the hero footprint and the camera→hero foreground
+  // sightline. Taller toward the back. Muted greys / cremes / taupes so the
+  // blue hero tower stays the star. Each carries a `delay` for staggered rise.
   const cityBuildings = useMemo(() => {
     const rand = mulberry32(7);
-    const GLASS = ["#C9D8EE", "#BFD2EC", "#D3E0F2", "#AFC6E4"];
-    const CONCRETE = ["#D9DDE3", "#CFD4DB", "#E2E5EA", "#C7CDD5"];
+    // Live-site palette — blue-grey glass + light concrete + slate (tints the facade)
+    const MUTED = [
+      "#C9D8EE", "#BFD2EC", "#D3E0F2", "#AFC6E4",   // blue-grey glass
+      "#D9DDE3", "#CFD4DB", "#E2E5EA", "#C7CDD5",   // light concrete
+      "#B9C2CD", "#AAB6C4",                          // slate
+    ];
     const out: {
       x: number; z: number; w: number; d: number; h: number;
-      color: string; glass: boolean; delay: number;
+      color: string; glassy: boolean; delay: number;
     }[] = [];
-    for (let gx = -28; gx <= 28; gx += 6.5) {
-      for (let gz = -34; gz <= 8; gz += 6.5) {
-        const x = gx + (rand() - 0.5) * 3.2;
-        const z = gz + (rand() - 0.5) * 3.2;
+    for (let gx = -36; gx <= 36; gx += 5.4) {
+      for (let gz = -44; gz <= 10; gz += 5.4) {
+        const x = gx + (rand() - 0.5) * 2.8;
+        const z = gz + (rand() - 0.5) * 2.8;
         // Keep the hero footprint clear (with margin)
-        if (Math.abs(x) < 7.5 && z > -5 && z < 5) continue;
+        if (Math.abs(x) < 7 && z > -5.5 && z < 5.5) continue;
         // Keep the camera→hero foreground sightline clear
-        if (z > 3 && Math.abs(x) < 10) continue;
-        // Random gaps so it doesn't read as a perfect grid
-        if (rand() < 0.22) continue;
-        const w = 2.2 + rand() * 2.8;
-        const d = 2.2 + rand() * 2.8;
-        const depth = clamp01((8 - z) / 42);           // 0 near .. 1 far back
-        const h = lerp(2.4, 9.5, depth) * (0.7 + rand() * 0.6);
-        const glass = rand() > 0.45;
-        const color = glass
-          ? GLASS[Math.floor(rand() * GLASS.length)]
-          : CONCRETE[Math.floor(rand() * CONCRETE.length)];
-        out.push({ x, z, w, d, h, color, glass, delay: rand() });
+        if (z > 2.5 && Math.abs(x) < 9) continue;
+        // A few random gaps so it doesn't read as a perfect grid
+        if (rand() < 0.14) continue;
+        const w = 2.2 + rand() * 3.2;
+        const d = 2.2 + rand() * 3.2;
+        const depth = clamp01((10 - z) / 54);          // 0 near .. 1 far back
+        const h = lerp(2.6, 12.0, depth) * (0.7 + rand() * 0.7);
+        const glassy = rand() > 0.4;                   // glassy vs more matte stone
+        const color = MUTED[Math.floor(rand() * MUTED.length)];
+        out.push({ x, z, w, d, h, color, glassy, delay: rand() });
       }
     }
     return out;
   }, []);
 
+  // ─── Street life — trees, little people, cars (the polished axonometric vibe) ───
+  // Scattered in open ground only: never under the hero footprint or a building.
+  const streetProps = useMemo(() => {
+    const rand = mulberry32(23);
+    const clear = (x: number, z: number, pad: number) => {
+      if (Math.abs(x) < PODIUM_W / 2 + pad + 0.6 && Math.abs(z) < PODIUM_D / 2 + pad + 0.6) return false;
+      for (const b of cityBuildings) {
+        if (Math.abs(x - b.x) < b.w / 2 + pad && Math.abs(z - b.z) < b.d / 2 + pad) return false;
+      }
+      return true;
+    };
+    const trees: { x: number; z: number; s: number; tone: string }[] = [];
+    const people: { x: number; z: number; rot: number; tone: string }[] = [];
+    const cars: { x: number; z: number; rot: number; color: string }[] = [];
+    const GREENS = ["#7f9b6e", "#8aa178", "#74925f", "#94a886"];
+    const SKIN = ["#5a6b86", "#6b7790", "#4f5d77", "#7a86a0"];
+    const CARC = ["#cfd4db", "#b9c2cd", "#aab6c4", "#d3d7dd", "#9fb0c8"];
+    let g = 0;
+    while (trees.length < 48 && g++ < 800) {
+      const x = (rand() * 2 - 1) * 30, z = -40 + rand() * 50;
+      if (z > 4 && Math.abs(x) < 8) continue;             // keep the foreground sightline
+      if (!clear(x, z, 1.1)) continue;
+      trees.push({ x, z, s: 0.7 + rand() * 0.8, tone: GREENS[Math.floor(rand() * GREENS.length)] });
+    }
+    let pp = 0;
+    while (people.length < 16 && pp++ < 400) {
+      const ang = rand() * Math.PI * 2, r = 3.4 + rand() * 6;
+      const x = Math.cos(ang) * r, z = Math.sin(ang) * r;
+      if (z > 4 && Math.abs(x) < 7) continue;
+      if (!clear(x, z, 0.5)) continue;
+      people.push({ x, z, rot: rand() * Math.PI * 2, tone: SKIN[Math.floor(rand() * SKIN.length)] });
+    }
+    let cc = 0;
+    while (cars.length < 10 && cc++ < 400) {
+      const x = (rand() * 2 - 1) * 24, z = -34 + rand() * 42;
+      if (z > 4 && Math.abs(x) < 8) continue;
+      if (!clear(x, z, 1.6)) continue;
+      cars.push({ x, z, rot: rand() < 0.5 ? 0 : Math.PI / 2, color: CARC[Math.floor(rand() * CARC.length)] });
+    }
+    return { trees, people, cars };
+  }, [cityBuildings]);
+
   return (
     <>
-      {/* Lights — warm key, cool fill, soft ambient */}
-      <ambientLight intensity={0.55} color="#FFF6E6" />
-      <hemisphereLight color="#DCE6F2" groundColor="#AEB6C2" intensity={0.45} />
+      {/* Lights — soft key for slab/cantilever definition; the Environment
+          below does most of the fill and ALL the glass reflections. */}
+      <ambientLight intensity={0.32} color="#FBFCFF" />
+      <hemisphereLight color="#EAF1FB" groundColor="#C2C9D4" intensity={0.5} />
       <directionalLight
-        position={[10, 16, 8]}
-        intensity={1.4}
-        color="#FFF1D6"
+        position={[12, 22, 9]}
+        intensity={1.05}
+        color="#FFF6E8"
         castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
-        shadow-bias={-0.0005}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={30}
+        shadow-camera-bottom={-6}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
       />
+
+      {/* Image-based environment — built procedurally from Lightformers (no
+          network fetch, no asset weight). The bright sky card + warm/cool side
+          panels + vertical "reflected-city" streaks are what the glass curtain
+          wall mirrors, turning flat boxes into believable glass. */}
+      <Environment resolution={256} frames={1}>
+        {/* Sky dome overhead */}
+        <Lightformer form="rect" intensity={1.1} color="#eef5ff" scale={[60, 60, 1]} position={[0, 32, 0]} rotation={[Math.PI / 2, 0, 0]} />
+        {/* Warm sun side */}
+        <Lightformer form="rect" intensity={2.3} color="#fff0d6" scale={[14, 28, 1]} position={[20, 15, 10]} rotation={[0, -Math.PI / 3, 0]} />
+        {/* Cool sky fill, opposite */}
+        <Lightformer form="rect" intensity={1.4} color="#dce9ff" scale={[16, 28, 1]} position={[-20, 14, -6]} rotation={[0, Math.PI / 2.4, 0]} />
+        {/* Vertical "reflected city" streaks that read in the glass facade */}
+        <Lightformer form="rect" intensity={1.0} color="#ffffff" scale={[1.4, 24, 1]} position={[11, 12, -16]} />
+        <Lightformer form="rect" intensity={0.8} color="#cfe0f7" scale={[1.0, 20, 1]} position={[-8, 10, -17]} />
+        <Lightformer form="rect" intensity={0.9} color="#ffffff" scale={[1.2, 22, 1]} position={[3, 11, -18]} />
+        {/* FRONT sky + city — what the camera-facing glass faces actually mirror.
+            Without these the front facade has nothing bright to reflect and reads
+            matte. Placed behind/above the camera (+z, high). */}
+        <Lightformer form="rect" intensity={1.7} color="#f4f9ff" scale={[44, 30, 1]} position={[0, 22, 34]} rotation={[0, Math.PI, 0]} />
+        <Lightformer form="rect" intensity={1.3} color="#ffffff" scale={[1.6, 26, 1]} position={[-7, 11, 24]} rotation={[0, Math.PI, 0]} />
+        <Lightformer form="rect" intensity={1.1} color="#dbe8fb" scale={[1.2, 22, 1]} position={[9, 12, 26]} rotation={[0, Math.PI, 0]} />
+        {/* Ground bounce */}
+        <Lightformer form="rect" intensity={0.5} color="#eef1f6" scale={[44, 44, 1]} position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]} />
+      </Environment>
 
       {/* Blueprint plane — sits flat on the ground. Sized to frame the larger
           highrise footprint with parchment border around it. */}
@@ -640,61 +718,69 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         </mesh>
       ))}
 
-      {/* Building blocks — stacked tiers honor baseY for podium → tower → crown */}
-      {BLOCKS.map((b, i) => {
-        const baseY = b.baseY ?? 0;
+      {/* Podium — the plaza block the slender shaft rises from */}
+      <group ref={podiumRef} position={[0, 0, 0]}>
+        <mesh position={[0, PODIUM_H / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[PODIUM_W, PODIUM_H, PODIUM_D]} />
+          <meshPhysicalMaterial
+            color="#c4d2e6" roughness={0.18} metalness={0.1} ior={1.5}
+            clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={1.3}
+            transparent opacity={0.96}
+          />
+        </mesh>
+        <mesh position={[0, PODIUM_H + 0.05, 0]} castShadow>
+          <boxGeometry args={[PODIUM_W + 0.12, 0.1, PODIUM_D + 0.12]} />
+          <meshStandardMaterial color="#eef3f8" roughness={0.6} metalness={0.04} />
+        </mesh>
+      </group>
+
+      {/* Tower — one glass curtain-wall band + one concrete slab edge per floor.
+          The group origin sits at the floor base so scroll-driven scale.y grows
+          the plate upward. A straight, classical shaft (no offsets). */}
+      {FLOORS.map((f, i) => {
+        const glassH = FLOOR_H * GLASS_FRAC;
+        const slabH = FLOOR_H - glassH;
         return (
-          <group key={i}>
-            <mesh
-              ref={(el) => { blockRefs.current[i] = el; }}
-              position={[b.x, baseY + b.h / 2, b.z]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[b.w, b.h, b.d]} />
+          <group
+            key={f.i}
+            ref={(el) => { floorRefs.current[i] = el; }}
+            position={[f.x, f.baseY, f.z]}
+          >
+            <mesh position={[0, glassH / 2, 0]} castShadow receiveShadow>
+              <boxGeometry args={[f.w, glassH, f.d]} />
               <meshPhysicalMaterial
-                ref={(el) => { blockMats.current[i] = el; }}
-                color={b.color ?? "#E8F1FF"}
-                transmission={0.85}
-                thickness={0.6}
-                roughness={0.08}
-                metalness={0.0}
-                ior={1.45}
-                transparent
-                opacity={0}
-                attenuationColor="#BFD4F2"
-                attenuationDistance={4}
+                color="#6e93c0"
+                roughness={0.045}
+                metalness={0.15}
+                ior={1.5}
+                reflectivity={0.9}
                 clearcoat={1}
-                clearcoatRoughness={0.06}
+                clearcoatRoughness={0.03}
+                envMapIntensity={2.6}
+                transparent
+                opacity={0.93}
               />
-              <Edges threshold={15} color="#2F5BFF" />
             </mesh>
-            {b.greenRoof && (
-              <mesh
-                ref={(el) => { roofRefs.current[i] = el; }}
-                position={[b.x, baseY + b.h + 0.06, b.z]}
-                castShadow
-              >
-                <boxGeometry args={[b.w * 0.96, 0.12, b.d * 0.96]} />
-                <meshStandardMaterial
-                  color="#5E7C4F"
-                  roughness={0.9}
-                  metalness={0}
-                  transparent
-                  opacity={0}
-                />
-              </mesh>
-            )}
+            {/* Thin concrete floor-slab edge — faint floor lines, slightly proud */}
+            <mesh position={[0, glassH + slabH / 2, 0]} castShadow receiveShadow>
+              <boxGeometry args={[f.w + 0.05, slabH, f.d + 0.05]} />
+              <meshStandardMaterial color="#cdd8e6" roughness={0.5} metalness={0.04} envMapIntensity={1.0} />
+            </mesh>
           </group>
         );
       })}
 
-      {/* Ground — concrete plane with a tileable street grid */}
-      <mesh
-        rotation-x={-Math.PI / 2}
-        position={[0, 0, 0]}
-        receiveShadow
-      >
+      {/* Anish Kapoor mirror "bean" at the plaza — a nod to the real 56 Leonard */}
+      <group ref={beanRef} position={[PODIUM_W / 2 + 1.5, 0.5, PODIUM_D / 2 + 0.7]}>
+        <mesh scale={[1.5, 0.62, 1.05]} castShadow receiveShadow>
+          <sphereGeometry args={[0.7, 48, 32]} />
+          <meshStandardMaterial color="#e8edf3" metalness={1} roughness={0.03} envMapIntensity={2.2} />
+        </mesh>
+      </group>
+
+      {/* Ground — concrete plane with a tileable street grid (no hard receiveShadow;
+          ContactShadows below does the soft grounding instead) */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial
           ref={groundMat}
@@ -707,7 +793,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         />
       </mesh>
 
-      {/* Surrounding city — buildings rise + fade in (staggered) on scroll */}
+      {/* Soft contact shadow grounding the tower + city in the plaza */}
+      <ContactShadows
+        position={[0, 0.04, 0]}
+        scale={64}
+        far={28}
+        blur={2.6}
+        opacity={0.42}
+        color="#8a98b0"
+        resolution={512}
+        frames={Infinity}
+      />
+
+      {/* Surrounding city — detailed glass-facade buildings (floor lines +
+          windows via the shared facade texture), muted grey/creme/taupe tints,
+          rising + fading in (staggered) on scroll. */}
       {cityBuildings.map((b, i) => (
         <mesh
           key={i}
@@ -718,15 +818,63 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         >
           <boxGeometry args={[b.w, b.h, b.d]} />
           <meshStandardMaterial
+            map={facadeTex}
             color={b.color}
-            roughness={b.glass ? 0.18 : 0.82}
-            metalness={b.glass ? 0.45 : 0.05}
+            roughness={b.glassy ? 0.34 : 0.62}
+            metalness={b.glassy ? 0.3 : 0.06}
+            envMapIntensity={b.glassy ? 0.85 : 0.4}
             transparent
             opacity={0}
           />
-          <Edges threshold={15} color="#8FA6C8" />
+          <Edges threshold={15} color="#9fb0c8" />
         </mesh>
       ))}
+
+      {/* Street life — low-poly trees, little people, cars. Hidden until the
+          city ground is in (toggled in useFrame). Adds the polished, lived-in
+          axonometric-render vibe without going photoreal. */}
+      <group ref={propsRef} visible={false}>
+        {streetProps.trees.map((t, i) => (
+          <group key={`t${i}`} position={[t.x, 0, t.z]} scale={t.s}>
+            <mesh position={[0, 0.34, 0]} castShadow>
+              <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
+              <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
+            </mesh>
+            <mesh position={[0, 0.98, 0]} castShadow>
+              <icosahedronGeometry args={[0.5, 0]} />
+              <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
+            </mesh>
+            <mesh position={[0.16, 1.28, 0.05]} castShadow>
+              <icosahedronGeometry args={[0.3, 0]} />
+              <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
+            </mesh>
+          </group>
+        ))}
+        {streetProps.people.map((p, i) => (
+          <group key={`p${i}`} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
+            <mesh position={[0, 0.16, 0]}>
+              <capsuleGeometry args={[0.045, 0.17, 3, 6]} />
+              <meshStandardMaterial color={p.tone} roughness={0.8} />
+            </mesh>
+            <mesh position={[0, 0.33, 0]}>
+              <sphereGeometry args={[0.05, 8, 8]} />
+              <meshStandardMaterial color="#d7c2ac" roughness={0.8} />
+            </mesh>
+          </group>
+        ))}
+        {streetProps.cars.map((c, i) => (
+          <group key={`c${i}`} position={[c.x, 0.12, c.z]} rotation={[0, c.rot, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.52, 0.2, 0.98]} />
+              <meshStandardMaterial color={c.color} roughness={0.35} metalness={0.35} envMapIntensity={1} />
+            </mesh>
+            <mesh position={[0, 0.16, -0.05]}>
+              <boxGeometry args={[0.46, 0.16, 0.5]} />
+              <meshStandardMaterial color={c.color} roughness={0.2} metalness={0.4} envMapIntensity={1.2} />
+            </mesh>
+          </group>
+        ))}
+      </group>
     </>
   );
 }
