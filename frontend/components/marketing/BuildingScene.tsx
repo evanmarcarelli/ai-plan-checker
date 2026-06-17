@@ -571,16 +571,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       // skyline materializes in waves rather than all at once.
       const start = 0.52 + b.delay * 0.26;
       const t = smoothstep(start, start + 0.16, p);
-      // Skip buildings whose rise value is unchanged since last frame: when the
-      // scroll is idle every building is stable, and while scrubbing only the
-      // handful inside their rise window are moving. Bidirectional-safe — t
-      // recomputes from p, so scrolling back up re-animates them.
-      const last = cityT.current[i];
-      if (last !== undefined && Math.abs(t - last) < 0.0015) return;
+      // Skip only when the rise value is exactly unchanged (idle scroll). Below
+      // the rise window smoothstep returns a true 0, so an idle top settles to
+      // 0 and stays skipped; while scrubbing t changes every frame and we do the
+      // work. Bidirectional-safe — t recomputes from p on the way back up too.
+      if (cityT.current[i] === t) return;
       cityT.current[i] = t;
-      const sy = Math.max(0.0001, t);
-      m.scale.y = sy;                    // extrude from the ground
-      m.position.y = (b.h * sy) / 2;
+      // Hide the building entirely until it starts rising. Toggling `visible`
+      // (not just opacity) is what keeps the city — including its Edges wireframe
+      // outlines — fully gone during the blueprint phase and when scrolled back
+      // to the top; opacity alone leaves those edges faintly drawn on the plaza.
+      const vis = t > 0.001;
+      m.visible = vis;
+      if (!vis) return;
+      m.scale.y = t;                     // extrude from the ground
+      m.position.y = (b.h * t) / 2;
       // Once fully risen, drop transparency so the box writes depth and stops
       // contributing to the transparent-overdraw pass (the steady-state look).
       const settled = t >= 0.999;
@@ -874,6 +879,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
           key={i}
           ref={(el) => { cityRefs.current[i] = el; }}
           position={[b.x, b.h / 2, b.z]}
+          visible={false}
           castShadow
           receiveShadow
         >
