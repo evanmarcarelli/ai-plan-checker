@@ -8,7 +8,7 @@
 // Sits ABOVE the existing <Hero/> on the marketing page.
 import { Component, useRef, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 
 // R3F touches `window` and `WebGLRenderingContext` — disable SSR.
@@ -45,18 +45,32 @@ export default function ScrollBuildingHero() {
     offset: ["start start", "end end"],
   });
 
+  // Smooth the raw scroll value before anything consumes it. Wheel notches,
+  // trackpad momentum, and low-frequency touch scroll arrive in coarse chunks;
+  // feeding those straight into the scene makes the tower snap between steps.
+  // An over-damped spring (damping ≫ critical, so no overshoot) glides between
+  // states and settles fast enough to still read as scroll-linked, not floaty.
+  // Both the 3D scene and the HTML overlays read from this single smoothed
+  // source so they stay perfectly in sync.
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 110,
+    damping: 30,
+    mass: 0.5,
+    restDelta: 0.0008,
+  });
+
   // Overlay opacity curves — keep them in sync with BuildingScene's phase ranges.
   // The tagline stays anchored above the scene the entire scroll — it's the
   // narrative spine — so no time-based fade. Only the small wordmark and the
   // trusted-by row fade in/out by phase.
-  const wordmarkOpacity = useTransform(scrollYProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
-  const trustedOpacity  = useTransform(scrollYProgress, [0.86, 0.97],       [0, 1]);
-  const trustedY        = useTransform(scrollYProgress, [0.86, 0.97],       [12, 0]);
+  const wordmarkOpacity = useTransform(smoothProgress, [0.00, 0.18, 0.32], [1, 1, 0]);
+  const trustedOpacity  = useTransform(smoothProgress, [0.86, 0.97],       [0, 1]);
+  const trustedY        = useTransform(smoothProgress, [0.86, 0.97],       [12, 0]);
 
   // Tagline vertical position: starts higher (above the plan set in the
   // lower half of the frame), then eases down once the plan fades and the
   // building rises so the line sits closer to the city skyline.
-  const taglineTop = useTransform(scrollYProgress, [0.0, 0.45, 1.0], ["22vh", "32vh", "32vh"]);
+  const taglineTop = useTransform(smoothProgress, [0.0, 0.45, 1.0], ["22vh", "32vh", "32vh"]);
 
   return (
     <section
@@ -70,7 +84,7 @@ export default function ScrollBuildingHero() {
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* 3D scene fills the viewport (gracefully degrades if WebGL fails) */}
         <SceneBoundary>
-          <BuildingScene progress={scrollYProgress} />
+          <BuildingScene progress={smoothProgress} />
         </SceneBoundary>
 
         {/* Architechtura wordmark — the site's primary logo treatment. Sits above

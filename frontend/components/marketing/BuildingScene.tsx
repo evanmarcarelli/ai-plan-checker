@@ -13,8 +13,8 @@
 // The scene reads progress every frame via .get() on the MotionValue, so React
 // never re-renders on scroll — only the GPU does work.
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges, Environment, Lightformer, ContactShadows } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { Edges, Environment, Lightformer, ContactShadows, PerformanceMonitor } from "@react-three/drei";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MotionValue } from "framer-motion";
 
@@ -459,6 +459,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const groundMat = useRef<THREE.MeshStandardMaterial>(null);
   const groundMeshRef = useRef<THREE.Mesh>(null);
   const cityRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const cityT = useRef<number[]>([]);            // last rise value per building (skip unchanged)
   const propsRef = useRef<THREE.Group>(null);   // trees / people / cars
   const contactRef = useRef<THREE.Group>(null); // contact-shadow plane
 
@@ -570,14 +571,24 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       // skyline materializes in waves rather than all at once.
       const start = 0.52 + b.delay * 0.26;
       const t = smoothstep(start, start + 0.16, p);
+      // Skip buildings whose rise value is unchanged since last frame: when the
+      // scroll is idle every building is stable, and while scrubbing only the
+      // handful inside their rise window are moving. Bidirectional-safe — t
+      // recomputes from p, so scrolling back up re-animates them.
+      const last = cityT.current[i];
+      if (last !== undefined && Math.abs(t - last) < 0.0015) return;
+      cityT.current[i] = t;
       const sy = Math.max(0.0001, t);
       m.scale.y = sy;                    // extrude from the ground
       m.position.y = (b.h * sy) / 2;
+      // Once fully risen, drop transparency so the box writes depth and stops
+      // contributing to the transparent-overdraw pass (the steady-state look).
+      const settled = t >= 0.999;
       m.traverse((o) => {
         const mat = (o as THREE.Mesh).material as
-          | (THREE.Material & { opacity: number })
+          | (THREE.Material & { opacity: number; transparent: boolean })
           | undefined;
-        if (mat && "opacity" in mat) { mat.transparent = true; mat.opacity = t; }
+        if (mat && "opacity" in mat) { mat.transparent = !settled; mat.opacity = t; }
       });
     });
 
@@ -695,7 +706,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         intensity={1.05}
         color="#FFF6E8"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-22}
         shadow-camera-right={22}
         shadow-camera-top={30}
@@ -851,7 +862,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         blur={2.6}
         opacity={0.42}
         color="#8a98b0"
-        resolution={512}
+        resolution={256}
         frames={Infinity}
       />
 
@@ -1006,6 +1017,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   );
 }
 
+// Device-tier pixel-ratio caps. Touch / small-viewport devices start lower so
+// the first frames are smooth on phones (a dpr-3 screen would otherwise render
+// 9× the pixels); PerformanceMonitor then nudges within [1, max] to hold a
+// steady framerate. Desktops start crisp at 2 and only step down under load.
+function pickDpr(): { start: number; max: number } {
+  if (typeof window === "undefined") return { start: 1.5, max: 2 };
+  const lowEnd =
+    (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+    window.innerWidth < 768;
+  const ratio = window.devicePixelRatio || 1;
+  return lowEnd
+    ? { start: Math.min(ratio, 1.25), max: 1.5 }
+    : { start: Math.min(ratio, 2), max: 2 };
+}
+
 // Tiny seeded PRNG so tree layout is stable across reloads.
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -1020,6 +1046,11 @@ function mulberry32(seed: number) {
 // ────────────────── Public component ────────────────────────────
 
 export default function BuildingScene({ progress }: { progress: MotionValue<number> }) {
+  // Device-tier resolution: start sensibly for the hardware, then let
+  // PerformanceMonitor (below) raise/lower it to hold a steady framerate.
+  const caps = useRef(pickDpr());
+  const [dpr, setDpr] = useState(caps.current.start);
+
   // R3F observes its parent via ResizeObserver. Inside a sticky container, the
   // observer occasionally locks onto a stale ~150px measurement at mount and
   // never recovers — a manual resize event after mount forces it to re-measure
@@ -1036,10 +1067,20 @@ export default function BuildingScene({ progress }: { progress: MotionValue<numb
     <div style={{ position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh" }}>
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={dpr}
         camera={{ position: [0, 13, 4], fov: 35, near: 0.1, far: 200 }}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       >
+        {/* Auto-scale resolution to the device: step down when the framerate
+            sags, back up (within the device cap) when it recovers. This is what
+            lets the same scene stay smooth from a low-end phone to a 4K desktop
+            without hardcoding quality tiers. */}
+        <PerformanceMonitor
+          flipflops={3}
+          onDecline={() => setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)))}
+          onIncline={() => setDpr((d) => Math.min(caps.current.max, +(d + 0.25).toFixed(2)))}
+          onFallback={() => setDpr(1)}
+        />
         <SceneContents progress={progress} />
       </Canvas>
     </div>
