@@ -33,16 +33,10 @@ appeal hearing asks for.
 """
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from app.models.schemas import ComplianceFinding, ComplianceStatus
-
-# A section token inside a citation string, e.g. "506.2", "7A", "1006.3.2",
-# "230.42", "R401". Used to probe the corpus when the full citation string
-# ("IBC Table 506.2") doesn't match a chunk id directly.
-_SECTION_TOKEN_RE = re.compile(r"\b([A-Z]?\d+[A-Z]?(?:\.\d+[A-Z]?)*)\b")
 
 _UNVERIFIED_NOTE = (
     " [Citation unverified against code corpus — confirm against the adopted "
@@ -79,8 +73,8 @@ class _CorpusProbe:
         self._memo: Dict[str, Optional[str]] = {}
 
     def lookup(self, citation: str) -> Optional[str]:
-        """Return verbatim source text if the citation (or any section token
-        inside it) is in the corpus, else None."""
+        """Return verbatim source text if any '·'-separated ref in the citation
+        is in the corpus, else None."""
         if not citation:
             return None
         if citation in self._memo:
@@ -90,13 +84,22 @@ class _CorpusProbe:
         return result
 
     def _lookup_uncached(self, citation: str) -> Optional[str]:
-        # 1. Try the whole citation string.
-        if self._src.verify_citation(citation):
-            return self._src.get_source_text(citation) or ""
-        # 2. Try each section-number token found in the string.
-        for tok in _SECTION_TOKEN_RE.findall(citation.upper()):
-            if self._src.verify_citation(tok):
-                return self._src.get_source_text(tok) or ""
+        # Resolve each '·'-separated ref ("IBC Table 506.2 · 504.2") through the
+        # corpus's OWN lookup. has_section()/get_source_text() already
+        # prefix-guard cross-code section collisions and handle lead-ins
+        # ("IBC Table 506.2" → IBC 506.2), so one resolving ref grounds the
+        # finding.
+        #
+        # We deliberately do NOT fall back to bare, prefix-less section tokens.
+        # A naked number matches ANY code that carries it — "504.2" → ADA 504.2,
+        # "CMC 303.4" → ADA 303.4 — grounding a finding on a different code's
+        # text. That wrong-section "verified=true" is exactly the failure this
+        # gate exists to prevent. Dropping the token loop makes the gate, the
+        # corpus's has_section(), and tests/test_rule_citation_coverage.py
+        # (_refs) share ONE resolution semantics.
+        for ref in (r.strip() for r in citation.split("·")):
+            if ref and self._src.verify_citation(ref):
+                return self._src.get_source_text(ref) or ""
         return None
 
 

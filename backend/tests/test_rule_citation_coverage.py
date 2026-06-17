@@ -9,8 +9,14 @@ rules: confirmed fire-zone violations shipped as needs_review because
 KNOWN_MISSING is an explicit debt list, not a pass: each entry names the
 ingest that retires it. When the section gets ingested, this test FAILS on
 the stale entry so the list can't rot.
+
+Covers every rule list the engine assembles — BASELINE + WUI + CALGREEN +
+LADBS_SFD. The LADBS list was previously unscanned, which hid two gate-muted
+fire rules (LADBS-SFD-WUI, LADBS-SFD-HILLSIDE-FIRE); they are now explicit
+debt below.
 """
 from app.code_library.adapter import CorpusCodeSource
+from app.code_library.deterministic.ladbs_rules import LADBS_SFD_RULES
 from app.code_library.deterministic.rules import (
     BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES,
 )
@@ -20,9 +26,13 @@ KNOWN_MISSING = {
     "FIRE-WUI-VENT": "CBC 708A — retire via licensed 2025 CBC PDF ingest",
     "FIRE-WUI-DECK": "CBC 709A — retire via licensed 2025 CBC PDF ingest",
     "FIRE-WUI-7A": "CBC Chapter 7A — retire via licensed 2025 CBC PDF ingest",
+    "LADBS-SFD-WUI": "LAMC Ch. V Art. 7.1 (CWUIC) — retire via LAMC fire-code ingest",
+    "LADBS-SFD-HILLSIDE-FIRE": "LAMC 91.7207 — retire via LAMC fire-code ingest",
 }
 
-ALL_RULES = BASELINE_RULES + CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES
+ALL_RULES = (
+    BASELINE_RULES + CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES + LADBS_SFD_RULES
+)
 
 
 def _refs(rule) -> list:

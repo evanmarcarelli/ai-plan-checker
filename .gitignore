@@ -37,6 +37,7 @@ dist/
 # Local uploads / exports / logs
 backend/uploads/
 backend/exports/
+exports/
 backend/cache/
 backend/logs/
 *.log
