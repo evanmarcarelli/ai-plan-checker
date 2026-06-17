@@ -48,3 +48,16 @@ as $$
    where id = p_user_id
   returning credits_remaining;
 $$;
+
+-- ── API lockdown ─────────────────────────────────────────────
+-- These are SECURITY DEFINER with no internal auth check, so leaving them
+-- EXECUTE-able by anon/authenticated via PostgREST (/rest/v1/rpc/...) is a hole:
+-- any signed-in user could mint credits (add_credits_atomic) or drain another
+-- user's balance by passing their id (decrement_credits_atomic). The backend
+-- calls them ONLY with the service role, so restrict EXECUTE to it. Placed after
+-- the CREATE OR REPLACE above, which resets the function ACL to the default
+-- (PUBLIC) each run — so this re-locks on every (re)deploy.
+revoke all on function public.decrement_credits_atomic(uuid, integer) from public, anon, authenticated;
+revoke all on function public.add_credits_atomic(uuid, integer)        from public, anon, authenticated;
+grant execute on function public.decrement_credits_atomic(uuid, integer) to service_role;
+grant execute on function public.add_credits_atomic(uuid, integer)       to service_role;

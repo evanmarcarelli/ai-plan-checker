@@ -172,3 +172,14 @@ create policy "Users can read own plan documents"
 create policy "Users can read own plan sheets"
   on public.plan_sheets for select
   using (auth.uid() = user_id);
+
+-- ── API lockdown ─────────────────────────────────────────────
+-- Both functions are SECURITY DEFINER and take a caller-supplied p_user_id, so
+-- leaving them EXECUTE-able by anon/authenticated via PostgREST would let a
+-- signed-in user read ANOTHER user's plan corpus by passing their id. The
+-- backend calls them ONLY with the service role. Re-applied after the
+-- CREATE OR REPLACE above, which resets the function ACL to default each run.
+revoke all on function public.search_plan_sheets(uuid, text, text[], uuid, integer)  from public, anon, authenticated;
+revoke all on function public.find_plan_revision_candidates(uuid, text, text, text)  from public, anon, authenticated;
+grant execute on function public.search_plan_sheets(uuid, text, text[], uuid, integer) to service_role;
+grant execute on function public.find_plan_revision_candidates(uuid, text, text, text) to service_role;

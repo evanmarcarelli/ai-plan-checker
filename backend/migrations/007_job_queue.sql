@@ -187,3 +187,20 @@ begin
   return n;
 end;
 $$;
+
+
+-- ── API lockdown ─────────────────────────────────────────────
+-- These SECURITY DEFINER functions must not be callable directly by
+-- anon/authenticated via PostgREST: refund_job_credit would let a user
+-- self-refund credits, and claim/heartbeat/reaper let a caller tamper with the
+-- queue. The worker calls them ONLY with the service role. (fail_exhausted_jobs
+-- calls refund_job_credit internally, which still works — it runs as the owner,
+-- who keeps EXECUTE.) Re-applied after CREATE OR REPLACE, which resets the ACL.
+revoke all on function public.claim_next_job(text, integer)        from public, anon, authenticated;
+revoke all on function public.heartbeat_job(uuid, text, integer)   from public, anon, authenticated;
+revoke all on function public.refund_job_credit(uuid)              from public, anon, authenticated;
+revoke all on function public.fail_exhausted_jobs()                from public, anon, authenticated;
+grant execute on function public.claim_next_job(text, integer)        to service_role;
+grant execute on function public.heartbeat_job(uuid, text, integer)   to service_role;
+grant execute on function public.refund_job_credit(uuid)              to service_role;
+grant execute on function public.fail_exhausted_jobs()                to service_role;
