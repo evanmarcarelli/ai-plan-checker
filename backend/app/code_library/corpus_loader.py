@@ -203,8 +203,14 @@ class CodeRetriever:
 
     def __init__(self, corpus: CodeCorpus):
         self.corpus = corpus
-        self._tokenized = [tokenize(f"{c.title} {c.text} {' '.join(c.tags)}") for c in corpus.chunks]
-        self._bm25 = BM25Okapi(self._tokenized) if self._tokenized else None
+        # Build the BM25 index from a TRANSIENT tokenized view of the corpus.
+        # BM25Okapi copies what it needs (doc_freqs / idf / doc_len) at init and
+        # does NOT retain the input list, so binding it to self would just pin a
+        # second full copy of the tokenized corpus in RAM for the life of the
+        # process — a corpus-sized waste, and the single biggest avoidable chunk
+        # of the in-process baseline on a 512 MB dyno.
+        tokenized = [tokenize(f"{c.title} {c.text} {' '.join(c.tags)}") for c in corpus.chunks]
+        self._bm25 = BM25Okapi(tokenized) if tokenized else None
 
     def search(
         self,

@@ -13,13 +13,34 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def compress(input_path: str, output_path: str = None) -> Tuple[str, int, int]:
+def compress(input_path: str, output_path: str = None, max_mb: float = None) -> Tuple[str, int, int]:
     """Compress a PDF in place (or to output_path).
 
     Returns (output_path, original_bytes, new_bytes).
     Falls back to original file if compression fails or grows the file.
+
+    Files larger than `max_mb` are skipped (returned untouched). doc.save with
+    garbage=4 / clean=True / deflate_images rewrites and sanitizes the WHOLE
+    document in memory, so on a large vector- or image-heavy plan set that
+    transient spike is a top OOM cause on a small dyno — and the compressed copy
+    is only used locally then deleted, so the marginal saving isn't worth the
+    risk on big files. `max_mb=None` reads settings.pdf_compress_max_mb
+    (default 25); `max_mb=0` disables the gate.
     """
     original_size = os.path.getsize(input_path)
+
+    if max_mb is None:
+        try:
+            from app.config import settings
+            max_mb = float(getattr(settings, "pdf_compress_max_mb", 25))
+        except Exception:
+            max_mb = 25.0
+    if max_mb and original_size > max_mb * 1024 * 1024:
+        logger.info(
+            f"compress: skipping {original_size:,}-byte PDF (over {max_mb:g} MB cap) "
+            f"to avoid the in-memory rewrite spike; using original"
+        )
+        return input_path, original_size, original_size
 
     # Write to a temp file so we can fall back if it gets worse
     target = output_path or input_path

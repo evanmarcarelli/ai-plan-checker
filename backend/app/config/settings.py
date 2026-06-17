@@ -104,6 +104,13 @@ class Settings(BaseSettings):
 
     # File Storage
     max_upload_size_mb: int = 100
+    # Skip the best-effort PDF compression pass for files larger than this.
+    # pdf_compressor.compress() runs doc.save(garbage=4, clean=True,
+    # deflate_images=True), which rewrites the whole document in memory; on big
+    # plan sets that transient spike is a top OOM cause on a 512 MB dyno, and the
+    # compressed file is only used locally then deleted. Env: PDF_COMPRESS_MAX_MB.
+    # Set to 0 to disable the gate (always attempt compression).
+    pdf_compress_max_mb: int = 25
     upload_folder: str = "./uploads"
     export_folder: str = "./exports"
 
