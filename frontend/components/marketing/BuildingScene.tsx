@@ -13,7 +13,7 @@
 // The scene reads progress every frame via .get() on the MotionValue, so React
 // never re-renders on scroll — only the GPU does work.
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges, Environment, Lightformer, ContactShadows, PerformanceMonitor } from "@react-three/drei";
+import { Edges, Environment, Lightformer, ContactShadows, PerformanceMonitor, Preload } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MotionValue } from "framer-motion";
@@ -460,7 +460,9 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const groundMeshRef = useRef<THREE.Mesh>(null);
   const cityRefs = useRef<(THREE.Mesh | null)[]>([]);
   const cityT = useRef<number[]>([]);            // last rise value per building (skip unchanged)
-  const propsRef = useRef<THREE.Group>(null);   // trees / people / cars
+  const treesRef = useRef<THREE.Group>(null);    // scatter trees
+  const gardenRef = useRef<THREE.Group>(null);   // entrance garden + fountain
+  const figuresRef = useRef<THREE.Group>(null);  // people + cars
   const contactRef = useRef<THREE.Group>(null); // contact-shadow plane
 
   // Tileable street-grid ground texture
@@ -597,8 +599,16 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       });
     });
 
-    // Street props (trees / people / cars) appear once the city ground is in.
-    if (propsRef.current) propsRef.current.visible = landT > 0.02;
+    // Street life reveals in a quick warm cascade once the city ground is in.
+    // <Preload> has already compiled every shader and uploaded every geometry/
+    // texture at load — including these props, which mount hidden — so the
+    // frames where they first appear no longer stall the main thread. Staggering
+    // trees → garden → figures also spreads the per-frame draw/shadow work over
+    // a few frames instead of spiking ~260 meshes onto one. Together these kill
+    // the mid-scroll choppiness the greenery used to cause when it popped in.
+    if (treesRef.current)   treesRef.current.visible   = landT > 0.02;
+    if (gardenRef.current)  gardenRef.current.visible  = landT > 0.10;
+    if (figuresRef.current) figuresRef.current.visible = landT > 0.18;
   });
 
   // ─── Surrounding city buildings ───
@@ -897,10 +907,11 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         </mesh>
       ))}
 
-      {/* Street life — low-poly trees, little people, cars. Hidden until the
-          city ground is in (toggled in useFrame). Adds the polished, lived-in
-          axonometric-render vibe without going photoreal. */}
-      <group ref={propsRef} visible={false}>
+      {/* Street life — low-poly trees, people, cars + the entrance garden.
+          Split into three groups (trees → garden → figures) that reveal in a
+          quick warm cascade once the city ground is in. The GPU is pre-warmed
+          by <Preload all/> at load, so no group stalls on first paint. */}
+      <group ref={treesRef} visible={false}>
         {streetProps.trees.map((t, i) => (
           <group key={`t${i}`} position={[t.x, 0, t.z]} scale={t.s}>
             <mesh position={[0, 0.34, 0]} castShadow>
@@ -917,6 +928,11 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
             </mesh>
           </group>
         ))}
+      </group>
+
+      {/* People + cars — revealed a beat after the trees so the whole cast
+          doesn't pop onto one frame. */}
+      <group ref={figuresRef} visible={false}>
         {streetProps.people.map((p, i) => (
           <group key={`p${i}`} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
             <mesh position={[0, 0.16, 0]}>
@@ -941,9 +957,12 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
             </mesh>
           </group>
         ))}
+      </group>
 
-        {/* ── Entrance: a garden walkway with a water fountain leading up to
-            the tower (front, +Z, facing the camera) ── */}
+      {/* ── Entrance garden — walkway, beds, hedges, shrubs, flowers + a water
+          fountain leading up to the tower (front, +Z, facing the camera).
+          Revealed last in the cascade. ── */}
+      <group ref={gardenRef} visible={false}>
         {/* Stone walkway from the front plaza to the tower entrance */}
         <mesh position={[0, 0.03, 6.7]} receiveShadow>
           <boxGeometry args={[2.2, 0.06, 6.2]} />
@@ -1088,6 +1107,12 @@ export default function BuildingScene({ progress }: { progress: MotionValue<numb
           onFallback={() => setDpr(1)}
         />
         <SceneContents progress={progress} />
+        {/* Pre-compile every shader and upload every geometry/texture at load —
+            including the street props that mount hidden — so nothing has to be
+            compiled or uploaded on the main thread the moment they first turn
+            visible mid-scroll. This is the core fix for the choppy hitch when
+            the trees / garden used to render. */}
+        <Preload all />
       </Canvas>
     </div>
   );
