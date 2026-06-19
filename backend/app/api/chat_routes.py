@@ -19,6 +19,7 @@ NOTE: deliberately NO `from __future__ import annotations` here — see the
 matching note in collab_routes.py. It breaks request-body model resolution
 on the pinned FastAPI 0.109 + Pydantic 2.5.x.
 """
+import re
 from typing import Any, Dict, List, Optional
 
 import anthropic
@@ -44,6 +45,11 @@ new code review and you are NOT a substitute for a licensed professional or
 the AHJ. Always remind users to verify with their AHJ for final determinations.
 
 RULES:
+0. SCOPE: You ONLY answer questions about building/zoning code, this compliance
+   report and its findings, or the plan set under review. If a question is about
+   anything else (general knowledge, coding/programming help, personal advice,
+   chit-chat, etc.), politely decline in ONE sentence — "I can only help with
+   building-code and plan-set questions about this report." — and do not answer it.
 1. Ground every claim in the CODE EXCERPTS provided below. If a question
    asks about a section that isn't in the excerpts, say "I don't have that
    section in my reference — please verify directly with the source."
@@ -97,6 +103,28 @@ async def _assert_access(actor: Actor, job_id: str) -> Dict[str, Any]:
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+
+# Broad allow-vocabulary: building code + the report/plan-set meta a user asks
+# about. Used only by the fail-open gate below — keep it generous on purpose.
+_DOMAIN_RE = re.compile(
+    r"\b(code|ibc|irc|ada|nec|cbc|fire|egress|setback|occupanc|zoning|electric|"
+    r"plumb|mechanic|energy|accessib|public works|environmental|afci|gfci|"
+    r"defensible|corridor|stair|guard|rail|permit|ahj|report|finding|section|"
+    r"sheet|plan|drawing|score|compliance|requirement|notice|review)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_on_topic(question: str, excerpts: List[CodeChunk], finding_ref) -> bool:
+    """Fail-OPEN topic gate — block only the clearly off-topic.
+
+    On-topic if ANY signal fires: the question is anchored to a report finding,
+    BM25 matched at least one code chunk, or the text hits the domain vocabulary.
+    This is conservative hardening to skip the LLM call on obvious junk; the
+    system prompt's SCOPE rule catches anything that slips through.
+    """
+    return bool(finding_ref) or bool(excerpts) or bool(_DOMAIN_RE.search(question))
 
 
 def _retrieve_excerpts(question: str, k: int = 5) -> List[CodeChunk]:
@@ -198,7 +226,26 @@ CODE EXCERPTS (use ONLY these for your answer):
         author_display=actor.display,
     )
 
-    # Call Claude Sonnet (cheap)
+    # Fail-open topic gate: if a question is clearly NOT about building code,
+    # this report, or the plan set, skip the LLM call entirely (cost control)
+    # and return a canned redirect — still persisted so the thread stays
+    # consistent for collaborators.
+    if not _looks_on_topic(body.question, excerpts, body.finding_ref):
+        reply = (
+            "I can only answer questions about building code and your plan set / "
+            "this compliance report. For other topics, please use a general "
+            "assistant. Try asking about a specific finding or code section."
+        )
+        assistant_row = db.add_chat_message(
+            job_id=job_id,
+            role="assistant",
+            content=reply,
+            citations=[],
+            author_display="Architechtura AI",
+        )
+        return {"reply": reply, "citations": [], "message_id": assistant_row.get("id")}
+
+    # Call Claude (cheap chat model)
     if not settings.anthropic_api_key:
         # Graceful degradation in dev
         reply = (
@@ -210,7 +257,7 @@ CODE EXCERPTS (use ONLY these for your answer):
         try:
             client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
             resp = await client.messages.create(
-                model=settings.anthropic_model_cheap,
+                model=settings.anthropic_model_chat,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}],
                 max_tokens=800,
