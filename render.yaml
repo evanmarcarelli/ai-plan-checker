@@ -37,6 +37,11 @@ services:
         value: claude-opus-4-7
       - key: ANTHROPIC_MODEL_CHEAP
         value: claude-sonnet-4-6
+      # AI assistant chat (web service only — the worker doesn't serve chat).
+      # Cheapest tier: ~3x cheaper than Sonnet. Matches the settings.py default;
+      # set here so prod config is explicit rather than relying on the default.
+      - key: ANTHROPIC_MODEL_CHAT
+        value: claude-haiku-4-5
       - key: ANTHROPIC_MAX_TOKENS
         value: "4096"
       - key: SUPABASE_URL
