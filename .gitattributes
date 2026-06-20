@@ -1,0 +1,3 @@
+# Keep shell scripts as LF so they run under Git Bash / WSL even on Windows,
+# where Git would otherwise convert them to CRLF and break the script.
+*.sh text eol=lf
