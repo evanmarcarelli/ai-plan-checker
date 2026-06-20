@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # which silently degrades every department reviewer to needs_review. Do not
     # change to "4-7" without verifying with the Anthropic API first.
     anthropic_model_cheap: str = "claude-sonnet-4-6"   # ~5x cheaper, used by 10 department reviewers
+    # AI assistant chat uses the cheapest tier — these are short, grounded
+    # clarification answers, not plan reviews. Haiku 4.5 is ~3x cheaper than
+    # Sonnet 4.6 ($1/$5 vs $3/$15 per 1M tok). Bare alias resolves (same form
+    # as anthropic_model_cheap above). Override via ANTHROPIC_MODEL_CHAT if needed.
+    anthropic_model_chat: str = "claude-haiku-4-5"
     anthropic_max_tokens: int = 4096
     # #6 — Per-department model tier. Department CATEGORIES listed here use the
     # premium model (anthropic_model) instead of the cheap one. Empty by
