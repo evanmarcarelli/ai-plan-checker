@@ -1,0 +1,182 @@
+{
+  "scope": {
+    "priority": "California first",
+    "code_families": ["CBC", "CRC", "ICC"],
+    "include_local_amendments": true,
+    "preferred_formats": ["PDF", "HTML text", "OCR-capable scans"],
+    "exclude": ["paid-only scans", "login-gated content without public text", "non-downloadable image-only views"]
+  },
+  "canonical_sources": [
+    {
+      "id": "ca_dgs_codes",
+      "name": "California Building Standards Commission - Codes",
+      "url": "https://www.dgs.ca.gov/bsc/codes",
+      "type": "official_state_index",
+      "free_access": true,
+      "ingestable": true,
+      "why_it_matters": "Primary index for current Title 24 parts, errata, and supplements.",
+      "notes": "Use to discover current CBC, CRC, and related parts; the page lists 2025, 2022, 2019, 2016 editions and update links."
+    },
+    {
+      "id": "ca_dgs_bsc",
+      "name": "California Building Standards Commission main resources",
+      "url": "https://www.dgs.ca.gov/bsc",
+      "type": "official_state_portal",
+      "free_access": true,
+      "ingestable": true,
+      "why_it_matters": "Contains Title 24 access, guidebooks, and resource links."
+    }
+  ],
+  "core_code_targets": [
+    {
+      "id": "cbc_2025_state",
+      "name": "2025 California Building Code",
+      "part": "Title 24 Part 2",
+      "source": "ca_dgs_codes",
+      "url_hint": "linked from DGS Codes page",
+      "format": "HTML/PDF via publisher links",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high"
+    },
+    {
+      "id": "crc_2025_state",
+      "name": "2025 California Residential Code",
+      "part": "Title 24 Part 2.5",
+      "source": "ca_dgs_codes",
+      "url_hint": "linked from DGS Codes page",
+      "format": "HTML/PDF via publisher links",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high"
+    },
+    {
+      "id": "icc_public_access",
+      "name": "ICC Digital Codes public access",
+      "url": "https://codes.iccsafe.org",
+      "type": "public_text_viewer",
+      "free_access": true,
+      "ingestable": "partial",
+      "priority": "medium",
+      "notes": "Useful for reading and section lookup; may not provide clean bulk PDFs."
+    }
+  ],
+  "archive_targets": [
+    {
+      "id": "ia_cbc_2007_vol1",
+      "name": "Title 24, Part 2, Volume 1, 2007 California Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.title24.part02.vol01",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": ["PDF", "JP2", "OCR text when available"],
+      "priority": "high"
+    },
+    {
+      "id": "ia_cbc_2007_vol2",
+      "name": "Title 24, Part 2, Volume 2, 2007 California Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.title24.part02.vol02",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": ["PDF", "JP2", "OCR text when available"],
+      "priority": "high"
+    },
+    {
+      "id": "ia_cbc_2019",
+      "name": "Title 24, Part 02.1, 2019 California Building Code, Vol. 1",
+      "url": "https://archive.org/details/2019californiabu01unse",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": ["PDF", "JP2", "OCR text when available"],
+      "priority": "high"
+    },
+    {
+      "id": "ia_existing_2025",
+      "name": "California 2025 Existing Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.existing.2025",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": ["PDF", "JP2", "OCR text when available"],
+      "priority": "medium"
+    }
+  ],
+  "local_amendment_targets": [
+    {
+      "id": "contra_costa_2025_19",
+      "name": "Contra Costa County Ordinance No. 2025-19",
+      "jurisdiction": "Contra Costa County",
+      "source_url": "https://moraga.ca.us/DocumentCenter/View/10325/8A-Public-Hearing",
+      "type": "county_ordinance_pdf_or_attachment",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high",
+      "why_it_matters": "Explicitly adopts and amends the 2025 California Building Standards Code with county-specific changes.",
+      "notable_amendment_topics": [
+        "smoke detection in existing flat-roof buildings when pitched roofs are added",
+        "enhanced concrete inspection and design requirements",
+        "slab-on-ground minimum standards",
+        "fire-treated wood shakes/shingles for exterior wall coverings",
+        "wall-bracing restrictions in CRC",
+        "CalGreen EV charging requirements",
+        "C&D debris recycling"
+      ]
+    },
+    {
+      "id": "san_diego_local_amendments",
+      "name": "San Diego County building code amendments",
+      "jurisdiction": "San Diego County",
+      "source_url": "https://codelibrary.amlegal.com/codes/san_diego/latest/sandiego_regs/0-0-0-101714",
+      "type": "county_code_ordinance_html",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "medium",
+      "notes": "Useful as a pattern for local amendment language and codified ordinance structure."
+    },
+    {
+      "id": "county_amendments_general",
+      "name": "County-specific local amendments throughout California",
+      "jurisdiction": "California counties",
+      "source_url": "https://www.dgs.ca.gov/bsc/codes",
+      "type": "discovery_seed",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "medium",
+      "notes": "Use DGS codes page plus county ordinance searches to find adopted local amendments and supplements."
+    }
+  ],
+  "crawl_strategy": {
+    "order": [
+      "1. DGS codes index for current CBC/CRC links.",
+      "2. Internet Archive items for prior editions and downloadable scans.",
+      "3. County ordinances / staff reports for amendments.",
+      "4. ICC public access for section-level cross-checking."
+    ],
+    "filters": {
+      "accept": ["pdf", "html", "ocr text", "scan with downloadable files"],
+      "reject": ["paywalled download", "login required to access full text", "image-only with no OCR if avoidable"]
+    }
+  },
+  "county_amendment_hunt_list": {
+    "tier_1_counties": [
+      "Contra Costa",
+      "Los Angeles",
+      "Orange",
+      "San Diego",
+      "Santa Clara",
+      "Alameda",
+      "San Mateo",
+      "Marin",
+      "Ventura",
+      "Sacramento"
+    ],
+    "search_patterns": [
+      "\"ordinance\" \"California Building Code\" county pdf",
+      "\"local amendments\" \"Title 24\" county pdf",
+      "\"adopts and amends\" \"California Building Standards Code\" county",
+      "\"building code\" \"Health and Safety Code sections 17958.5\" county"
+    ]
+  }
+}

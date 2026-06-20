@@ -320,6 +320,32 @@ def cmd_energy_code(args: argparse.Namespace) -> int:
     return 0 if written else 4
 
 
+def cmd_california(args: argparse.Namespace) -> int:
+    """California amendments + archive scans (multi-source)."""
+    from app.code_library.ingest.california_amendments import (
+        ingest_all, ingest_target, ingest_tier1_counties, list_targets,
+    )
+    if args.ca_list:
+        for tid, ttype, name in list_targets():
+            print(f"  {tid:36}  [{ttype:32}]  {name}")
+        return 0
+    if args.target:
+        n = ingest_target(args.target)
+        logger.info(f"[california] {args.target}: wrote {n} chunks")
+        return 0 if n else 4
+    if args.tier1_counties:
+        n = ingest_tier1_counties()
+        logger.info(f"[california] tier1 hunt: wrote {n} chunks")
+        return 0
+    if args.all:
+        n = ingest_all()
+        logger.info(f"[california] all targets: wrote {n} chunks")
+        return 0
+    print("Pass one of --target <id>, --all, --tier1-counties, --list",
+          file=sys.stderr)
+    return 2
+
+
 def cmd_ladbs_local(args: argparse.Namespace) -> int:
     import glob as _glob
     from app.code_library.ingest.ladbs import ingest_ladbs_files
@@ -592,6 +618,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="skip the LADBS publication ingest step",
     )
     p_lc.set_defaults(func=cmd_la_county)
+
+    # california — multi-source CA amendment + archive ingester
+    p_ca = sub.add_parser(
+        "california",
+        help="ingest California building-code amendments + archive scans "
+             "from the seed list in california_targets.json (IA items, county "
+             "ordinances, DGS index, tier-1 county DDG hunt)",
+    )
+    g_ca = p_ca.add_mutually_exclusive_group()
+    g_ca.add_argument("--target", help="run one target by id (see --list)")
+    g_ca.add_argument("--all", action="store_true",
+                      help="every explicit target + tier-1 county hunt")
+    g_ca.add_argument("--tier1-counties", action="store_true",
+                      help="only the tier-1 county DDG hunt")
+    g_ca.add_argument("--list", action="store_true",
+                      dest="ca_list", help="list configured targets")
+    p_ca.set_defaults(func=cmd_california)
 
     # list
     p_ls = sub.add_parser("list", help="show configured targets")
