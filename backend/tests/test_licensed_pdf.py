@@ -72,6 +72,56 @@ def test_parser_max_sections_cap():
     assert len(parse_code_text(SAMPLE, max_sections=2)) == 2
 
 
+# Regression: the CEBC 319.7.x failure. A subsection whose number runs straight
+# into a long descriptive sentence (no short "Title.") used to be invisible to
+# the parser and got glued into its parent's body.
+UNTITLED = """SECTION 319 SEISMIC EVALUATION
+
+319.7 Prescriptive selection of the design method. The requirements of Method A
+per Section 320 are permitted to be used except if the building has one or more
+characteristics described in Sections 319.7.1 through 319.7.7.
+
+319.7.1 A building with prestressed or post-tensioned structural components
+(beams, columns, walls or slabs) or precast structural components (beams,
+columns, walls or flooring systems).
+
+319.7.2 A building assigned to Risk Category IV per Section 319.4.
+"""
+
+
+def test_parser_recognizes_untitled_list_subsections():
+    by_num = {s.section_number: s for s in parse_code_text(UNTITLED)}
+    # All three are seen as distinct sections (the bug dropped .1 and .2).
+    assert {"319.7", "319.7.1", "319.7.2"} <= set(by_num)
+    # The titled parent keeps its title and is NOT polluted with the child text.
+    assert by_num["319.7"].title == "Prescriptive selection of the design method"
+    assert "prestressed" not in by_num["319.7"].text
+    # The untitled list items carry their full text and no spurious title.
+    assert by_num["319.7.1"].title == ""
+    assert "flooring systems" in by_num["319.7.1"].text
+    # A trailing section cross-reference ("Section 319.4.") must not be split
+    # off as a bogus title or truncate the body to "4.".
+    assert by_num["319.7.2"].title == ""
+    assert by_num["319.7.2"].text == "A building assigned to Risk Category IV per Section 319.4."
+
+
+def test_parser_skips_toc_rows():
+    """Dot-leader / page-folio rows are table-of-contents entries, not sections.
+    Loosening the heading match must not re-admit them (the relocations-table
+    over-match)."""
+    toc = (
+        "TABLE OF CONTENTS\n"
+        "319.7 Prescriptive selection of the design method ............ 3-19\n"
+        "319.8 Strength requirements ............ 3-20\n"
+        "\n"
+        "SECTION 320 METHOD A\n"
+        "320.1 Scope. This method applies to buildings of light-frame construction.\n"
+    )
+    nums = {s.section_number for s in parse_code_text(toc)}
+    assert "320.1" in nums                       # real heading still parses
+    assert "319.7" not in nums and "319.8" not in nums   # TOC rows dropped
+
+
 def test_chunks_carry_section_citations():
     target = IngestTarget(
         code_short="IBC", code_name="International Building Code",
