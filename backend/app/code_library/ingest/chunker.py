@@ -23,6 +23,9 @@ import re
 from typing import Dict, Iterable, List, Optional
 
 from app.code_library.ingest.base import IngestTarget, RawSection
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 # Soft cap on chunk text size. Sections longer than this are split on
@@ -147,6 +150,43 @@ _SECTION_NUM_RE = re.compile(r"[A-Z0-9]+(?:\.[A-Z0-9]+)*", re.IGNORECASE)
 _WHITESPACE_RE = re.compile(r"[ \t]+")
 _BLANK_LINES_RE = re.compile(r"\n{3,}")
 
+# Minimum plausible length for a provision body. A citable provision is a
+# sentence or more; a handful of characters is almost always parser debris
+# (a page number, a stray cross-reference, a TOC cell). See _is_provision_body.
+MIN_BODY_CHARS = 10
+
+# A body that is nothing but a number or section/page-number fragment:
+# "5", "11", "10.1", "3.1.1", "R302", "A4.8", "90.4.1.1". Optional single
+# leading code letter, then digit groups joined by dots/dashes/en-dashes.
+# These come from TOC and relocations tables where the heading regex grabbed
+# a page or cross-reference number instead of provision prose.
+_NUMERICISH_BODY_RE = re.compile(r"^[A-Za-z]?\d+(?:[.\-–]\d+)*$")
+
+# A run of 3+ letters = a real word. Provision prose always has several; a
+# number fragment has none. Lets genuinely short bodies ("Reserved.") survive
+# the length floor while word-less debris ("4.", ">", "xi") is dropped.
+_PROSE_WORD_RE = re.compile(r"[A-Za-z]{3,}")
+
+
+def _is_provision_body(body: str) -> bool:
+    """True if `body` plausibly holds a citable provision; False if it looks
+    like parser debris.
+
+    Citation-critical bias: this fails toward False. In a legal corpus a
+    DROPPED chunk reads UNVERIFIED (safe), whereas a kept page-number fragment
+    becomes text a citation could be falsely 'verified' against (unsafe). So a
+    body that is purely a number/section-number fragment, or too short to carry
+    a requirement and lacking any real word, is rejected rather than written as
+    a provision."""
+    s = body.strip()
+    if not s:
+        return False
+    if _NUMERICISH_BODY_RE.match(s.replace(" ", "")):
+        return False
+    if len(s) < MIN_BODY_CHARS and not _PROSE_WORD_RE.search(s):
+        return False
+    return True
+
 
 def _normalize_text(s: str) -> str:
     """Light cleanup. Scrapers vary in how clean their text is."""
@@ -240,7 +280,21 @@ def chunk_section(section: RawSection, target: IngestTarget) -> List[Dict]:
     """Turn one RawSection into one or more JSONL-ready dicts."""
     body = _normalize_text(section.text or "")
     if not body:
-        return []   # empty sections are noise
+        return []   # empty sections are noise (expected; many headings have none)
+
+    # Reject parser debris before it becomes a "provision". A non-empty body
+    # that is just a page/section-number fragment ("5", "10.1") or too short to
+    # carry a requirement means the heading regex over-matched a TOC/relocations
+    # table. Writing it as text lets a citation get falsely "verified" against
+    # garbage — far worse, in a legal corpus, than the chunk reading UNVERIFIED.
+    if not _is_provision_body(body):
+        logger.warning(
+            "[ingest] %s %s: dropping non-provision body %r — looks like parser "
+            "debris (page/section-number fragment or too short to carry a "
+            "requirement), not citable text.",
+            target.code_short, section.section_number or "(unnumbered)", body[:60],
+        )
+        return []
 
     title = (section.title or "").strip() or section.section_number
     section_number = (section.section_number or "").strip() or "(unnumbered)"

@@ -97,6 +97,38 @@ def test_chunk_section_empty_text_returns_nothing():
     assert chunk_section(s, _target()) == []
 
 
+@pytest.mark.parametrize("fragment", ["5", "11", "10", "10.1", "3.1.1", "R302",
+                                      "90.4.1.1", "  4  ", "4.", ">"])
+def test_chunk_section_drops_page_number_fragments(fragment):
+    """A page/section-number fragment must NOT be written as a provision body.
+
+    This is the bug the licensed-PDF ingester produced on ca_crc_2025: the
+    heading regex over-matched a TOC/relocations table and wrote section
+    'R104.6' with body '3', 'R101.2.1' with body '5', etc. In a citation-critical
+    legal corpus, dropping the chunk (citation reads UNVERIFIED) is the correct
+    failure — keeping garbage text a citation could be 'verified' against is not.
+    """
+    s = RawSection(breadcrumb=["Chapter 1"], section_number="R104.6",
+                   title="Notices and orders", text=fragment)
+    assert chunk_section(s, _target()) == []
+
+
+@pytest.mark.parametrize("body", [
+    "Reserved.",                                   # genuinely short, but real prose
+    "See Section R113.2.",                          # short cross-reference provision
+    "The minimum front setback shall be 25 feet.",  # ordinary provision
+])
+def test_chunk_section_keeps_legit_short_and_full_bodies(body):
+    """Calibration guard: the fragment filter targets number debris, not brevity.
+    A real 'Reserved.' section or a short cross-reference must still produce a
+    chunk, or a future tightening of the predicate could silently eat provisions."""
+    s = RawSection(breadcrumb=["Chapter 1"], section_number="R104.6",
+                   title="Notices", text=body)
+    chunks = chunk_section(s, _target())
+    assert len(chunks) == 1
+    assert chunks[0]["text"] == body
+
+
 # ─────────────────────────────────────────────────────────────
 # Writer
 # ─────────────────────────────────────────────────────────────
