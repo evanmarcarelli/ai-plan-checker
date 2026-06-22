@@ -18,6 +18,9 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+
+# Step-4 harness scratch artifacts (re-ingest candidates/quarantine/reports)
+backend/scratch/
 .venv-claude/
 venv/
 *.egg-info/
