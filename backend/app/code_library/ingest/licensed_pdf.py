@@ -108,7 +108,11 @@ _FURNITURE_RES = [
     # Chapter-page folio on its own line, e.g. "3-20", "3-4" (CEBC/CRC print
     # the running folio as <chapter>-<page>). These leaked into provision
     # bodies as standalone-number debris — the Step-2 audit found dozens.
-    re.compile(r"^\s*\d{1,2}[-–]\d{1,3}\s*$", re.MULTILINE),
+    # HYPHEN ONLY (not en-dash): folios use a hyphen, while a standalone table
+    # cell like "3–5" (an en-dash range, "3 to 5") is a real provision VALUE.
+    # Matching the en-dash here stripped those table values on re-ingest
+    # (corrupted e.g. CRC R702.2.2.1's cement-plaster proportions).
+    re.compile(r"^\s*\d{1,2}-\d{1,3}\s*$", re.MULTILINE),
     # Column-break artifact: a line that is nothing but ">" markers, left by
     # PyMuPDF when it linearizes a multi-column page.
     re.compile(r"^\s*>+\s*$", re.MULTILINE),

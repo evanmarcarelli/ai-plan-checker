@@ -105,6 +105,18 @@ def test_parser_recognizes_untitled_list_subsections():
     assert by_num["319.7.2"].text == "A building assigned to Risk Category IV per Section 319.4."
 
 
+def test_furniture_strips_hyphen_folio_not_endash_range():
+    """A standalone hyphen folio ('3-5' = chapter 3 page 5) is page furniture and
+    must be stripped; a standalone en-dash range ('3–5' = the value "3 to 5", e.g.
+    a plaster-proportion table cell) is a provision VALUE and must survive. The
+    two are only distinguishable by hyphen vs en-dash — stripping the en-dash
+    blanked CRC R702.2.2.1's cement-plaster table cells on re-ingest."""
+    from app.code_library.ingest.licensed_pdf import _strip_page_furniture
+    out = _strip_page_furniture("Aggregate volume.\n3-5\nSecond coat ratio:\n3–5\nEnd.")
+    assert "3-5" not in out.split()        # hyphen folio stripped
+    assert "3–5" in out               # en-dash table value kept
+
+
 def test_parser_skips_toc_rows():
     """Dot-leader / page-folio rows are table-of-contents entries, not sections.
     Loosening the heading match must not re-admit them (the relocations-table

@@ -67,6 +67,10 @@ PROTECTED_IDS = {
 }
 
 _ALLCAPS_LINE = re.compile(r"^[A-Z][A-Z0-9 \-/&,.\[\]]{7,}$")
+# A hyphen page folio as a single token ("7-5"). En-dash ranges ("3–5") tokenize
+# to separate "3"/"5" and are table VALUES, never folios — so they can never
+# match this and a section that drops one is never treated as furniture-only.
+_FOLIO_TOKEN = re.compile(r"^\d{1,2}-\d{1,3}$")
 
 
 # ── signals ──────────────────────────────────────────────────────────────
@@ -159,11 +163,19 @@ def categorize(section, old_chunks, new_chunks, code_short) -> str:
     if _normalize_text(old_b) == _normalize_text(new_b):
         return "UNCHANGED"
     f_old, f_new = furniture_count(old_b), furniture_count(new_b)
-    recall = token_recall(old_b, new_b)
-    if looks_like_titlebleed(new_b) or f_new > f_old or recall < RECALL_MIN:
+    # Table-safe gate, independent of the furniture-line heuristic: a genuine
+    # furniture removal adds NO tokens and drops ONLY hyphen-folio tokens
+    # ("7-5"). Any other dropped token (e.g. the bare "5" left when the
+    # re-extraction blanked CRC R702.2.2.1's "3–5" table cell) or any added
+    # token disqualifies it. This is stricter than a recall threshold, which
+    # let that single lost table value slip through at recall 0.997.
+    ot, nt = set(tokenize(old_b)), set(tokenize(new_b))
+    dropped, added = ot - nt, nt - ot
+    pure_folio_removal = (not added) and all(_FOLIO_TOKEN.match(t) for t in dropped)
+    if looks_like_titlebleed(new_b) or f_new > f_old or not pure_folio_removal:
         return "REGRESSED"
     if len(_normalize_text(new_b)) > len(_normalize_text(old_b)):
-        return "LONGER"  # high-recall but longer (over-merge or restore?) → review, keep current
+        return "LONGER"  # content preserved but longer (over-merge/restore?) → review, keep current
     if f_new < f_old:
         return "IMPROVED"
     return "OTHER"  # changed but not clearly furniture removal → keep current
@@ -223,7 +235,7 @@ def run(code: str, promote: bool) -> None:
     for k in sorted(counts):
         lines.append(f"- {k}: {counts[k]}")
     lines.append("")
-    lines.append(f"## IMPROVED (auto-applied — furniture removed, recall>={RECALL_MIN}, 1:1, not longer)")
+    lines.append("## IMPROVED (auto-applied — furniture removed, zero content-token loss, 1:1, not longer)")
     for s in improved:
         ob, nb = old_by[s][0]["text"], new_by[s][0]["text"]
         lines.append(f"\n### {s}  furniture {furniture_count(ob)}->{furniture_count(nb)}  "
