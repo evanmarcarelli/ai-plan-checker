@@ -9,15 +9,19 @@ import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
-const SCENE_MS = 5200;
+const SCENE_MS = 5200;       // default hold per scene
+// The opening "submittal loop" scene lands its "438 days" punchline by ~3.4s,
+// so it doesn't need the full beat the denser scenes do — give it a shorter
+// hold so the reel doesn't stall on slide one.
+const OPENING_MS = 4200;
 
 const CHAPTERS = [
-  { id: "pain",    title: "The submittal loop"   },
-  { id: "intro",   title: "Meet Architechtura"         },
-  { id: "upload",  title: "Drop the plan set"    },
-  { id: "process", title: "Multi-agent review"   },
-  { id: "findings",title: "Findings, cited"      },
-  { id: "teams",   title: "From AEC teams"       },
+  { id: "pain",    title: "The submittal loop", ms: OPENING_MS },
+  { id: "intro",   title: "Meet Architechtura", ms: SCENE_MS   },
+  { id: "upload",  title: "Drop the plan set",  ms: SCENE_MS   },
+  { id: "process", title: "Multi-agent review", ms: SCENE_MS   },
+  { id: "findings",title: "Findings, cited",    ms: SCENE_MS   },
+  { id: "teams",   title: "From AEC teams",     ms: SCENE_MS   },
 ] as const;
 
 /* ─── Root ──────────────────────────────────────────────────────────── */
@@ -53,7 +57,7 @@ export default function AutoplayReel() {
 
   useEffect(() => {
     if (reduce || paused || !inView) return;
-    const t = setTimeout(() => setIdx(i => (i + 1) % CHAPTERS.length), SCENE_MS);
+    const t = setTimeout(() => setIdx(i => (i + 1) % CHAPTERS.length), CHAPTERS[idx].ms);
     return () => clearTimeout(t);
   }, [idx, paused, reduce, inView]);
 
@@ -116,7 +120,7 @@ export default function AutoplayReel() {
                           key={`prog-${i}-${idx}`}
                           initial={{ scaleX: 0 }}
                           animate={{ scaleX: 1 }}
-                          transition={{ duration: SCENE_MS / 1000, ease: "linear" }}
+                          transition={{ duration: CHAPTERS[idx].ms / 1000, ease: "linear" }}
                           className="absolute inset-0 origin-left"
                           style={{ background: "var(--accent-bright)" }}
                         />
