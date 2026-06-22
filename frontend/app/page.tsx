@@ -59,13 +59,12 @@ export default function MarketingHome() {
       <Nav isAuthed={isAuthed} />
       <ScrollBuildingHero />
       <Hero />
-      <StatBand />
-      <AutoplayReel />
       <DemoSection />
+      <AutoplayReel />
       <HowItWorks />
       <AgentGrid />
       <Pricing />
-      <FinalCta />
+      <StatBand />
       <Disclaimer />
     </div>
   );
@@ -467,34 +466,6 @@ function Pricing() {
         <div className="text-center mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
           Inviting contractors and inspectors to view a report is free. They don&apos;t need an Architechtura account.
         </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────── Final CTA ───────────────────────
-
-function FinalCta() {
-  return (
-    <section className="px-6 py-24">
-      <div className="max-w-3xl mx-auto text-center">
-        <h2
-          className="text-4xl font-bold tracking-tight mb-4"
-          style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
-        >
-          Find the corrections before the city does.
-        </h2>
-        <p className="text-base mb-7" style={{ color: "var(--text-secondary)" }}>
-          Your first plan check is on us. Sign up, upload a PDF, and read the report in 90 seconds.
-        </p>
-        <Link
-          href="/signup?redirect=/dashboard"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base"
-          style={{ background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)" }}
-        >
-          Run your first check, free
-          <ArrowRight className="w-4 h-4" />
-        </Link>
       </div>
     </section>
   );
