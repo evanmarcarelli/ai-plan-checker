@@ -1,0 +1,58 @@
+{
+  "slug": "la-sfr-v5b-stair-geometry-violation",
+  "title": "LA SFR — Type V-B, R-3 stair geometry and guard outside the CRC limits",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "la_sfr_typ_vb_ministerial",
+  "project_address": "987 Ridge Way, Los Angeles, CA 90049",
+  "source": "synthetic",
+  "notes": "Tests the new CRC R-3 stair-geometry rules: tread 9 in (< 10 in, CRC R318.5), riser 8 in (> 7-3/4 in, CRC R318.5 — exercises max_dimension_check at the fractional 7.75 limit), guard 36 in (< 42 in, CRC R312.1.2). Each has a CRC exception the engine can't rule out from a scalar (spiral/winder stairs; stair-side handrail-guards at 34-38 in), so all three emit needs_review. plan_type residential gates the IBC commercial geometry twins (EGR-*) off so only the CRC twins fire.",
+  "plan_data": {
+    "plan_type": "residential",
+    "occupancy_type": "R-3 (single-family dwelling)",
+    "construction_type": "V-B",
+    "dimensions": { "tread_depth": 9, "riser_height": 8, "guard_height": 36 }
+  },
+  "plan_text": "PROJECT DATA - 987 RIDGE WAY, LOS ANGELES CA 90049\nCODE ANALYSIS SHEET A-0.1\n2023 LA BUILDING CODE (LABC)\nOccupancy Group: R-3 (single-family dwelling)\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 24 ft\nTotal building area: 2,800 sf\nPer-story area: 1,400 sf\nFully sprinklered: yes (NFPA 13D residential)\nDesign occupant load: 10\nIECC compliance path: Title 24 Part 6 prescriptive\nElectrical service: 200 A service main breaker\nWater closets: WC 3\nLavatories: LAV 3\nEXIT 1 (front door)\nEXIT 2 (rear door)\nEXIT DOOR 36\" min clear width\nTread depth: 9 in. Max riser: 8 in. Guard height: 36 in.\nFire alarm: NFPA 72 smoke alarms per CRC R314.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical", "rationale": "Table 506.2 R-3 = UL; no IBC area limit applies to a dwelling" },
+    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
+    {
+      "rule_id": "CRC-TREAD-DEPTH",
+      "expected_status": "warn",
+      "expected_severity": "major",
+      "rationale": "Tread depth is 9 in, below the 10 in CRC R318.5 minimum. Spiral/winder stairs allow narrower treads, which the engine can't rule out from a scalar, so it flags needs_review."
+    },
+    {
+      "rule_id": "CRC-RISER-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "major",
+      "rationale": "Riser height is 8 in, over the 7-3/4 in CRC R318.5 maximum (exercises the max_dimension_check at a fractional limit). Spiral/winder stairs allow taller risers, so needs_review."
+    },
+    {
+      "rule_id": "CRC-GUARD-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "major",
+      "rationale": "Guard height is 36 in, below the 42 in CRC R312.1.2 minimum. A stair-side guard whose top rail serves as a handrail (34-38 in) is a documented exception, so needs_review."
+    },
+    {
+      "rule_id": "EGR-TREAD-DEPTH",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "The IBC commercial tread rule is gated off for a residential plan type — the CRC twin scores this dimension, so the IBC rule is not-applicable (no double-fire)."
+    },
+    {
+      "rule_id": "EGR-RISER-HEIGHT",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "IBC commercial riser rule gated off for residential — CRC twin scores it; not-applicable."
+    },
+    {
+      "rule_id": "EGR-GUARD-HEIGHT",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "IBC commercial guard rule gated off for residential — CRC twin scores it; not-applicable."
+    }
+  ]
+}

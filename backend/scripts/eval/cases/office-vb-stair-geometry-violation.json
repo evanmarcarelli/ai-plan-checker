@@ -1,0 +1,79 @@
+{
+  "slug": "office-vb-stair-geometry-violation",
+  "title": "Commercial office, Type V-B, stair geometry and guard outside the IBC limits",
+  "notes": "Tests the new IBC stair-geometry rules: tread 10 in (< 11 in, IBC 1011.5.2), riser 7.5 in (> 7 in, IBC 1011.5.2 — exercises the max_dimension_check), guard 38 in (< 42 in, IBC 1015.3). Each has a legitimate exception the engine can't rule out from a scalar (spiral/winder stairs for tread/riser; stair-side handrail-guards for the 38 in guard), so all three emit needs_review rather than a hard violation. Area/stories/exits/corridor/stair-width are clean so only the three geometry rules fire.",
+  "plan_data": {
+    "project_address": "654 Olive St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 6000,
+    "building_area": 12000,
+    "stories": 2,
+    "building_height": 28,
+    "occupant_load": 80,
+    "sprinklered": true,
+    "dimensions": { "corridor_widths": [48, 60], "stair_width": 48, "tread_depth": 10, "riser_height": 7.5, "guard_height": 38 }
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 2\nBuilding height: 28 ft\nPer-story area: 6,000 sf\nFully sprinklered: yes\nDesign occupant load: 80\nIECC: Title 24 Part 6\nElectrical: 200 A main breaker\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nCorridor width: 48 in. Corridor width: 60 in (lobby).\nStairway width: 48 in. Tread depth: 10 in. Max riser: 7.5 in. Guard height: 38 in.\nEXIT 1 (north). EXIT 2 (south). EXIT DOOR 36 in each.\nWC 4 LAV 4. CALGreen low-flow fixtures. Construction waste management plan.",
+  "ground_truth": [
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-AREA-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "6,000 sf per-story sprinklered B/V-B is within the Table 506.2 allowance"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "2 stories within the B/V-B sprinklered 3-story limit"
+    },
+    {
+      "rule_id": "EGR-CORRIDOR-WIDTH",
+      "expected_status": "pass",
+      "expected_severity": "high",
+      "rationale": "Both corridors (48, 60 in) clear the 44 in IBC 1020.3 minimum — clean true negative alongside the geometry violations"
+    },
+    {
+      "rule_id": "EGR-STAIR-WIDTH",
+      "expected_status": "pass",
+      "expected_severity": "high",
+      "rationale": "Stair is 48 in, clearing the 44 in IBC 1011.2 minimum — clean true negative"
+    },
+    {
+      "rule_id": "EGR-TREAD-DEPTH",
+      "expected_status": "warn",
+      "expected_severity": "high",
+      "rationale": "Tread depth is 10 in, below the 11 in IBC 1011.5.2 minimum. Spiral/winder/alternating-tread stairs allow narrower treads, which the engine can't rule out from a scalar, so it flags needs_review rather than a hard violation."
+    },
+    {
+      "rule_id": "EGR-RISER-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "high",
+      "rationale": "Riser height is 7.5 in, over the 7 in IBC 1011.5.2 maximum (exercises the max_dimension_check). Spiral/winder/alternating-tread stairs allow taller risers, so needs_review rather than a hard violation."
+    },
+    {
+      "rule_id": "EGR-GUARD-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "high",
+      "rationale": "Guard height is 38 in, below the 42 in IBC 1015.3 minimum. A stair-side guard whose top rail also serves as a handrail (34-38 in) is a documented exception, so needs_review rather than a hard violation."
+    },
+    {
+      "rule_id": "EGR-MIN-EXITS",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "OL 80 requires 2 exits; 2 labeled"
+    }
+  ]
+}

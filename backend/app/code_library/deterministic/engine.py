@@ -198,9 +198,39 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
             # occupant load; the 44" minimum (IBC 1020.3 corridors, 1011.2
             # stairways) only binds at OL >= 50 (36" is allowed below). Flag
             # for human confirmation rather than asserting a violation the
-            # engine can't fully substantiate.
+            # engine can't fully substantiate. soft_note lets other soft rules
+            # (guard/tread) supply their own exception caveat.
             result.status = "warn"
-            result.summary += " Confirm served occupant load (44\" binds at OL >= 50)."
+            result.summary += rule.check.get(
+                "soft_note", " Confirm served occupant load (44\" binds at OL >= 50)."
+            )
+        return result
+
+    if t == "max_dimension_check":
+        # Upper-bound twin of min_dimension_check (e.g. stair riser height).
+        dims = plan_data.dimensions or {}
+        raw = dims.get(rule.check.get("dim"))
+        if isinstance(raw, list):
+            if not raw:
+                raw = None
+            elif rule.check.get("agg") == "min":
+                raw = min(raw)
+            else:
+                raw = max(raw)
+        result = ck.check_max_dimension(
+            raw,
+            rule.check["maximum"],
+            rule.check.get("unit", ""),
+            rule.check.get("label", "Dimension"),
+            rule.code_ref,
+        )
+        if rule.check.get("soft") and result.status == "fail":
+            # A scalar over the straight-run riser maximum can be a legitimate
+            # spiral stair (IBC 1011.10), winder, or alternating-tread device
+            # (IBC 1011.14) — different riser limits the engine can't rule out
+            # from a single number. Flag for confirmation, not a hard fail.
+            result.status = "warn"
+            result.summary += rule.check.get("soft_note", "")
         return result
 
     if t == "high_rise_check":

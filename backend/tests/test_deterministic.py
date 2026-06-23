@@ -7,6 +7,7 @@ that it is pure and testable.
 from app.code_library.deterministic.checkers import (
     check_allowable_area,
     check_allowable_stories,
+    check_max_dimension,
     check_min_exits,
     required_min_exits,
 )
@@ -55,6 +56,26 @@ def test_stories_sprinklered_gains_a_floor():
     assert check_allowable_stories("B", "V-B", 3, sprinklered=False).status == "fail"
     assert check_allowable_stories("B", "V-B", 3, sprinklered=True).status == "pass"
     assert check_allowable_stories("B", "V-B", 4, sprinklered=True).status == "fail"
+
+
+def test_max_dimension_over_under_and_missing():
+    cr = "IBC 1011.5.2"
+    # Over the max -> fail; at/under -> pass; missing -> warn (never a false fail).
+    assert check_max_dimension(7.5, 7.0, " in", "Riser height", cr).status == "fail"
+    assert check_max_dimension(7.0, 7.0, " in", "Riser height", cr).status == "pass"
+    assert check_max_dimension(6.0, 7.0, " in", "Riser height", cr).status == "pass"
+    assert check_max_dimension(None, 7.0, " in", "Riser height", cr).status == "warn"
+
+
+def test_max_dimension_fractional_limit_renders():
+    # CRC riser max is 7-3/4" — the integer formatter would truncate to "7";
+    # the fractional formatter must keep 7.75 so a compliant 7.5" reads right.
+    r = check_max_dimension(7.5, 7.75, " in", "Riser height", "CRC R318.5")
+    assert r.status == "pass"
+    assert "7.75 in" in r.summary
+    bad = check_max_dimension(8.0, 7.75, " in", "Riser height", "CRC R318.5")
+    assert bad.status == "fail"
+    assert "7.75 in" in bad.summary
 
 
 def test_min_exits_thresholds():
@@ -164,6 +185,75 @@ def test_stair_width_excluded_for_residential():
     findings = {f.code_requirement.code_id: f for f in
                 evaluate_plan(pd, include_passing=True)}
     assert findings["EGR-STAIR-WIDTH"].status == ComplianceStatus.NOT_APPLICABLE
+
+
+# ---------------- stair geometry + guards (IBC + CRC twins) ----------------
+
+def test_ibc_tread_riser_guard_flag_needs_review_below_limits():
+    # IBC straight-run limits: tread >= 11", riser <= 7", guard >= 42". The
+    # engine can't rule out spiral/winder/handrail-guard exceptions from a
+    # scalar, so a reading outside the limit is needs_review (soft), not a fail.
+    pd = _plan(plan_type="commercial",
+               dimensions={"tread_depth": 10, "riser_height": 7.5, "guard_height": 38})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-TREAD-DEPTH"].status == ComplianceStatus.NEEDS_REVIEW
+    assert findings["EGR-RISER-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+    assert findings["EGR-GUARD-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_ibc_tread_riser_guard_pass_at_limits():
+    pd = _plan(plan_type="commercial",
+               dimensions={"tread_depth": 11, "riser_height": 7, "guard_height": 42})
+    ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}
+    # All compliant -> dropped from default findings.
+    assert "EGR-TREAD-DEPTH" not in ids
+    assert "EGR-RISER-HEIGHT" not in ids
+    assert "EGR-GUARD-HEIGHT" not in ids
+
+
+def test_ibc_geometry_excluded_for_residential():
+    # IBC commercial geometry rules must NOT run on a dwelling — the CRC twins
+    # cover R-3 (different numbers), so the IBC rules gate off to avoid a
+    # double-fire on a residential plan.
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"tread_depth": 9, "riser_height": 8, "guard_height": 36})
+    findings = {f.code_requirement.code_id: f for f in
+                evaluate_plan(pd, include_passing=True)}
+    assert findings["EGR-TREAD-DEPTH"].status == ComplianceStatus.NOT_APPLICABLE
+    assert findings["EGR-RISER-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
+    assert findings["EGR-GUARD-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
+
+
+def test_crc_tread_riser_guard_flag_needs_review_below_limits():
+    # CRC R-3 limits differ from IBC: tread >= 10", riser <= 7.75", guard >= 42".
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"tread_depth": 9, "riser_height": 8, "guard_height": 36})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["CRC-TREAD-DEPTH"].status == ComplianceStatus.NEEDS_REVIEW
+    assert findings["CRC-RISER-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+    assert findings["CRC-GUARD-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_crc_geometry_pass_at_limits():
+    # A 7.75" riser is exactly at the CRC max (passes); a 10" tread is exactly
+    # the CRC min (passes). These are below the IBC numbers but legal for R-3.
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"tread_depth": 10, "riser_height": 7.75, "guard_height": 42})
+    ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}
+    assert "CRC-TREAD-DEPTH" not in ids
+    assert "CRC-RISER-HEIGHT" not in ids
+    assert "CRC-GUARD-HEIGHT" not in ids
+
+
+def test_crc_geometry_excluded_for_commercial():
+    # CRC R-3 geometry rules must NOT run on a commercial (non R-3) plan.
+    pd = _plan(plan_type="commercial", occupancy_type="B",
+               dimensions={"tread_depth": 9, "riser_height": 8, "guard_height": 36})
+    findings = {f.code_requirement.code_id: f for f in
+                evaluate_plan(pd, include_passing=True)}
+    assert findings["CRC-TREAD-DEPTH"].status == ComplianceStatus.NOT_APPLICABLE
+    assert findings["CRC-RISER-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
+    assert findings["CRC-GUARD-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
 
 
 def test_wui_rules_skip_without_zone():
