@@ -137,6 +137,35 @@ def test_corridor_width_excluded_for_residential():
     assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NOT_APPLICABLE
 
 
+def test_stair_width_flags_below_minimum():
+    # IBC 1011.2: an egress stair serving OL >= 50 must clear 44". The engine
+    # can't see the stair's served occupant load (44" only binds at OL >= 50),
+    # so a sub-minimum stair is flagged needs_review, not a hard violation.
+    pd = _plan(plan_type="commercial", occupant_load=80,
+               dimensions={"stair_width": 38})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-STAIR-WIDTH"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_stair_width_passes_when_clear_minimum():
+    pd = _plan(plan_type="commercial", occupant_load=80,
+               dimensions={"stair_width": 52})
+    ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}
+    # Passing -> dropped from default findings (include_passing=False).
+    assert "EGR-STAIR-WIDTH" not in ids
+
+
+def test_stair_width_excluded_for_residential():
+    # The 44" rule is the commercial IBC stair regime; an SFR uses CRC R318
+    # (36"), so the rule must NOT run on a residential plan even when a stair
+    # dimension is present.
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"stair_width": 30})
+    findings = {f.code_requirement.code_id: f for f in
+                evaluate_plan(pd, include_passing=True)}
+    assert findings["EGR-STAIR-WIDTH"].status == ComplianceStatus.NOT_APPLICABLE
+
+
 def test_wui_rules_skip_without_zone():
     pd = _plan()  # no wui_zone
     ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}

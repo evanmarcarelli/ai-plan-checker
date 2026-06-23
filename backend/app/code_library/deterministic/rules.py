@@ -165,6 +165,22 @@ BASELINE_RULES: List[Rule] = [
                    "agg": "min", "soft": True},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
+    # Commercial egress stairway minimum width (IBC 1011.2): stairways serving
+    # an occupant load of 50 or more must be >= 44" clear width (36" is allowed
+    # below 50). stair_width is a single extracted scalar (no closet-door
+    # ambiguity), so this is the cleanest analogue to EGR-CORRIDOR-WIDTH. Same
+    # soft posture: the engine sees the width but not the served occupant load,
+    # so a sub-44" stair is needs_review, not a hard fail. Gated to non-dwelling
+    # plan types — an SFR uses the CRC R318 36" stair regime (CRC-STAIR-WIDTH),
+    # which would otherwise double-fire here.
+    Rule("EGR-STAIR-WIDTH", "Fire & Life Safety", "IBC 1011.2",
+         "Egress stairways serving an occupant load of 50 or more shall be a "
+         "minimum of 44 inches clear width.",
+         "major", {"type": "min_dimension_check", "dim": "stair_width",
+                   "minimum": 44.0, "unit": " in", "label": "Stair width",
+                   "soft": True},
+         requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 
     # ---- Required submittal items (completeness) ----
     Rule("GEN-CODE-ANALYSIS", "General", "IBC Ch. 3-5",

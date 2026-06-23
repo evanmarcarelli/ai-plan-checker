@@ -194,10 +194,11 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
             rule.code_ref,
         )
         if rule.check.get("soft") and result.status == "fail":
-            # The engine sees the corridor width but not its served occupant
-            # load; IBC 1020.3's 44" minimum only binds at OL >= 50 (36" is
-            # allowed below). Flag for human confirmation rather than asserting
-            # a violation the engine can't fully substantiate.
+            # The engine sees the corridor/stair width but not its served
+            # occupant load; the 44" minimum (IBC 1020.3 corridors, 1011.2
+            # stairways) only binds at OL >= 50 (36" is allowed below). Flag
+            # for human confirmation rather than asserting a violation the
+            # engine can't fully substantiate.
             result.status = "warn"
             result.summary += " Confirm served occupant load (44\" binds at OL >= 50)."
         return result
