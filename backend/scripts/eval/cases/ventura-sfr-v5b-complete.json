@@ -13,12 +13,12 @@
     { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-MIXED-OCCUPANCY",      "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "COM-MIXED-OCCUPANCY",      "expected_status": "info", "expected_severity": "major", "rationale": "A lone R-3 single-family dwelling is a single occupancy — IBC 508 mixed-occupancy separation/analysis does not apply, so this check is not-applicable rather than an affirmative pass" },
     { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "info", "expected_severity": "critical", "rationale": "R-3 dwellings use CRC R310 smoke alarms, not an NFPA 72 fire-alarm SYSTEM (scored by CRC-SMOKE-CO); FLS-ALARM is gated off for R-3, so not-applicable is correct" },
     { "rule_id": "NEC-SERVICE-RATING",       "expected_status": "pass", "expected_severity": "major" },
     { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" }
   ]
