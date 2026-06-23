@@ -9,6 +9,7 @@ from app.code_library.deterministic.checkers import (
     check_allowable_stories,
     check_max_dimension,
     check_min_exits,
+    check_range,
     required_min_exits,
 )
 from app.code_library.deterministic.citation_gate import apply_citation_gate
@@ -254,6 +255,53 @@ def test_crc_geometry_excluded_for_commercial():
     assert findings["CRC-TREAD-DEPTH"].status == ComplianceStatus.NOT_APPLICABLE
     assert findings["CRC-RISER-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
     assert findings["CRC-GUARD-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
+
+
+def test_range_check_under_over_in_and_missing():
+    cr = "IBC 1014.2"
+    # Two-sided: below min AND above max both fail; in-range passes; missing warns.
+    assert check_range(30.0, 34.0, 38.0, " in", "Handrail height", cr).status == "fail"
+    assert check_range(40.0, 34.0, 38.0, " in", "Handrail height", cr).status == "fail"
+    assert check_range(36.0, 34.0, 38.0, " in", "Handrail height", cr).status == "pass"
+    assert check_range(34.0, 34.0, 38.0, " in", "Handrail height", cr).status == "pass"
+    assert check_range(38.0, 34.0, 38.0, " in", "Handrail height", cr).status == "pass"
+    assert check_range(None, 34.0, 38.0, " in", "Handrail height", cr).status == "warn"
+
+
+def test_handrail_below_range_needs_review():
+    # IBC 1014.2 handrail 34-38"; 30" is below range. soft -> needs_review
+    # (measurement point / handrail-type nuance the engine can't resolve).
+    pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"handrail_height": 30})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-HANDRAIL-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_handrail_above_range_needs_review():
+    # The OTHER side of the range — 42" exceeds 38". Both sides must trip.
+    pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"handrail_height": 42})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-HANDRAIL-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_handrail_in_range_passes_dropped():
+    pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"handrail_height": 36})
+    ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}
+    # Passing -> dropped from default findings (include_passing=False).
+    assert "EGR-HANDRAIL-HEIGHT" not in ids
+
+
+def test_handrail_residential_uses_crc_not_ibc():
+    # A dwelling is scored by the CRC twin; the IBC commercial rule is gated off
+    # (no double-fire), mirroring the tread/riser/guard split.
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"handrail_height": 30})
+    findings = {f.code_requirement.code_id: f for f in
+                evaluate_plan(pd, include_passing=True)}
+    assert findings["CRC-HANDRAIL-HEIGHT"].status == ComplianceStatus.NEEDS_REVIEW
+    assert findings["EGR-HANDRAIL-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
 
 
 def test_wui_rules_skip_without_zone():

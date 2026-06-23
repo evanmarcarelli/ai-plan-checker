@@ -10,7 +10,7 @@
     "plan_type": "residential",
     "occupancy_type": "R-3 (single-family dwelling)",
     "construction_type": "V-B",
-    "dimensions": { "tread_depth": 9, "riser_height": 8, "guard_height": 36 }
+    "dimensions": { "tread_depth": 9, "riser_height": 8, "guard_height": 36, "handrail_height": 40 }
   },
   "plan_text": "PROJECT DATA - 987 RIDGE WAY, LOS ANGELES CA 90049\nCODE ANALYSIS SHEET A-0.1\n2023 LA BUILDING CODE (LABC)\nOccupancy Group: R-3 (single-family dwelling)\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 24 ft\nTotal building area: 2,800 sf\nPer-story area: 1,400 sf\nFully sprinklered: yes (NFPA 13D residential)\nDesign occupant load: 10\nIECC compliance path: Title 24 Part 6 prescriptive\nElectrical service: 200 A service main breaker\nWater closets: WC 3\nLavatories: LAV 3\nEXIT 1 (front door)\nEXIT 2 (rear door)\nEXIT DOOR 36\" min clear width\nTread depth: 9 in. Max riser: 8 in. Guard height: 36 in.\nFire alarm: NFPA 72 smoke alarms per CRC R314.",
   "ground_truth": [
@@ -35,6 +35,12 @@
       "expected_status": "warn",
       "expected_severity": "major",
       "rationale": "Guard height is 36 in, below the 42 in CRC R312.1.2 minimum. A stair-side guard whose top rail serves as a handrail (34-38 in) is a documented exception, so needs_review."
+    },
+    {
+      "rule_id": "CRC-HANDRAIL-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "major",
+      "rationale": "Handrail height is 40 in, above the 34-38 in CRC R311.7.8.1 range (exercises the HIGH side of check_range). Measurement-point/exception nuance the engine can't resolve from a scalar, so needs_review."
     },
     {
       "rule_id": "EGR-TREAD-DEPTH",

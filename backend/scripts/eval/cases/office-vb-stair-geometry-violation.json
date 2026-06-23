@@ -13,7 +13,7 @@
     "building_height": 28,
     "occupant_load": 80,
     "sprinklered": true,
-    "dimensions": { "corridor_widths": [48, 60], "stair_width": 48, "tread_depth": 10, "riser_height": 7.5, "guard_height": 38 }
+    "dimensions": { "corridor_widths": [48, 60], "stair_width": 48, "tread_depth": 10, "riser_height": 7.5, "guard_height": 38, "handrail_height": 30 }
   },
   "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 2\nBuilding height: 28 ft\nPer-story area: 6,000 sf\nFully sprinklered: yes\nDesign occupant load: 80\nIECC: Title 24 Part 6\nElectrical: 200 A main breaker\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nCorridor width: 48 in. Corridor width: 60 in (lobby).\nStairway width: 48 in. Tread depth: 10 in. Max riser: 7.5 in. Guard height: 38 in.\nEXIT 1 (north). EXIT 2 (south). EXIT DOOR 36 in each.\nWC 4 LAV 4. CALGreen low-flow fixtures. Construction waste management plan.",
   "ground_truth": [
@@ -68,6 +68,12 @@
       "expected_status": "warn",
       "expected_severity": "high",
       "rationale": "Guard height is 38 in, below the 42 in IBC 1015.3 minimum. A stair-side guard whose top rail also serves as a handrail (34-38 in) is a documented exception, so needs_review rather than a hard violation."
+    },
+    {
+      "rule_id": "EGR-HANDRAIL-HEIGHT",
+      "expected_status": "warn",
+      "expected_severity": "high",
+      "rationale": "Handrail height is 30 in, below the 34-38 in IBC 1014.2 range (exercises the low side of the two-sided check_range). Measurement point and exceptions (transitions, children's handrails) the engine can't resolve from a scalar, so needs_review."
     },
     {
       "rule_id": "EGR-MIN-EXITS",

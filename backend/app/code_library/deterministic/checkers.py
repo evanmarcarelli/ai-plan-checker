@@ -184,6 +184,35 @@ def check_max_dimension(
     return _pass(f"{label} {_fmt_dim(value)}{unit} within the {_fmt_dim(maximum)}{unit} maximum.")
 
 
+def check_range(
+    value: Optional[float],
+    minimum: float,
+    maximum: float,
+    unit: str,
+    label: str,
+    code_ref: str,
+) -> CheckResult:
+    """One extracted dimension vs a two-sided code range (e.g. handrail height
+    34-38"): both too-low AND too-high fail. None → warn (not found), never a
+    false fail — absence of a regex match is not a violation."""
+    if value is None:
+        return _warn(
+            f"{label} not found on plans — verify {code_ref} range of "
+            f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit}."
+        )
+    if value < minimum or value > maximum:
+        return _fail(
+            f"{label} {_fmt_dim(value)}{unit} is outside the "
+            f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} range ({code_ref}).",
+            [f"{_fmt_dim(value)}{unit} shown",
+             f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} required"],
+        )
+    return _pass(
+        f"{label} {_fmt_dim(value)}{unit} within the "
+        f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} range."
+    )
+
+
 # =====================================================================
 # Allowable stories (IBC Table 504.4)
 # =====================================================================

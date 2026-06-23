@@ -233,6 +233,34 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
             result.summary += rule.check.get("soft_note", "")
         return result
 
+    if t == "range_dimension_check":
+        # Two-sided twin of min/max_dimension_check (e.g. handrail height,
+        # which fails both too-low and too-high).
+        dims = plan_data.dimensions or {}
+        raw = dims.get(rule.check.get("dim"))
+        if isinstance(raw, list):
+            if not raw:
+                raw = None
+            elif rule.check.get("agg") == "max":
+                raw = max(raw)
+            else:
+                raw = min(raw)
+        result = ck.check_range(
+            raw,
+            rule.check["minimum"],
+            rule.check["maximum"],
+            rule.check.get("unit", ""),
+            rule.check.get("label", "Dimension"),
+            rule.code_ref,
+        )
+        if rule.check.get("soft") and result.status == "fail":
+            # A handrail reading outside 34-38" can be a documented exception
+            # (transitions, children's handrails, the exact measurement point)
+            # the engine can't resolve from a scalar — flag for confirmation.
+            result.status = "warn"
+            result.summary += rule.check.get("soft_note", "")
+        return result
+
     if t == "high_rise_check":
         return ck.check_high_rise(plan_data.building_height, sprinklered)
 

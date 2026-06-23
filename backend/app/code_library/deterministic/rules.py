@@ -221,6 +221,21 @@ BASELINE_RULES: List[Rule] = [
                                 "serving as a handrail may be 34-38\")."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
+    # Handrails (IBC 1014.2): top of gripping surface 34-38" above the stair
+    # nosings — a TWO-SIDED range, so both too-low and too-high fail. soft
+    # posture: the exact measurement point and documented exceptions
+    # (transitions, children's handrails) are conditions the engine can't
+    # resolve from a scalar, so a reading outside 34-38" is needs_review. Gated
+    # to non-dwelling plan types — an SFR uses the CRC twin (CRC-HANDRAIL-HEIGHT).
+    Rule("EGR-HANDRAIL-HEIGHT", "Fire & Life Safety", "IBC 1014.2",
+         "Handrail height shall be 34 to 38 inches above the stair nosings.",
+         "major", {"type": "range_dimension_check", "dim": "handrail_height",
+                   "minimum": 34.0, "maximum": 38.0, "unit": " in",
+                   "label": "Handrail height", "soft": True,
+                   "soft_note": " Confirm measurement point / handrail type "
+                                "(transitions and children's handrails differ)."},
+         requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 
     # ---- Required submittal items (completeness) ----
     Rule("GEN-CODE-ANALYSIS", "General", "IBC Ch. 3-5",
@@ -364,6 +379,14 @@ BASELINE_RULES: List[Rule] = [
                    "soft_note": " Confirm guard location (stair-side guards "
                                 "serving as a handrail may be 34-38\" per CRC "
                                 "R312.1.2 exc.)."},
+         requires_citation=False, applies={"occupancies": ["R-3"]}),
+    Rule("CRC-HANDRAIL-HEIGHT", "Architectural", "CRC R311.7.8.1",
+         "Handrail height: 34 to 38 inches above the stair nosings.",
+         "major", {"type": "range_dimension_check", "dim": "handrail_height",
+                   "minimum": 34.0, "maximum": 38.0, "unit": " in",
+                   "label": "Handrail height", "soft": True,
+                   "soft_note": " Confirm measurement point / handrail type "
+                                "(transitions and children's handrails differ)."},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
     Rule("CRC-EGRESS-DOOR", "Architectural", "CRC R318.2",
          "At least one egress door: minimum 32-inch clear width.",
