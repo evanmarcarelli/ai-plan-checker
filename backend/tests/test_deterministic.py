@@ -128,13 +128,22 @@ def test_engine_drops_passing_by_default():
     assert "COM-AREA-ALLOWABLE" not in ids
 
 
-def test_corridor_width_flags_narrowest_below_minimum():
+def test_corridor_width_hard_fails_when_occupant_load_binds():
     # IBC 1020.3: the narrowest labeled corridor must clear 44". agg=min means
     # one pinch point (38") trips the rule even when other corridors are wide.
-    # The engine can't see the corridor's served occupant load (44" only binds
-    # at OL >= 50), so a sub-minimum corridor is flagged needs_review for human
-    # confirmation, not asserted as a hard violation.
+    # Declared occupant load is 70 (>= 50), so the 44" minimum binds (hard_when
+    # met) — the exception is closed and the engine asserts a hard violation.
     pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"corridor_widths": [44, 38, 52]})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NON_COMPLIANT
+
+
+def test_corridor_width_soft_when_occupant_load_unknown():
+    # Same 38" pinch point, but no declared occupant load: the 44" minimum
+    # binds only at OL >= 50 (36" is allowed below), so the engine can't
+    # substantiate a hard violation and falls back to needs_review.
+    pd = _plan(plan_type="commercial",
                dimensions={"corridor_widths": [44, 38, 52]})
     findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
     assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NEEDS_REVIEW
@@ -159,12 +168,21 @@ def test_corridor_width_excluded_for_residential():
     assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NOT_APPLICABLE
 
 
-def test_stair_width_flags_below_minimum():
-    # IBC 1011.2: an egress stair serving OL >= 50 must clear 44". The engine
-    # can't see the stair's served occupant load (44" only binds at OL >= 50),
-    # so a sub-minimum stair is flagged needs_review, not a hard violation.
+def test_stair_width_hard_fails_when_occupant_load_binds():
+    # IBC 1011.2: an egress stair serving OL >= 50 must clear 44". Declared
+    # occupant load is 80 (>= 50), so the minimum binds (hard_when met) and the
+    # engine asserts a hard violation rather than a soft needs_review.
     pd = _plan(plan_type="commercial", occupant_load=80,
                dimensions={"stair_width": 38})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-STAIR-WIDTH"].status == ComplianceStatus.NON_COMPLIANT
+
+
+def test_stair_width_soft_when_occupant_load_unknown():
+    # Same 38" stair, but no declared occupant load: 36" is allowed below OL 50,
+    # so the engine can't substantiate a hard violation and falls back to
+    # needs_review.
+    pd = _plan(plan_type="commercial", dimensions={"stair_width": 38})
     findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
     assert findings["EGR-STAIR-WIDTH"].status == ComplianceStatus.NEEDS_REVIEW
 
@@ -225,6 +243,21 @@ def test_ibc_geometry_excluded_for_residential():
     assert findings["EGR-GUARD-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
 
 
+def test_ibc_geometry_hard_fails_when_standard_stair():
+    # When the plan declares a "standard" (straight-run) stair, the spiral/
+    # winder/alternating-tread exception is closed (hard_when met) — a sub-limit
+    # tread/riser/guard and an out-of-range handrail become hard violations an
+    # examiner would cite, not soft needs_review. Covers all four IBC shape rules.
+    pd = _plan(plan_type="commercial", stair_type="standard",
+               dimensions={"tread_depth": 10, "riser_height": 7.5,
+                           "guard_height": 38, "handrail_height": 30})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-TREAD-DEPTH"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["EGR-RISER-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["EGR-GUARD-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["EGR-HANDRAIL-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
+
+
 def test_crc_tread_riser_guard_flag_needs_review_below_limits():
     # CRC R-3 limits differ from IBC: tread >= 10", riser <= 7.75", guard >= 42".
     pd = _plan(plan_type="residential", occupancy_type="R-3",
@@ -255,6 +288,20 @@ def test_crc_geometry_excluded_for_commercial():
     assert findings["CRC-TREAD-DEPTH"].status == ComplianceStatus.NOT_APPLICABLE
     assert findings["CRC-RISER-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
     assert findings["CRC-GUARD-HEIGHT"].status == ComplianceStatus.NOT_APPLICABLE
+
+
+def test_crc_geometry_hard_fails_when_standard_stair():
+    # CRC twin of the IBC hard-fail path: a declared "standard" R-3 stair closes
+    # the spiral/winder exception, so sub-limit CRC geometry (tread < 10",
+    # riser > 7-3/4", guard < 42", handrail outside 34-38") hard-fails.
+    pd = _plan(plan_type="residential", occupancy_type="R-3", stair_type="standard",
+               dimensions={"tread_depth": 9, "riser_height": 8,
+                           "guard_height": 36, "handrail_height": 40})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["CRC-TREAD-DEPTH"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["CRC-RISER-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["CRC-GUARD-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
+    assert findings["CRC-HANDRAIL-HEIGHT"].status == ComplianceStatus.NON_COMPLIANT
 
 
 def test_range_check_under_over_in_and_missing():

@@ -1,7 +1,7 @@
 {
   "slug": "office-vb-corridor-violation",
   "title": "Commercial office, Type V-B, egress corridor below the 44-inch minimum",
-  "notes": "Tests IBC 1020.3: the narrowest labeled corridor (38 in) is below the 44 in general minimum. The engine sees the width but not the corridor's served occupant load (44 in only binds at OL >= 50; 36 in is allowed below), so the deterministic rule emits needs_review for human confirmation rather than a hard violation. Area/stories/exits are clean so only the corridor rule fires.",
+  "notes": "Tests IBC 1020.3: the narrowest labeled corridor (38 in) is below the 44 in minimum. Declared occupant load is 70 (>= 50), so the 44 in minimum binds and the deterministic rule asserts a hard violation an examiner would cite. Area/stories/exits are clean so only the corridor rule fires.",
   "plan_data": {
     "project_address": "789 Spring St, Los Angeles, CA",
     "plan_type": "commercial",
@@ -35,9 +35,10 @@
     },
     {
       "rule_id": "EGR-CORRIDOR-WIDTH",
-      "expected_status": "warn",
+      "expected_status": "fail",
       "expected_severity": "high",
-      "rationale": "Narrowest corridor is 38 in, below the 44 in IBC 1020.3 general minimum. The engine can't confirm the corridor's served occupant load (44 in binds only at OL >= 50), so it flags needs_review rather than asserting a violation."
+      "reviewer_finding": true,
+      "rationale": "Narrowest corridor is 38 in, below the 44 in IBC 1020.3 minimum. Declared occupant load is 70 (>= 50), so the 44 in minimum binds and this is a hard violation an examiner would cite (not a needs_review)."
     },
     {
       "rule_id": "EGR-MIN-EXITS",

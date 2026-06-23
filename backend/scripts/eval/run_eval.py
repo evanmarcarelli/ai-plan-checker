@@ -74,6 +74,83 @@ def _fmt(x: Optional[float]) -> str:
     return "n/a" if x is None else f"{x:.3f}"
 
 
+def _ratio(num: int, den: int) -> Optional[float]:
+    return None if den == 0 else num / den
+
+
+def build_summary(overall: dict, per_rule: dict, gate: tuple) -> dict:
+    """Machine-readable snapshot for baseline tracking and regression gating.
+
+    Captures the two independent signals: the strict confusion matrix (does
+    the engine assert hard fails correctly) AND surfacing recall (of the
+    findings a real reviewer flagged, how many did the engine surface as
+    fail|warn — the dimension the confusion matrix can't see for soft rules).
+    """
+    p, r, f1 = prf(overall["tp"], overall["fp"], overall["fn"])
+    gate_correct, gate_total = gate
+    return {
+        "overall": {
+            "tp": overall["tp"], "fp": overall["fp"], "fn": overall["fn"],
+            "tn": overall["tn"], "wrong_status": overall["wrong_status"],
+            "precision": p, "recall": r, "f1": f1,
+        },
+        "surfacing": {
+            "surfaced": overall["surfaced"],
+            "reviewer_findings": overall["reviewer_findings"],
+            "recall": _ratio(overall["surfaced"], overall["reviewer_findings"]),
+        },
+        "archetype_gate": {
+            "correct": gate_correct, "total": gate_total,
+            "rate": _ratio(gate_correct, gate_total),
+        },
+        "per_rule": {
+            rid: {**buckets, "recall": _ratio(buckets["tp"], buckets["tp"] + buckets["fn"])}
+            for rid, buckets in sorted(per_rule.items())
+        },
+    }
+
+
+def _delta(now: Optional[float], was: Optional[float]) -> str:
+    if now is None or was is None:
+        return "  n/a"
+    d = now - was
+    sign = "+" if d >= 0 else ""
+    return f"{sign}{d:.3f}"
+
+
+def compare_to_baseline(summary: dict, baseline_path: str) -> bool:
+    """Print metric deltas vs a stored baseline; return True if regressed.
+
+    Regression = overall F1 OR surfacing recall dropped below the baseline
+    (a per-rule recall drop also counts). Used to fail CI when a change makes
+    the engine measurably worse.
+    """
+    base = json.loads(Path(baseline_path).read_text())
+    print("\n" + "=" * 78)
+    print(f"Baseline compare vs {baseline_path}")
+    print("=" * 78)
+    regressed = False
+    for label, key in (("overall F1", ("overall", "f1")),
+                       ("surfacing recall", ("surfacing", "recall"))):
+        now = summary[key[0]][key[1]]
+        was = base.get(key[0], {}).get(key[1])
+        print(f"  {label:18} {_fmt(was):>6} -> {_fmt(now):>6}  ({_delta(now, was)})")
+        if now is not None and was is not None and now < was - 1e-9:
+            regressed = True
+    rule_drops = []
+    for rid, buckets in summary["per_rule"].items():
+        was = base.get("per_rule", {}).get(rid, {}).get("recall")
+        now = buckets["recall"]
+        if was is not None and now is not None and now < was - 1e-9:
+            rule_drops.append(f"  {rid:22} recall {_fmt(was)} -> {_fmt(now)}")
+            regressed = True
+    if rule_drops:
+        print("  per-rule recall regressions:")
+        print("\n".join(rule_drops))
+    print(f"  => {'REGRESSED' if regressed else 'no regression'}")
+    return regressed
+
+
 # Field extraction from the case's plan_text, mirroring what the production
 # Surveyor (regex + Textract + vision title-sheet parse) hands the engine.
 # Without this, every case lacking an explicit plan_data block ran the engine
@@ -82,6 +159,18 @@ def _fmt(x: Optional[float]) -> str:
 # accounting for 20 of the eval's 23 false positives as pure harness artifact.
 # Explicit plan_data values always win; text extraction only fills gaps.
 import re as _re
+
+
+def _norm_stair_type(v: str) -> str:
+    """Mirror PDFProcessor._extract_stair_type: normalize the straight-run
+    family to "standard" (the stair-geometry hard-fail disambiguator)."""
+    v = v.lower()
+    if v.startswith("standard") or v.startswith("straight"):
+        return "standard"
+    if v.startswith("alternating"):
+        return "alternating_tread"
+    return v
+
 
 _TEXT_FIELDS = [
     ("occupancy_type", r"Occupancy(?:\s+Group)?\s*:\s*([^\n]+)", str),
@@ -93,6 +182,10 @@ _TEXT_FIELDS = [
     ("occupant_load", r"(?:Design\s+)?occupant\s+load\s*:\s*([\d,]+)", int),
     ("actual_wc", r"\bWC\s*:?\s*(\d{1,3})\b", int),
     ("actual_lav", r"\bLAV(?:ATORIES)?\s*:?\s*(\d{1,3})\b", int),
+    ("stair_type",
+     r"Stair\s*(?:type|config(?:uration)?)\s*:\s*"
+     r"(standard|straight(?:[-\s]?run)?|spiral|winder|alternating[-\s]?tread)",
+     _norm_stair_type),
 ]
 
 
@@ -149,6 +242,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="apply the citation gate before scoring")
     ap.add_argument("--min-f1", type=float, default=None,
                     help="exit non-zero if overall F1 is below this")
+    ap.add_argument("--json", action="store_true",
+                    help="emit the machine-readable summary (for baseline tracking)")
+    ap.add_argument("--baseline", default=None,
+                    help="compare against a stored summary JSON; exit non-zero on regression")
     ap.add_argument("--verbose", action="store_true", help="print per-rule mismatches")
     args = ap.parse_args(argv)
 
@@ -159,9 +256,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"No case named {args.case!r} in {CASES_DIR}", file=sys.stderr)
             return 2
 
-    overall = {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "wrong_status": 0}
+    overall = {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "wrong_status": 0,
+               "surfaced": 0, "reviewer_findings": 0}
+    per_rule: Dict[str, dict] = {}
     per_case_rows: List[tuple] = []
     mismatches: List[str] = []
+    surfacing_misses: List[str] = []
     # Archetype-gate scoring: every case that declares its archetype becomes
     # a gate observation (the 8 out-of-scope cases previously contributed
     # NOTHING — empty ground_truth, and 'measured separately' was measured
@@ -199,6 +299,24 @@ def main(argv: Optional[List[str]] = None) -> int:
             bucket = classify(expected, actual)
             c[bucket] += 1
             overall[bucket] += 1
+            rb = per_rule.setdefault(
+                rid, {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "wrong_status": 0})
+            rb[bucket] += 1
+            # Surfacing recall: independent of the strict confusion matrix.
+            # reviewer_finding asserts a REAL examiner flagged this rule on this
+            # plan (sourced from a correction letter where available); it
+            # defaults to expected in {fail, warn} for cases that predate the
+            # field. A conservative warn that surfaces a real issue counts;
+            # only a pass/info that BURIES a real finding misses.
+            reviewer_finding = gt.get("reviewer_finding", expected in ("fail", "warn"))
+            if reviewer_finding:
+                overall["reviewer_findings"] += 1
+                if actual in ("fail", "warn"):
+                    overall["surfaced"] += 1
+                else:
+                    surfacing_misses.append(
+                        f"  {case['slug']:34} {rid:22} reviewer-flagged but engine={actual}"
+                    )
             if bucket in ("fp", "fn", "wrong_status"):
                 mismatches.append(
                     f"  {case['slug']:34} {rid:22} expected={expected:5} actual={actual:5} ({bucket})"
@@ -206,37 +324,49 @@ def main(argv: Optional[List[str]] = None) -> int:
         p, r, f1 = prf(c["tp"], c["fp"], c["fn"])
         per_case_rows.append((case["slug"], c, p, r, f1))
 
-    # ---- report ----
-    print("=" * 78)
-    print(f"Deterministic engine eval{'  (+ citation gate)' if args.with_gate else ''}")
-    print("=" * 78)
-    print(f"{'case':36} {'tp':>3} {'fp':>3} {'fn':>3} {'tn':>3}  {'prec':>6} {'rec':>6} {'f1':>6}")
-    for slug, c, p, r, f1 in per_case_rows:
-        print(f"{slug:36} {c['tp']:>3} {c['fp']:>3} {c['fn']:>3} {c['tn']:>3}  "
-              f"{_fmt(p):>6} {_fmt(r):>6} {_fmt(f1):>6}")
-
     p, r, f1 = prf(overall["tp"], overall["fp"], overall["fn"])
-    print("-" * 78)
-    print(f"{'OVERALL':36} {overall['tp']:>3} {overall['fp']:>3} {overall['fn']:>3} "
-          f"{overall['tn']:>3}  {_fmt(p):>6} {_fmt(r):>6} {_fmt(f1):>6}")
-    if overall["wrong_status"]:
-        print(f"  wrong_status (e.g. expected warn, got something else): {overall['wrong_status']}")
-    if gate_total:
-        print(f"  archetype gate: {gate_correct}/{gate_total} correct "
-              f"({gate_correct / gate_total:.0%}; pilot target 95%)")
-        if gate_misses:
-            print("\n".join(gate_misses))
+    summary = build_summary(overall, per_rule, (gate_correct, gate_total))
 
-    if (args.verbose or args.min_f1 is not None) and mismatches:
-        print("\nMismatches:")
-        print("\n".join(mismatches))
+    # ---- report ----
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print("=" * 78)
+        print(f"Deterministic engine eval{'  (+ citation gate)' if args.with_gate else ''}")
+        print("=" * 78)
+        print(f"{'case':36} {'tp':>3} {'fp':>3} {'fn':>3} {'tn':>3}  {'prec':>6} {'rec':>6} {'f1':>6}")
+        for slug, c, p_, r_, f1_ in per_case_rows:
+            print(f"{slug:36} {c['tp']:>3} {c['fp']:>3} {c['fn']:>3} {c['tn']:>3}  "
+                  f"{_fmt(p_):>6} {_fmt(r_):>6} {_fmt(f1_):>6}")
+        print("-" * 78)
+        print(f"{'OVERALL':36} {overall['tp']:>3} {overall['fp']:>3} {overall['fn']:>3} "
+              f"{overall['tn']:>3}  {_fmt(p):>6} {_fmt(r):>6} {_fmt(f1):>6}")
+        if overall["wrong_status"]:
+            print(f"  wrong_status (e.g. expected warn, got something else): {overall['wrong_status']}")
+        sr = summary["surfacing"]["recall"]
+        print(f"  surfacing recall: {overall['surfaced']}/{overall['reviewer_findings']} "
+              f"reviewer findings surfaced as fail|warn ({_fmt(sr)})")
+        if gate_total:
+            print(f"  archetype gate: {gate_correct}/{gate_total} correct "
+                  f"({gate_correct / gate_total:.0%}; pilot target 95%)")
+            if gate_misses:
+                print("\n".join(gate_misses))
+
+        if (args.verbose or args.min_f1 is not None) and mismatches:
+            print("\nMismatches:")
+            print("\n".join(mismatches))
+        if args.verbose and surfacing_misses:
+            print("\nSurfacing misses (real finding buried as pass/info):")
+            print("\n".join(surfacing_misses))
+
+    regressed = compare_to_baseline(summary, args.baseline) if args.baseline else False
 
     if args.min_f1 is not None:
         if f1 is None or f1 < args.min_f1:
             print(f"\nFAIL: overall F1 {_fmt(f1)} < required {args.min_f1}", file=sys.stderr)
             return 1
         print(f"\nPASS: overall F1 {_fmt(f1)} >= {args.min_f1}")
-    return 0
+    return 1 if regressed else 0
 
 
 if __name__ == "__main__":

@@ -120,6 +120,13 @@ class ExtractedPlanData(BaseModel):
     declared_exits: Optional[int] = None
     declared_door_width_in: Optional[float] = None
     declared_stair_width_in: Optional[float] = None
+    # Stair configuration ("standard" for a straight-run stair; otherwise
+    # "spiral" / "winder" / "alternating_tread"). Disambiguates the
+    # deterministic stair-geometry rules: a declared "standard" stair closes
+    # the spiral/winder/alternating-tread exception, so a sub-limit tread /
+    # riser / guard / handrail asserts a HARD fail instead of needs_review
+    # (engine._hard_trigger_met). None falls SOFT, never silently hardens.
+    stair_type: Optional[str] = None
     actual_wc: Optional[int] = None
     actual_lav: Optional[int] = None
     state_code: Optional[str] = None

@@ -130,6 +130,31 @@ def _rule_applies(rule: Rule, plan_data: ExtractedPlanData, occ: Optional[str]) 
     return True
 
 
+def _hard_trigger_met(check: dict, plan_data: ExtractedPlanData) -> bool:
+    """A soft dimension rule asserts a HARD fail (skips the needs_review
+    downgrade) only when its disambiguating trigger is present in plan_data.
+
+    The soft posture exists because the engine can't rule out a documented
+    exception from a single scalar (a 38" stair is only a violation once the
+    served occupant load is known to be >= 50). When the plan declares that
+    trigger, the exception is closed and the violation is real — so we keep
+    the hard fail. Without the trigger we stay soft (warn). Declarative:
+        check['hard_when'] = {'field': 'occupant_load', 'min': 50}
+    Missing trigger data falls SOFT, never silently hardens.
+    """
+    cond = check.get("hard_when")
+    if not cond:
+        return False
+    val = getattr(plan_data, cond["field"], None)
+    if val is None:
+        return False
+    if "min" in cond and val < cond["min"]:
+        return False
+    if "equals" in cond and val != cond["equals"]:
+        return False
+    return True
+
+
 def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.CheckResult:
     """Dispatch one rule to its checker. Returns a CheckResult."""
     t = rule.check.get("type")
@@ -199,11 +224,15 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
             # stairways) only binds at OL >= 50 (36" is allowed below). Flag
             # for human confirmation rather than asserting a violation the
             # engine can't fully substantiate. soft_note lets other soft rules
-            # (guard/tread) supply their own exception caveat.
-            result.status = "warn"
-            result.summary += rule.check.get(
-                "soft_note", " Confirm served occupant load (44\" binds at OL >= 50)."
-            )
+            # (guard/tread) supply their own exception caveat. When the trigger
+            # IS known (hard_when met), the exception is closed -> hard fail.
+            if _hard_trigger_met(rule.check, plan_data):
+                result.summary += rule.check.get("hard_note", "")
+            else:
+                result.status = "warn"
+                result.summary += rule.check.get(
+                    "soft_note", " Confirm served occupant load (44\" binds at OL >= 50)."
+                )
         return result
 
     if t == "max_dimension_check":
@@ -228,9 +257,13 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
             # A scalar over the straight-run riser maximum can be a legitimate
             # spiral stair (IBC 1011.10), winder, or alternating-tread device
             # (IBC 1011.14) — different riser limits the engine can't rule out
-            # from a single number. Flag for confirmation, not a hard fail.
-            result.status = "warn"
-            result.summary += rule.check.get("soft_note", "")
+            # from a single number. Flag for confirmation, not a hard fail —
+            # unless the disambiguating trigger (hard_when) is declared.
+            if _hard_trigger_met(rule.check, plan_data):
+                result.summary += rule.check.get("hard_note", "")
+            else:
+                result.status = "warn"
+                result.summary += rule.check.get("soft_note", "")
         return result
 
     if t == "range_dimension_check":
@@ -256,9 +289,13 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
         if rule.check.get("soft") and result.status == "fail":
             # A handrail reading outside 34-38" can be a documented exception
             # (transitions, children's handrails, the exact measurement point)
-            # the engine can't resolve from a scalar — flag for confirmation.
-            result.status = "warn"
-            result.summary += rule.check.get("soft_note", "")
+            # the engine can't resolve from a scalar — flag for confirmation,
+            # unless the disambiguating trigger (hard_when) is declared.
+            if _hard_trigger_met(rule.check, plan_data):
+                result.summary += rule.check.get("hard_note", "")
+            else:
+                result.status = "warn"
+                result.summary += rule.check.get("soft_note", "")
         return result
 
     if t == "high_rise_check":

@@ -211,6 +211,9 @@ class PDFProcessor:
         plan_data.dimensions = self._extract_dimensions(all_text)
         plan_data.building_height = plan_data.dimensions.get("building_height")
         plan_data.building_area = plan_data.dimensions.get("building_area")
+        # Stair configuration (disambiguates the stair-geometry rules — a
+        # declared "standard" straight-run stair hard-fails sub-limit geometry).
+        plan_data.stair_type = self._extract_stair_type(all_text)
 
         # Extract elements
         plan_data.elements = self._extract_elements(all_text)
@@ -282,6 +285,30 @@ class PDFProcessor:
         pattern = r'(?:CONSTRUCTION|CONST\.?)\s+TYPE[:\s]+((?:TYPE\s+)?[IVX]+[-A-Z]*)'
         match = re.search(pattern, text, re.IGNORECASE)
         return match.group(1).strip() if match else None
+
+    def _extract_stair_type(self, text: str) -> Optional[str]:
+        """Stair configuration declared on an egress / stair sheet.
+
+        Normalizes the straight-run family to "standard" — the value the
+        deterministic stair-geometry rules treat as the disambiguator that
+        closes the spiral/winder/alternating-tread exception (so a sub-limit
+        tread/riser/guard/handrail hard-fails instead of needs_review). Other
+        recognized configurations are returned verbatim so the soft posture is
+        preserved. No match -> None (stays soft).
+        """
+        m = re.search(
+            r'STAIR\s*(?:TYPE|CONFIG(?:URATION)?)[:\s]+'
+            r'(STANDARD|STRAIGHT(?:[-\s]?RUN)?|SPIRAL|WINDER|ALTERNATING[-\s]?TREAD)',
+            text, re.IGNORECASE
+        )
+        if not m:
+            return None
+        raw = m.group(1).lower()
+        if raw.startswith("standard") or raw.startswith("straight"):
+            return "standard"
+        if raw.startswith("alternating"):
+            return "alternating_tread"
+        return raw  # "spiral" | "winder"
 
     @staticmethod
     def _safe_float(v: str) -> Optional[float]:

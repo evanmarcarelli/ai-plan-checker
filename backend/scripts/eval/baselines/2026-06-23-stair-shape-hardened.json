@@ -1,0 +1,440 @@
+{
+  "overall": {
+    "tp": 49,
+    "fp": 0,
+    "fn": 0,
+    "tn": 186,
+    "wrong_status": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "surfacing": {
+    "surfaced": 63,
+    "reviewer_findings": 63,
+    "recall": 1.0
+  },
+  "archetype_gate": {
+    "correct": 22,
+    "total": 22,
+    "rate": 1.0
+  },
+  "per_rule": {
+    "ADA-PARKING": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "ADA-RESTROOM": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "ADA-ROUTE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "CAL-CONST-WASTE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "CAL-WATER-EFF": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "COM-AREA-ALLOWABLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 18,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "COM-CONSTRUCTION-TYPE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 18,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "COM-HIGH-RISE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 11,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "COM-MIXED-OCCUPANCY": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "COM-OCCUPANCY-DECL": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 18,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "COM-STORIES-ALLOWABLE": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "CRC-GUARD-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "CRC-HANDRAIL-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "CRC-RISER-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "CRC-TREAD-DEPTH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-CORRIDOR-WIDTH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-GUARD-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-HANDRAIL-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-MIN-EXITS": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 10,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "EGR-OCCUPANT-LOAD": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 11,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "EGR-RISER-HEIGHT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-STAIR-WIDTH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "EGR-TREAD-DEPTH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "ENR-IECC": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "tn": 6,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "FIRE-WUI-7A": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "FIRE-WUI-DECK": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "FIRE-WUI-VENT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "FLS-ALARM": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "FLS-SPRINKLER": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "tn": 11,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "GEN-CODE-ANALYSIS": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "tn": 13,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-ANTIGRAFFITI": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-COOLROOF": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-DATUM": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-EO-ELIGIBILITY": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-EV-RACEWAY": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-EXHAUST": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-FIREPLACE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-FLOWRATE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-FOOTPRINT": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-GRN1-SWPP": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-GRN11-VOC": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-GRN4": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-HILLSIDE-FIRE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-NATGRADE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-RFA": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-SETBACKS": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "LADBS-SFD-SPRINKLER": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-WALLSCHED": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "LADBS-SFD-WUI": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "MECH-VENTILATION": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "wrong_status": 0,
+      "recall": null
+    },
+    "NEC-SERVICE-RATING": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4,
+      "wrong_status": 0,
+      "recall": 1.0
+    },
+    "PLUMB-FIXTURES": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "wrong_status": 0,
+      "recall": null
+    }
+  }
+}

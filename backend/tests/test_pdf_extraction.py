@@ -48,3 +48,25 @@ def test_junk_values_dropped():
     dims = P._extract_dimensions("GUARD HEIGHT: .\nRISER: ")
     assert "guard_height" not in dims
     assert "riser_height" not in dims
+
+
+def test_stair_type_normalizes_straight_run_to_standard():
+    # The straight-run family normalizes to "standard" — the value the
+    # deterministic stair-geometry rules hard-fail on.
+    assert P._extract_stair_type("STAIR TYPE: STANDARD") == "standard"
+    assert P._extract_stair_type("Stair type: straight-run") == "standard"
+    assert P._extract_stair_type("STAIR CONFIGURATION: STRAIGHT RUN") == "standard"
+
+
+def test_stair_type_other_configs_returned_verbatim():
+    # Non-standard configs are returned (soft posture preserved): they never
+    # equal "standard", so the hard trigger stays closed.
+    assert P._extract_stair_type("STAIR TYPE: SPIRAL") == "spiral"
+    assert P._extract_stair_type("Stair type: winder") == "winder"
+    assert P._extract_stair_type("STAIR TYPE: ALTERNATING TREAD") == "alternating_tread"
+
+
+def test_stair_type_absent_is_none():
+    # No declaration -> None (stays soft); "Stairway width" must not false-match.
+    assert P._extract_stair_type("Stairway width: 48 in") is None
+    assert P._extract_stair_type("OCCUPANCY: B") is None

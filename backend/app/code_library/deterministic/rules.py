@@ -162,7 +162,10 @@ BASELINE_RULES: List[Rule] = [
          "minimum of 44 inches clear width.",
          "major", {"type": "min_dimension_check", "dim": "corridor_widths",
                    "minimum": 44.0, "unit": " in", "label": "Narrowest corridor",
-                   "agg": "min", "soft": True},
+                   "agg": "min", "soft": True,
+                   "hard_when": {"field": "occupant_load", "min": 50},
+                   "hard_note": " Declared occupant load >= 50 closes the "
+                                "exception — the 44\" minimum binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     # Commercial egress stairway minimum width (IBC 1011.2): stairways serving
@@ -178,7 +181,10 @@ BASELINE_RULES: List[Rule] = [
          "minimum of 44 inches clear width.",
          "major", {"type": "min_dimension_check", "dim": "stair_width",
                    "minimum": 44.0, "unit": " in", "label": "Stair width",
-                   "soft": True},
+                   "soft": True,
+                   "hard_when": {"field": "occupant_load", "min": 50},
+                   "hard_note": " Declared occupant load >= 50 closes the "
+                                "exception — the 44\" minimum binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     # Stair geometry (IBC 1011.5.2): riser height <= 7" and tread depth >= 11"
@@ -194,7 +200,11 @@ BASELINE_RULES: List[Rule] = [
                    "minimum": 11.0, "unit": " in", "label": "Tread depth",
                    "soft": True,
                    "soft_note": " Confirm stair type (spiral / winder / "
-                                "alternating-tread devices allow narrower treads)."},
+                                "alternating-tread devices allow narrower treads).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "spiral/winder/alternating-tread exception — the "
+                                "11\" minimum binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     Rule("EGR-RISER-HEIGHT", "Fire & Life Safety", "IBC 1011.5.2",
@@ -203,7 +213,11 @@ BASELINE_RULES: List[Rule] = [
                    "maximum": 7.0, "unit": " in", "label": "Riser height",
                    "soft": True,
                    "soft_note": " Confirm stair type (spiral / winder / "
-                                "alternating-tread devices allow taller risers)."},
+                                "alternating-tread devices allow taller risers).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "spiral/winder/alternating-tread exception — the "
+                                "7\" maximum binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     # Guards (IBC 1015.3): required >= 42" high along open-sided walking
@@ -218,7 +232,11 @@ BASELINE_RULES: List[Rule] = [
                    "minimum": 42.0, "unit": " in", "label": "Guard height",
                    "soft": True,
                    "soft_note": " Confirm guard location (stair-side guards "
-                                "serving as a handrail may be 34-38\")."},
+                                "serving as a handrail may be 34-38\").",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "stair-side-handrail-guard exception — the 42\" "
+                                "minimum binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
     # Handrails (IBC 1014.2): top of gripping surface 34-38" above the stair
@@ -233,7 +251,11 @@ BASELINE_RULES: List[Rule] = [
                    "minimum": 34.0, "maximum": 38.0, "unit": " in",
                    "label": "Handrail height", "soft": True,
                    "soft_note": " Confirm measurement point / handrail type "
-                                "(transitions and children's handrails differ)."},
+                                "(transitions and children's handrails differ).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "handrail-type exception — the 34-38\" range "
+                                "binds (hard fail)."},
          requires_citation=False,
          applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 
@@ -357,7 +379,11 @@ BASELINE_RULES: List[Rule] = [
                    "minimum": 10.0, "unit": " in", "label": "Tread depth",
                    "soft": True,
                    "soft_note": " Confirm stair type (spiral / winder stairs "
-                                "allow narrower treads under CRC R318.5/.10)."},
+                                "allow narrower treads under CRC R318.5/.10).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "spiral/winder exception — the 10\" minimum "
+                                "binds (hard fail)."},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
     Rule("CRC-RISER-HEIGHT", "Architectural", "CRC R318.5",
          "Stair risers: maximum height 7-3/4 inches.",
@@ -365,7 +391,11 @@ BASELINE_RULES: List[Rule] = [
                    "maximum": 7.75, "unit": " in", "label": "Riser height",
                    "soft": True,
                    "soft_note": " Confirm stair type (spiral / winder stairs "
-                                "allow taller risers under CRC R318.5/.10)."},
+                                "allow taller risers under CRC R318.5/.10).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "spiral/winder exception — the 7-3/4\" maximum "
+                                "binds (hard fail)."},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
     # R-3 guards (CRC R312.1.2): >= 42" along open-sided walking surfaces.
     # soft posture: CRC R312.1.2 permits 34-38" guards on the open side of
@@ -378,7 +408,11 @@ BASELINE_RULES: List[Rule] = [
                    "soft": True,
                    "soft_note": " Confirm guard location (stair-side guards "
                                 "serving as a handrail may be 34-38\" per CRC "
-                                "R312.1.2 exc.)."},
+                                "R312.1.2 exc.).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "stair-side-handrail-guard exception — the 42\" "
+                                "minimum binds (hard fail)."},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
     Rule("CRC-HANDRAIL-HEIGHT", "Architectural", "CRC R311.7.8.1",
          "Handrail height: 34 to 38 inches above the stair nosings.",
@@ -386,7 +420,11 @@ BASELINE_RULES: List[Rule] = [
                    "minimum": 34.0, "maximum": 38.0, "unit": " in",
                    "label": "Handrail height", "soft": True,
                    "soft_note": " Confirm measurement point / handrail type "
-                                "(transitions and children's handrails differ)."},
+                                "(transitions and children's handrails differ).",
+                   "hard_when": {"field": "stair_type", "equals": "standard"},
+                   "hard_note": " Declared stair type 'standard' closes the "
+                                "handrail-type exception — the 34-38\" range "
+                                "binds (hard fail)."},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
     Rule("CRC-EGRESS-DOOR", "Architectural", "CRC R318.2",
          "At least one egress door: minimum 32-inch clear width.",
