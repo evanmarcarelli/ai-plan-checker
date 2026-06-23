@@ -149,6 +149,24 @@ def test_la_section_prefix_merges_topic():
     assert len(decisions[0].members) == 2
 
 
+# ── specificity ranking lock: a '*' model code is least specific ──────────────
+
+def test_specificity_ranks_model_below_state_below_city():
+    """A '*'-scope provision (model reference, e.g. the 2019 CBC or the IBC/IFC/
+    NEC stubs) is LEAST specific, so on layer grounds it never outranks an
+    adopted CA or city code. Locks the ordering precedence sorts members by.
+
+    (Edition-awareness — preventing a stale '*' edition from out-restricting an
+    adopted code via the numeric more-restrictive path — is a tracked follow-up;
+    this only locks jurisdiction specificity.)"""
+    from app.code_library.precedence import _specificity
+    order = ["CA:Los Angeles", "CA", "*"]
+    assert _specificity("CA:Los Angeles", order) < _specificity("CA", order)
+    assert _specificity("CA", order) < _specificity("*", order)
+    # fallback ranking (no explicit order) holds the same shape
+    assert _specificity("CA:Malibu", []) < _specificity("CA", []) < _specificity("*", [])
+
+
 # ── reviewer-facing governing-law block ───────────────────────────────────
 
 def test_governing_law_block_renders_and_skips_single_layer():
