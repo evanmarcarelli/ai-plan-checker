@@ -366,6 +366,50 @@ class PDFProcessor:
             if v is not None:
                 dims["ceiling_height"] = v
 
+        # Guard height (IBC 1015.3 / CRC R312: 42" min) — labeled scalar in
+        # inches on egress/code-analysis sheets.
+        guard_match = re.search(
+            r'GUARD(?:RAIL)?\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if guard_match:
+            v = self._safe_float(guard_match.group(1))
+            if v is not None:
+                dims["guard_height"] = v
+
+        # Handrail height (IBC 1014.2 / CRC R317: 34-38") — labeled scalar in
+        # inches.
+        handrail_match = re.search(
+            r'HAND\s*RAIL\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if handrail_match:
+            v = self._safe_float(handrail_match.group(1))
+            if v is not None:
+                dims["handrail_height"] = v
+
+        # Stair riser (IBC 1011.5.2 max 7" / CRC R318.5 max 7-3/4") — labeled
+        # "MAX RISER", "RISER HEIGHT", "RISER: 7".
+        riser_match = re.search(
+            r'(?:MAX(?:IMUM)?\s+)?RISER\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if riser_match:
+            v = self._safe_float(riser_match.group(1))
+            if v is not None:
+                dims["riser_height"] = v
+
+        # Stair tread depth (IBC 1011.5.2 min 11" / CRC R318.5 min 10") —
+        # labeled "MIN TREAD", "TREAD DEPTH", "TREAD: 11".
+        tread_match = re.search(
+            r'(?:MIN(?:IMUM)?\s+)?TREAD\s*(?:DEPTH|RUN|D\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if tread_match:
+            v = self._safe_float(tread_match.group(1))
+            if v is not None:
+                dims["tread_depth"] = v
+
         # Occupant load
         occupant_match = re.search(
             r'(?:OCCUPANT|OCCUPANCY)\s+LOAD[:\s]*([\d,]+)',
