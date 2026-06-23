@@ -63,15 +63,30 @@ _APPENDIX_RE = re.compile(
     re.MULTILINE,
 )
 
-# A numbered subsection heading at line start:
-#   "1004.1 Design occupant load."  /  "R301.2.1 Title."  /  "701A.3 Application."
-# Title group: starts uppercase, runs to the first period followed by space/EOL
-# (ICC headings end with a period). Body follows on the same or next lines.
+# A numbered subsection heading at a line start: a section number, then the
+# provision. We deliberately do NOT require a short "Title." here. Some
+# provisions run straight into a long sentence whose first period is 200+ chars
+# in (e.g. the CEBC 319.7.x list of building characteristics); the old pattern
+# required a period within 120 chars and so failed to SEE those headings,
+# silently gluing each one into its parent's body. Matching just "number + a
+# prose start" fixes that; the optional title is split out by _TITLE_RE below,
+# and table-of-contents rows are filtered with _TOC_NOISE_RE.
 _NUMBERED_RE = re.compile(
-    r"^([A-Z]?\d{3,4}[A-Z]?(?:\.\d+){1,4})\s+"
-    r"([A-Z][^\n]{0,120}?\.)\s*",
+    r"^([A-Z]?\d{3,4}[A-Z]?(?:\.\d+){1,4})\s+(?=[A-Za-z(\[])",
     re.MULTILINE,
 )
+
+# The ICC "Number Title. Body" form: a short capitalized title ending in a
+# period, then the body sentence. Title chars exclude '.' so a section cross-
+# reference ("...per Section 319.4.") or a decimal in the body is never mistaken
+# for the title-terminating period. Absent (list-style provisions) → no title.
+_TITLE_RE = re.compile(r"([A-Z][^\n.]{2,80}?)\.\s+(?=[A-Z(])")
+
+# A numbered token sitting on a table-of-contents / list-of-tables row: dot
+# leaders, or a right-aligned page or chapter-page folio (two+ spaces then a
+# number, or "3-19"). Such a row is not a real section start — skipping it is
+# what keeps TOC/relocations tables from becoming bogus chunks.
+_TOC_NOISE_RE = re.compile(r"\.{4,}|\s{2,}\d{1,4}\s*$|\s\d{1,3}[-–]\d{1,3}\s*$")
 
 # Page-furniture lines to strip before parsing: bare page numbers, edition
 # footers, ALL-CAPS running heads that repeat every page.
@@ -90,6 +105,17 @@ _FURNITURE_RES = [
     re.compile(r"^\s*(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|"
                r"AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{1,2},?\s+\d{4}\s*$",
                re.MULTILINE | re.IGNORECASE),                          # eff.-date header
+    # Chapter-page folio on its own line, e.g. "3-20", "3-4" (CEBC/CRC print
+    # the running folio as <chapter>-<page>). These leaked into provision
+    # bodies as standalone-number debris — the Step-2 audit found dozens.
+    # HYPHEN ONLY (not en-dash): folios use a hyphen, while a standalone table
+    # cell like "3–5" (an en-dash range, "3 to 5") is a real provision VALUE.
+    # Matching the en-dash here stripped those table values on re-ingest
+    # (corrupted e.g. CRC R702.2.2.1's cement-plaster proportions).
+    re.compile(r"^\s*\d{1,2}-\d{1,3}\s*$", re.MULTILINE),
+    # Column-break artifact: a line that is nothing but ">" markers, left by
+    # PyMuPDF when it linearizes a multi-column page.
+    re.compile(r"^\s*>+\s*$", re.MULTILINE),
 ]
 
 
@@ -140,7 +166,20 @@ def parse_code_text(
     for m in _SECTION_HDR_RE.finditer(text):
         markers.append((m.start(), "section_hdr", m.group(1), m.group(2).strip()))
     for m in heading_re.finditer(text):
-        markers.append((m.start(), "numbered", m.group(1), m.group(2).strip().rstrip(".")))
+        # Drop TOC / list-of-tables rows (see _TOC_NOISE_RE) — they're not
+        # section starts.
+        nl = text.find("\n", m.start())
+        heading_line = text[m.start(): nl if nl != -1 else len(text)]
+        if _TOC_NOISE_RE.search(heading_line):
+            continue
+        # A custom numbered_re may capture a title in group 2 (legacy contract,
+        # e.g. vcbc._RELAXED_NUMBERED_RE); the default _NUMBERED_RE captures only
+        # the number and the title is derived from the body below.
+        try:
+            grp_title = (m.group(2) or "").strip().rstrip(".")
+        except IndexError:
+            grp_title = ""
+        markers.append((m.start(), "numbered", m.group(1), grp_title))
     markers.sort(key=lambda t: t[0])
 
     sections: List[RawSection] = []
@@ -165,10 +204,18 @@ def parse_code_text(
 
         # numbered subsection: body runs to the next marker (any kind).
         end = markers[i + 1][0] if i + 1 < len(markers) else len(text)
-        # Skip past the heading line itself.
+        # Skip past the matched heading prefix ("number + spaces"). The default
+        # _NUMBERED_RE stops right before the provision text, so `after` still
+        # holds any "Title." that needs splitting; a legacy regex that captured
+        # the title in group 2 leaves `title` already set and ends past it.
         heading_match = heading_re.match(text, pos)
-        body_start = heading_match.end() if heading_match else pos
-        body = text[body_start:end].strip()
+        after = text[(heading_match.end() if heading_match else pos):end].strip()
+        if not title:
+            tm = _TITLE_RE.match(after)
+            if tm:
+                title = tm.group(1).strip()
+                after = after[tm.end():].strip()
+        body = after
         breadcrumb = [c for c in (chapter_crumb, section_crumb) if c]
         extra = ["exception"] if re.search(r"^\s*Exceptions?\s*:", body, re.MULTILINE) else None
         sections.append(RawSection(

@@ -277,6 +277,66 @@ class CodeRetriever:
 
 # ---------- Loading + singletons ----------
 
+# Source-tier authority for dedupe tie-breaking. Higher wins. Mirrors the
+# provenance ladder in CodeChunk.source_tier / license_status: an official
+# government / edict text outranks a licensed reproduction, which outranks
+# fair-use or unreviewed material. Unknown tiers sort to 0 (least authoritative).
+_TIER_RANK = {
+    "official_gov": 3,
+    "edict": 3,
+    "licensed": 2,
+    "fair_use_review": 1,
+    "review": 0,
+    "unspecified": 0,
+}
+
+
+def _authority_rank(chunk: CodeChunk) -> tuple:
+    """Rank for picking the survivor when two chunks share a chunk_id.
+
+    (source_tier authority, length of text). Higher is better. The length
+    tiebreak handles same-tier collisions — a fuller provision beats a stub or
+    a malformed fragment (e.g. an ingest that wrote a page number as the text)."""
+    tier = _TIER_RANK.get((chunk.source_tier or "").lower(), 0)
+    return (tier, len((chunk.text or "").strip()))
+
+
+def _dedupe_chunks(chunks: List[CodeChunk]) -> List[CodeChunk]:
+    """Collapse chunks that share a chunk_id, keeping the most authoritative copy.
+
+    Why: a chunk_id is the corpus's identity for a provision, but two sources can
+    carry the same one — the same ADA section ingested from both a hand-authored
+    seed and the official gov text, or a malformed re-ingest. Left alone, every
+    such pair is double-counted: indexed twice into BM25 (so it can surface twice
+    in results) and held twice in RAM. This does NOT merge DIFFERENT provisions —
+    a long section legitimately split into many chunks keeps distinct chunk_ids
+    and is untouched. Only exact chunk_id collisions collapse, deterministically
+    (authority then length), and the drop count is logged for audit. First-seen
+    wins ties, so load order (sorted filenames) keeps the result stable."""
+    best: Dict[str, CodeChunk] = {}
+    order: List[str] = []
+    dropped = 0
+    differing = 0
+    for c in chunks:
+        key = c.chunk_id.lower()
+        cur = best.get(key)
+        if cur is None:
+            best[key] = c
+            order.append(key)
+            continue
+        dropped += 1
+        if (c.text or "").strip() != (cur.text or "").strip():
+            differing += 1
+        if _authority_rank(c) > _authority_rank(cur):
+            best[key] = c  # higher-authority copy supersedes the one seen first
+    if dropped:
+        logger.info(
+            f"[code_library] dedupe: dropped {dropped} duplicate chunk_id(s) "
+            f"({differing} with differing text); {len(order)} unique chunks remain"
+        )
+    return [best[k] for k in order]
+
+
 def _load_corpus_from_disk() -> CodeCorpus:
     """Read every *.jsonl in corpus/ and build a CodeCorpus."""
     corpus = CodeCorpus()
@@ -289,8 +349,9 @@ def _load_corpus_from_disk() -> CodeCorpus:
         logger.warning(f"[code_library] no .jsonl corpus files in {CORPUS_DIR}")
         return corpus
 
+    parsed: List[CodeChunk] = []
     for fp in files:
-        count_before = len(corpus.chunks)
+        count_before = len(parsed)
         try:
             with fp.open(encoding="utf-8") as f:
                 for lineno, line in enumerate(f, 1):
@@ -308,12 +369,17 @@ def _load_corpus_from_disk() -> CodeCorpus:
                         f"{raw.get('code_short','?')}-{raw.get('section','?')}".lower(),
                     )
                     try:
-                        corpus.add(CodeChunk(**raw))
+                        parsed.append(CodeChunk(**raw))
                     except Exception as e:
                         logger.error(f"[code_library] {fp.name}:{lineno} bad chunk: {e}")
         except Exception as e:
             logger.error(f"[code_library] failed to load {fp}: {e}")
-        logger.info(f"[code_library] loaded {len(corpus.chunks)-count_before} chunks from {fp.name}")
+        logger.info(f"[code_library] parsed {len(parsed)-count_before} chunks from {fp.name}")
+
+    # Collapse duplicate chunk_ids BEFORE indexing so the BM25 corpus never holds
+    # two copies of one provision (double search hits + wasted RAM). See _dedupe_chunks.
+    for c in _dedupe_chunks(parsed):
+        corpus.add(c)
 
     logger.info(f"[code_library] corpus ready: {len(corpus.chunks)} total chunks")
     return corpus
@@ -330,9 +396,10 @@ def _load_corpus_from_postgres() -> CodeCorpus:
 
     corpus = CodeCorpus()
     rows = store.fetch_all_chunks()
+    parsed: List[CodeChunk] = []
     for r in rows:
         try:
-            corpus.add(CodeChunk(
+            parsed.append(CodeChunk(
                 chunk_id=r["chunk_id"],
                 code_name=r.get("code_short", "") or "",
                 code_short=r.get("code_short", "") or "",
@@ -352,6 +419,11 @@ def _load_corpus_from_postgres() -> CodeCorpus:
             ))
         except Exception as e:
             logger.error(f"[code_library] bad PG chunk {r.get('chunk_id')}: {e}")
+    # Same dedupe guard as the disk path (see _dedupe_chunks) — the DB can carry
+    # duplicate chunk_ids too (parallel ingests, re-runs), and they cost the same
+    # double-indexing in BM25 + RAM here as on disk.
+    for c in _dedupe_chunks(parsed):
+        corpus.add(c)
     logger.info(f"[code_library] corpus ready (postgres): {len(corpus.chunks)} chunks")
     return corpus
 

@@ -95,3 +95,28 @@ def test_chunk_to_requirement_sets_layer_key():
     assert state.layer_key == "CA"
     base = chunk_to_requirement(_chunk("b", ["*"]))
     assert base.layer_key == "*"
+
+
+# ── Step-6 contract lock: the 2019 CBC is a NATIONAL model reference ──────────
+
+def test_cbc_2019_is_model_reference_scope():
+    """The 2019 California Building Code was ingested as a national model
+    reference (version '2019', jurisdictions ['*']) — a deep replacement for the
+    IBC stub for commercial review, NOT an asserted adopted-CA-2025 citation. It
+    surfaces for a CA plan as reference context but stays '*'-scope, never a CA
+    layer. A future change to its scope/edition should trip this test.
+
+    NOTE: precedence is currently edition-blind (a stale 2019 provision could
+    out-restrict an adopted 2025 one on a shared topic). That hardening is a
+    tracked follow-up; this test only locks the model-reference scoping."""
+    from app.code_library.corpus_loader import get_corpus
+    cbc19 = [c for c in get_corpus().chunks if c.code_short == "CBC" and c.version == "2019"]
+    assert len(cbc19) > 1000, "expected the bulk 2019 CBC ingest"
+    assert all(c.jurisdictions == ["*"] for c in cbc19), "2019 CBC must stay national-scope"
+
+    cs = CorpusCodeSource()
+    cbc_reqs = [r for r in cs.get_applicable_codes("CA", "Los Angeles")
+                if r.code_id.startswith("CBC ")]
+    assert cbc_reqs, "2019 CBC should surface for an LA plan as a model reference"
+    assert all(r.layer_key == "*" for r in cbc_reqs), \
+        "CBC 2019 must stay '*'-scope, not promoted to a CA-adopted layer"

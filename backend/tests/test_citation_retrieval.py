@@ -18,6 +18,7 @@ from app.code_library.citation_retrieval import (
     verify_and_ground,
 )
 from app.code_library.corpus_loader import CodeChunk, CodeCorpus
+from app.code_library.deterministic.citation_gate import _CorpusProbe
 
 
 def _build_corpus() -> CodeCorpus:
@@ -278,3 +279,59 @@ def test_min_claim_support_tokens_is_enforced():
     )
     # Bigram overlap is also too thin → SECTION_ONLY, not VERIFIED.
     assert g.quality is not CitationQuality.VERIFIED
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# _CorpusProbe — the citation gate's grounding oracle
+# ─────────────────────────────────────────────────────────────────────────
+
+
+class _Src:
+    """Minimal duck-typed code source for _CorpusProbe (verify_citation +
+    get_source_text), backed by a synthetic corpus."""
+
+    def __init__(self, corpus: CodeCorpus) -> None:
+        self._c = corpus
+
+    def verify_citation(self, s: str) -> bool:
+        return self._c.has_section(s)
+
+    def get_source_text(self, s: str):
+        ch = self._c.get(s)
+        return ch.text if ch else None
+
+
+def _probe_corpus() -> CodeCorpus:
+    c = CodeCorpus()
+    c.add(CodeChunk(
+        chunk_id="ada-303.4", code_name="ADA", code_short="ADA", version="2010",
+        section="303.4", title="Ramps", category="accessibility",
+        jurisdictions=["*"], text="Changes in level greater than 1/2 inch shall be ramped.",
+    ))
+    c.add(CodeChunk(
+        chunk_id="ibc-506.2", code_name="IBC", code_short="IBC", version="2021",
+        section="506.2", title="Allowable area", category="building_safety",
+        jurisdictions=["*"], text="The allowable area of a building shall be determined per this section.",
+    ))
+    return c
+
+
+def test_corpus_probe_does_not_ground_a_coded_cite_on_a_foreign_code():
+    """Regression guard for the bare-token cross-code leak. 'CMC 303.4' shares
+    a section NUMBER with 'ADA 303.4' but a different code; the hardened probe
+    must NOT ground a mechanical-code cite on accessibility text. (Before the
+    fix, _lookup_uncached looped bare tokens with no prefix guard and returned
+    the ADA text.)"""
+    probe = _CorpusProbe(_Src(_probe_corpus()))
+    assert probe.lookup("CMC 303.4") is None
+
+
+def test_corpus_probe_still_grounds_legit_leadin_and_multiref_cites():
+    """The hardening must not regress good cites: a 'Table' lead-in still
+    resolves, and in a multi-ref string one resolving ref grounds the finding
+    even when a sibling ref points at an absent/foreign section."""
+    probe = _CorpusProbe(_Src(_probe_corpus()))
+    # Lead-in word — never a verbatim citation key, resolves via has_section.
+    assert "allowable area" in (probe.lookup("IBC Table 506.2") or "").lower()
+    # Multi-ref: the foreign 'CMC 303.4' ref does not poison; 'IBC 506.2' grounds.
+    assert "allowable area" in (probe.lookup("CMC 303.4 · IBC 506.2") or "").lower()

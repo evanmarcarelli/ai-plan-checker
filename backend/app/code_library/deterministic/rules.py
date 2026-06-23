@@ -129,7 +129,7 @@ BASELINE_RULES: List[Rule] = [
     # values ARE the provenance) and the table's text is not yet in the
     # corpus — enforce-mode would mute every true positive, exactly what
     # happened to the WUI rules.
-    Rule("COM-HEIGHT-ALLOWABLE", "Commercial", "IBC Table 504.3 · 504.2",
+    Rule("COM-HEIGHT-ALLOWABLE", "Commercial", "IBC Table 504.3 · IBC 504.2",
          "Building height in feet shall not exceed the tabular limit for the construction type.",
          "critical", {"type": "height_check"}, requires_citation=False),
     Rule("COM-HIGH-RISE", "Commercial", "IBC 403",
@@ -275,7 +275,7 @@ BASELINE_RULES: List[Rule] = [
                    "patterns": [r"egress\s+window", r"emergency\s+escape\s+and\s+rescue",
                                 r"\bR319\b"]},
          requires_citation=False, applies={"occupancies": ["R-3"]}),
-    Rule("CRC-SMOKE-CO", "Fire & Life Safety", "CRC R310 · R311",
+    Rule("CRC-SMOKE-CO", "Fire & Life Safety", "CRC R310 · CRC R311",
          "Smoke alarms (R310) and carbon monoxide alarms (R311) shall be shown.",
          "critical", {"type": "required_keyword",
                       "patterns": [r"smoke\s+(?:alarm|detector)", r"carbon\s+monoxide",
