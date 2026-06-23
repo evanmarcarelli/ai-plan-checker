@@ -106,6 +106,37 @@ def test_engine_drops_passing_by_default():
     assert "COM-AREA-ALLOWABLE" not in ids
 
 
+def test_corridor_width_flags_narrowest_below_minimum():
+    # IBC 1020.3: the narrowest labeled corridor must clear 44". agg=min means
+    # one pinch point (38") trips the rule even when other corridors are wide.
+    # The engine can't see the corridor's served occupant load (44" only binds
+    # at OL >= 50), so a sub-minimum corridor is flagged needs_review for human
+    # confirmation, not asserted as a hard violation.
+    pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"corridor_widths": [44, 38, 52]})
+    findings = {f.code_requirement.code_id: f for f in evaluate_plan(pd)}
+    assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NEEDS_REVIEW
+
+
+def test_corridor_width_passes_when_all_clear_minimum():
+    pd = _plan(plan_type="commercial", occupant_load=70,
+               dimensions={"corridor_widths": [48, 60]})
+    ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}
+    # Passing -> dropped from default findings (include_passing=False).
+    assert "EGR-CORRIDOR-WIDTH" not in ids
+
+
+def test_corridor_width_excluded_for_residential():
+    # The 44" rule is the commercial IBC corridor regime; an SFR uses CRC R311
+    # hallway minimums, so the rule must NOT run on a residential plan even
+    # when corridor dims are present.
+    pd = _plan(plan_type="residential", occupancy_type="R-3",
+               dimensions={"corridor_widths": [30]})
+    findings = {f.code_requirement.code_id: f for f in
+                evaluate_plan(pd, include_passing=True)}
+    assert findings["EGR-CORRIDOR-WIDTH"].status == ComplianceStatus.NOT_APPLICABLE
+
+
 def test_wui_rules_skip_without_zone():
     pd = _plan()  # no wui_zone
     ids = {f.code_requirement.code_id for f in evaluate_plan(pd)}

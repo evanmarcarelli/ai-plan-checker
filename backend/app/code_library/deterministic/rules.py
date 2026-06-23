@@ -151,6 +151,20 @@ BASELINE_RULES: List[Rule] = [
          "major", {"type": "required_keyword",
                    "patterns": [r"panic\s+hardware", r"panic\s+bar"]}, requires_citation=False,
          applies={"occupancies": ["A", "E"]}),
+    # The narrowest labeled corridor must clear the 44" general minimum
+    # (IBC 1020.3, corridors serving OL >= 50). agg=min mirrors the examiner
+    # reading: one pinch point below 44" is the violation. A missing corridor
+    # dimension warns, never false-fails. Gated to commercial/mixed-use/
+    # industrial — dwellings use the CRC R311 hallway regime (36"), so this
+    # 44" standard does not apply to an SFR.
+    Rule("EGR-CORRIDOR-WIDTH", "Fire & Life Safety", "IBC 1020.3",
+         "Egress corridors serving an occupant load of 50 or more shall be a "
+         "minimum of 44 inches clear width.",
+         "major", {"type": "min_dimension_check", "dim": "corridor_widths",
+                   "minimum": 44.0, "unit": " in", "label": "Narrowest corridor",
+                   "agg": "min", "soft": True},
+         requires_citation=False,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 
     # ---- Required submittal items (completeness) ----
     Rule("GEN-CODE-ANALYSIS", "General", "IBC Ch. 3-5",

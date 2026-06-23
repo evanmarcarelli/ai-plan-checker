@@ -186,13 +186,21 @@ def _evaluate_rule(rule: Rule, plan_data: ExtractedPlanData, text: str) -> ck.Ch
                 raw = max(raw)
             else:
                 raw = min(raw)
-        return ck.check_min_dimension(
+        result = ck.check_min_dimension(
             raw,
             rule.check["minimum"],
             rule.check.get("unit", ""),
             rule.check.get("label", "Dimension"),
             rule.code_ref,
         )
+        if rule.check.get("soft") and result.status == "fail":
+            # The engine sees the corridor width but not its served occupant
+            # load; IBC 1020.3's 44" minimum only binds at OL >= 50 (36" is
+            # allowed below). Flag for human confirmation rather than asserting
+            # a violation the engine can't fully substantiate.
+            result.status = "warn"
+            result.summary += " Confirm served occupant load (44\" binds at OL >= 50)."
+        return result
 
     if t == "high_rise_check":
         return ck.check_high_rise(plan_data.building_height, sprinklered)
