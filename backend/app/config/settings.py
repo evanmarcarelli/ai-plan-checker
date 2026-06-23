@@ -54,6 +54,15 @@ class Settings(BaseSettings):
     # DEPARTMENT_CONCURRENCY after a dyno upgrade — no code change needed.
     department_concurrency: int = 2
 
+    # Department routing pre-screen. When True, the workflow runs only the
+    # departments app.agents.routing.select_departments deems applicable for
+    # the resolved archetype (provably-irrelevant reviewers are skipped — a
+    # direct token + latency win). The router FAILS OPEN: unknown / out-of-
+    # scope / unmapped archetypes run the full panel. Default False = dark
+    # launch: production behavior is byte-identical until a budgeted live
+    # recall check validates routing, then flip via DEPARTMENT_ROUTING_ENABLED.
+    department_routing_enabled: bool = False
+
     # Adversarial-critic model. Empty = the premium model (anthropic_model).
     # Was hardcoded in critic.py, bypassing configuration entirely.
     anthropic_model_critic: str = ""
