@@ -30,11 +30,13 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-7"           # premium model, used by Surveyor
-    # Sonnet 4-6 is the current cheap model (companion to Opus 4-7). "claude-sonnet-4-7"
+    anthropic_model: str = "claude-opus-4-8"           # premium model, used by Surveyor
+    # Sonnet 4-6 is the current cheap model (companion to Opus 4-8). "claude-sonnet-4-7"
     # does not exist in Anthropic's catalog and any call referencing it returns 404,
     # which silently degrades every department reviewer to needs_review. Do not
     # change to "4-7" without verifying with the Anthropic API first.
+    # Opus 4-8 shares 4-7's request surface (adaptive thinking only; no temperature/
+    # top_p/budget_tokens/prefill), so the upgrade is a model-ID swap with no code change.
     anthropic_model_cheap: str = "claude-sonnet-4-6"   # ~5x cheaper, used by 10 department reviewers
     # AI assistant chat uses the cheapest tier — these are short, grounded
     # clarification answers, not plan reviews. Haiku 4.5 is ~3x cheaper than
@@ -42,6 +44,14 @@ class Settings(BaseSettings):
     # as anthropic_model_cheap above). Override via ANTHROPIC_MODEL_CHAT if needed.
     anthropic_model_chat: str = "claude-haiku-4-5"
     anthropic_max_tokens: int = 4096
+    # Prompt-cache TTL for the cached code-requirements prefix (base.py `_call_llm`).
+    # "5m" (Anthropic default) only hits if the next plan in the same jurisdiction
+    # lands within 5 minutes; "1h" keeps the cache warm across plans reviewed up to
+    # an hour apart — the realistic pattern for a plan-check service, where the same
+    # jurisdiction recurs. 1h writes cost 2x vs 1.25x for 5m, so it pays off once a
+    # cached block is reused ~3x within the hour. Drop to "5m" if traffic is sparse
+    # (one plan per jurisdiction per hour). Env: PROMPT_CACHE_TTL.
+    prompt_cache_ttl: str = "1h"
     # #6 — Per-department model tier. Department CATEGORIES listed here use the
     # premium model (anthropic_model) instead of the cheap one. Empty by
     # default: every reviewer stays on Sonnet (no surprise cost). Set the env

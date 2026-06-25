@@ -86,16 +86,66 @@ EXAMPLE_CORRECTIONS: Dict[str, List[str]] = {
 }
 
 
+# Worked example findings — a COMPLETE demonstration of the JSON output contract
+# for one category, not just phrasing. Where the bullet corrections above teach
+# tone, these teach the full structured output: how to fill plan_value vs
+# required_value, when to assert non_compliant vs needs_review, and how to
+# calibrate confidence. Each value is a ready-to-embed JSON array string of
+# example findings (generic — no real project data). Add a category here to give
+# that reviewer a worked example; categories without one fall back to the bullets.
+WORKED_EXAMPLES: Dict[str, str] = {
+    "building_safety": """[
+  {
+    "code_id": "IBC 1010.1.1",
+    "status": "non_compliant",
+    "plan_value": "30 in clear width at the main egress door (door schedule, Sheet A-2.1)",
+    "required_value": "32 in minimum clear width",
+    "description": "The main egress door is scheduled at 30 in clear width. IBC 1010.1.1 requires a minimum 32 in clear opening for egress doors, so the door is undersized by 2 in.",
+    "recommendation": "Revise the door schedule to a leaf providing at least 32 in clear opening (e.g. a 3'-0\\" door) and update the dimension on Sheet A-2.1.",
+    "severity": "high",
+    "confidence": 0.9,
+    "page_references": [11]
+  },
+  {
+    "code_id": "IBC 1011.5.2",
+    "status": "needs_review",
+    "plan_value": null,
+    "required_value": "7 ft 6 in minimum ceiling height in habitable rooms",
+    "description": "The submitted building section does not dimension the finished ceiling height for the habitable rooms, so compliance with the minimum ceiling height cannot be confirmed from the provided sheets.",
+    "recommendation": "Dimension the finished ceiling height on the building section and confirm it meets the 7 ft 6 in minimum for habitable spaces.",
+    "severity": "medium",
+    "confidence": 0.5,
+    "page_references": [20]
+  }
+]""",
+}
+
+
 def few_shot_block(category: str) -> str:
     """Return a prompt block of example corrections for a category, or '' if
-    none are defined for it."""
+    none are defined for it. When a WORKED_EXAMPLES entry exists for the category,
+    a complete JSON worked example is appended to demonstrate the full output
+    contract and confidence calibration."""
     examples = EXAMPLE_CORRECTIONS.get(category) or []
-    if not examples:
+    worked = WORKED_EXAMPLES.get(category)
+    if not examples and not worked:
         return ""
-    bullets = "\n".join(f'- "{e}"' for e in examples)
-    return (
-        "EXAMPLE CORRECTIONS in your domain (how a real building-department "
-        "examiner phrases findings — match this specificity, tone, and code-"
-        "citation style; these are examples only, not facts about THIS plan):\n"
-        + bullets
-    )
+
+    parts: List[str] = []
+    if examples:
+        bullets = "\n".join(f'- "{e}"' for e in examples)
+        parts.append(
+            "EXAMPLE CORRECTIONS in your domain (how a real building-department "
+            "examiner phrases findings — match this specificity, tone, and code-"
+            "citation style; these are examples only, not facts about THIS plan):\n"
+            + bullets
+        )
+    if worked:
+        parts.append(
+            "WORKED EXAMPLE FINDINGS (the exact JSON shape and judgment to "
+            "produce — note the confident non_compliant with concrete plan vs "
+            "required values, and the needs_review with confidence 0.5 where the "
+            "plan is silent rather than asserting a violation from absence; "
+            "illustrative only, not facts about THIS plan):\n" + worked
+        )
+    return "\n\n".join(parts)
