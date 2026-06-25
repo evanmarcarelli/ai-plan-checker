@@ -1,0 +1,35 @@
+{
+  "slug": "office-ia-highrise",
+  "title": "Commercial office tower, Type I-A, 90 ft — high-rise threshold",
+  "source": "synthetic",
+  "notes": "Exercises COM-HIGH-RISE, which had no case touching the >75 ft path. Type I-A is UL for area/stories/height (Tables 506.2/504.4/504.3), isolating the high-rise check. The engine returns needs_review (warn) — high-rise is IBC 403's verify-the-systems prompt (smoke control, voice alarm, standby power), not a hard fail the engine can assert from scope alone.",
+  "plan_data": {
+    "project_address": "400 Wilshire Blvd, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type I-A",
+    "per_story_area": 18000,
+    "building_area": 126000,
+    "stories": 7,
+    "building_height": 90,
+    "occupant_load": 400,
+    "sprinklered": true,
+    "declared_exits": 3,
+    "actual_wc": 20,
+    "actual_lav": 12
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: I-A\nNumber of stories: 7\nBuilding height: 90 ft\nPer-story area: 18,000 sf\nFully sprinklered: yes\nDesign occupant load: 400\nIECC: Title 24 Part 6\nNFPA 13 sprinkler system. NFPA 72 fire alarm. Smoke control and standby power provided.\nEXIT 1. EXIT 2. EXIT 3.\nWC 20 LAV 12.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "warn", "expected_severity": "critical",
+      "rationale": "90 ft exceeds the 75 ft threshold (IBC 403); engine flags needs_review to verify smoke control, voice alarm, and standby power." },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "Type I-A is UL for Group B area" },
+    { "rule_id": "COM-HEIGHT-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "Type I-A is UL for height" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "Type I-A is UL for stories" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}

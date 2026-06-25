@@ -1,0 +1,34 @@
+{
+  "slug": "office-vb-fixtures-violation",
+  "title": "Commercial office, Type V-B, plumbing fixtures short for occupant load",
+  "source": "synthetic",
+  "notes": "First true-positive case for PLUMB-FIXTURES. IPC Table 403.1 Group B ratios are 1 WC / 25 and 1 lav / 40 occupants, so OL 200 requires 8 WC and 5 lav; the plan shows 2 WC and 1 lav. Area/stories/height/exits are clean so the fixture shortfall is isolated. requires_citation=False (table-store provenance), so the fail survives the citation gate.",
+  "plan_data": {
+    "project_address": "330 Grand Ave, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 5000,
+    "building_area": 5000,
+    "stories": 1,
+    "building_height": 18,
+    "occupant_load": 200,
+    "sprinklered": true,
+    "declared_exits": 2,
+    "actual_wc": 2,
+    "actual_lav": 1
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 1\nBuilding height: 18 ft\nPer-story area: 5,000 sf\nFully sprinklered: yes\nDesign occupant load: 200\nIECC: Title 24 Part 6\nNFPA 13 sprinkler system.\nEXIT 1 (main). EXIT 2 (side).\nWC 2 LAV 1.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "PLUMB-FIXTURES", "expected_status": "fail", "expected_severity": "major",
+      "rationale": "OL 200 Group B requires 8 WC / 5 lav (IPC Table 403.1); only 2 WC / 1 lav shown." },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "5,000 sf within the 9,000 sf allowable for B/V-B" },
+    { "rule_id": "EGR-MIN-EXITS", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "OL 200 requires 2 exits; 2 labeled" },
+    { "rule_id": "EGR-OCCUPANT-LOAD", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "office-iib-exit-capacity-violation",
+  "title": "Commercial office, Type II-B, egress door capacity short for occupant load",
+  "source": "synthetic",
+  "notes": "First case to exercise EGR-EXIT-CAPACITY (absent from the baseline). IBC 1005.3.2 requires 0.2 in of door egress width per occupant; OL 300 needs 60 in of door width, the plan provides 48 in. Exit COUNT is fine (2 exits cover OL 300), so the capacity check is isolated. requires_citation=True, so the ungated baseline scores a fail (TP); --with-gate downgrades to needs_review until IBC 1005.3 text is in the corpus.",
+  "plan_data": {
+    "project_address": "900 Olympic Blvd, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type II-B",
+    "per_story_area": 12000,
+    "building_area": 12000,
+    "stories": 1,
+    "building_height": 22,
+    "occupant_load": 300,
+    "sprinklered": true,
+    "declared_exits": 2,
+    "declared_door_width_in": 48,
+    "actual_wc": 12,
+    "actual_lav": 8
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: II-B\nStories: 1\nBuilding height: 22 ft\nPer-story area: 12,000 sf\nFully sprinklered: yes\nDesign occupant load: 300\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nEXIT 1 (48 in total door width). EXIT 2.\nWC 12 LAV 8.",
+  "ground_truth": [
+    { "rule_id": "EGR-OCCUPANT-LOAD", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-MIN-EXITS", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "OL 300 requires 2 exits; 2 labeled" },
+    { "rule_id": "EGR-EXIT-CAPACITY", "expected_status": "fail", "expected_severity": "critical",
+      "rationale": "OL 300 needs 60 in of egress door width (0.2 in/occupant, IBC 1005.3.2); only 48 in provided." },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "12,000 sf within the 23,000 sf allowable for B/II-B" },
+    { "rule_id": "PLUMB-FIXTURES", "expected_status": "pass", "expected_severity": "major",
+      "rationale": "OL 300 Group B needs 12 WC / 8 lav; 12 / 8 provided" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}

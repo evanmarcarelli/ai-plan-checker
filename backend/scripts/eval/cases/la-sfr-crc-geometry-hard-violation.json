@@ -1,0 +1,32 @@
+{
+  "slug": "la-sfr-crc-geometry-hard-violation",
+  "title": "LA single-family dwelling, R-3, standard-run stair geometry outside the CRC limits (hard fail)",
+  "source": "synthetic",
+  "notes": "Hard-fail twin for the CRC R-3 stair pack, adding a second magnitude beyond the existing n=1 cases. Stair type: standard closes the spiral/winder (and stair-side-handrail-guard) exceptions, so the four CRC rules assert hard violations: tread 8 in (< 10, CRC R318.5), riser 8.25 in (> 7-3/4, CRC R318.5), guard 36 in (< 42, CRC R312.1.2), handrail 40 in (> 38, CRC R311.7.8.1 — high side of the range). plan_type residential excludes the IBC EGR twins so they do not double-fire. Stair width 36 in is a clean true negative.",
+  "plan_data": {
+    "project_address": "78 Canyon View Dr, Los Angeles, CA",
+    "plan_type": "residential",
+    "occupancy_type": "R-3",
+    "construction_type": "Type V-B",
+    "stories": 2,
+    "building_height": 24,
+    "sprinklered": true,
+    "stair_type": "standard",
+    "dimensions": { "stair_width": 36, "tread_depth": 8, "riser_height": 8.25, "guard_height": 36, "handrail_height": 40 }
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: R-3\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 24 ft\nFully sprinklered: yes\nStair type: standard\nNFPA 13D residential sprinklers. Smoke alarms and carbon monoxide alarms shown (R310/R311).\nStairway width: 36 in. Tread depth: 8 in. Max riser: 8.25 in. Guard height: 36 in. Handrail height: 40 in.\nEgress window at each sleeping room.",
+  "ground_truth": [
+    { "rule_id": "CRC-TREAD-DEPTH", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Tread 8 in below the 10 in CRC R318.5 minimum; standard stair type closes the spiral/winder exception — hard fail." },
+    { "rule_id": "CRC-RISER-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Riser 8.25 in over the 7-3/4 in CRC R318.5 maximum; standard stair type closes the exception — hard fail." },
+    { "rule_id": "CRC-GUARD-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Guard 36 in below the 42 in CRC R312.1.2 minimum; standard stair type closes the stair-side-handrail-guard exception — hard fail." },
+    { "rule_id": "CRC-HANDRAIL-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Handrail 40 in above the 34-38 in CRC R311.7.8.1 range (high side); standard stair type closes the exception — hard fail." },
+    { "rule_id": "CRC-STAIR-WIDTH", "expected_status": "pass", "expected_severity": "major",
+      "rationale": "36 in meets the 36 in CRC R318.7.1 minimum" },
+    { "rule_id": "CRC-SMOKE-CO", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "Smoke and CO alarms shown (R310/R311)" }
+  ]
+}

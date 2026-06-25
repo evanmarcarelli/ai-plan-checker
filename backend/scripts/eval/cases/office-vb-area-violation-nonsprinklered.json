@@ -1,0 +1,39 @@
+{
+  "slug": "office-vb-area-violation-nonsprinklered",
+  "title": "Commercial office, Type V-B, NON-sprinklered per-story area over the Group B limit",
+  "source": "synthetic",
+  "notes": "Tests IBC Table 506.2 hard fail. Group B / Type V-B NS tabular allowable is 9,000 sf. 12,000 sf NON-sprinklered exceeds it with no sprinkler increase available, so the engine asserts a hard violation (the sprinklered twin office-vb-area-violation.json warns for the 506.2 S1 increase math instead). This is the first true-positive case for COM-AREA-ALLOWABLE, which previously had only pass/warn coverage.",
+  "plan_data": {
+    "project_address": "789 Spring St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 12000,
+    "building_area": 12000,
+    "stories": 1,
+    "building_height": 18,
+    "occupant_load": 60,
+    "sprinklered": false,
+    "declared_exits": 2,
+    "actual_wc": 4,
+    "actual_lav": 4
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 1\nBuilding height: 18 ft\nPer-story area: 12,000 sf\nNon-sprinklered\nDesign occupant load: 60\nIECC: Title 24 Part 6\nElectrical: 400 A main breaker\nEXIT 1 (front). EXIT 2 (rear).\nWC 4 LAV 4.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "fail", "expected_severity": "critical",
+      "rationale": "12,000 sf per story exceeds the 9,000 sf NS tabular allowable for Group B / Type V-B (Table 506.2); non-sprinklered, so no 506.2 sprinkler increase is available." },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "1 story within the B/V-B 2-story NS limit (Table 504.4)" },
+    { "rule_id": "COM-HEIGHT-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "18 ft within the 40 ft NS limit for Type V-B (Table 504.3)" },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "18 ft is below the 75 ft high-rise threshold" },
+    { "rule_id": "EGR-MIN-EXITS", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "OL 60 requires 2 exits; 2 labeled" },
+    { "rule_id": "PLUMB-FIXTURES", "expected_status": "pass", "expected_severity": "major",
+      "rationale": "OL 60 Group B needs 3 WC / 2 lav; 4 / 4 provided" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}
