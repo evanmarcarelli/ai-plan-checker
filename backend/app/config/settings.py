@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
 from functools import lru_cache
 import os
@@ -209,10 +209,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "text"
 
-    class Config:
-        env_file = str(_ENV_PATH)
-        case_sensitive = False
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=str(_ENV_PATH),
+        case_sensitive=False,
+        extra="ignore",
+    )
 
     @property
     def is_production(self) -> bool:
