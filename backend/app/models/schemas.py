@@ -90,6 +90,42 @@ class PlanElement(BaseModel):
     raw_text: Optional[str] = None
 
 
+# ---- Geometry extraction (feature-flagged; populated by geometry_extractor) ----
+# Net-new geometry pulled from the drawing vector layer, distinct from the
+# text-label dimensions the surveyor has always parsed. Whole tree auto-persists
+# into jobs.plan_data JSONB via model_dump() — no migration needed.
+
+class SheetScale(BaseModel):
+    """Calibrated drawing scale for one sheet. points_per_foot converts a drawn
+    length in PDF points to real-world feet (PDF point = 1/72 inch)."""
+    page: int
+    scale_text: Optional[str] = None        # e.g. "1/4\"=1'-0\""
+    points_per_foot: Optional[float] = None
+    source: Optional[str] = None            # "note" | "bar" | "empirical" | "reconciled"
+    confidence: float = 0.0
+
+
+class PageGeometry(BaseModel):
+    page: int
+    # Router verdict: how this page should be (was) measured.
+    path: str = "vector_layered"            # vector_layered | vector_unlayered | raster
+    vector_coverage: float = 0.0            # rough 0..1 share of drawn vs scanned content
+    primitive_counts: Dict[str, int] = {}   # by primitive type and/or layer role
+    scale: Optional[SheetScale] = None
+    # Measured outputs that CAN drive checks; each value carries a confidence flag
+    # consumed by the Hybrid gate (see geometry_extractor / engine).
+    measured_features: Dict[str, Any] = {}  # corridor_widths, door_widths, ...
+    advisory: Dict[str, Any] = {}           # research-grade outputs, never a hard finding
+
+
+class GeometryData(BaseModel):
+    enabled: bool = True
+    pages: List[PageGeometry] = []
+    dominant_scale: Optional[SheetScale] = None
+    layers: List[str] = []                   # OCG layer names found in the document
+    stats: Dict[str, Any] = {}               # coverage, timings, self-consistency score
+
+
 class ExtractedPlanData(BaseModel):
     project_name: Optional[str] = None
     project_address: Optional[str] = None
@@ -139,6 +175,9 @@ class ExtractedPlanData(BaseModel):
     # coverage. Persisted in plan_data JSONB so "why was this check hollow?"
     # is answerable after the fact.
     extraction_stats: Dict[str, Any] = {}
+    # Net-new geometry pulled from the drawing vector layer (feature-flagged).
+    # None when geometry extraction is disabled or the document yielded nothing.
+    geometry: Optional[GeometryData] = None
 
 
 # ==================== Code Requirements ====================

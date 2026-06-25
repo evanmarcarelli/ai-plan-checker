@@ -41,5 +41,9 @@ backend/cache/
 backend/logs/
 *.log
 
+# Geometry-vision live-test output (rendered client plan sheets — do not commit)
+backend/geometry_vision_out/
+geometry_vision_out/
+
 # Benchmark run outputs (reproducible from manifest)
 benchmarks/results/

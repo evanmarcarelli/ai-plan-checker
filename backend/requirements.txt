@@ -35,3 +35,7 @@ beautifulsoup4>=4.12.0
 lxml>=5.0.0
 # AWS Textract OCR fallback (feature-flagged via AWS_TEXTRACT_ENABLED)
 boto3>=1.34.0
+# Geometry extraction (feature-flagged via GEOMETRY_EXTRACTION_ENABLED):
+# vector measurement over the PDF drawing layer (scale calibration, gray-wall
+# clear-distance measurement). numpy only — no heavier CV/geometry deps needed.
+numpy>=1.26

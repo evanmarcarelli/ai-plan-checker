@@ -112,6 +112,18 @@ class PDFProcessor:
             except Exception as e:
                 logger.error(f"Textract enhancement failed (continuing without): {e}")
 
+            # Geometry extraction (net-new: measure the drawing vector layer).
+            # Feature-flagged off by default; behaves as a no-op when disabled or
+            # if anything goes wrong, so the text pipeline is never affected.
+            try:
+                from app.services.geometry_extractor import geometry_extractor
+                if geometry_extractor.enabled:
+                    geometry = geometry_extractor.extract(file_path)
+                    if geometry is not None:
+                        result["geometry"] = geometry
+            except Exception as e:
+                logger.error(f"Geometry extraction failed (continuing without): {e}")
+
         except Exception as e:
             logger.error(f"PyMuPDF extraction failed: {e}")
             # Fallback to pdfplumber
@@ -216,7 +228,44 @@ class PDFProcessor:
         plan_data.elements = self._extract_elements(all_text)
         plan_data.materials = self._extract_materials(all_text)
 
+        # ── Geometry bridge (Phase E-lite): surface the calibrated scale + the
+        # positioned dimension catalog. Anything added to `dimensions` auto-reaches
+        # all 10 department reviewers (departments.py serializes the dimensions
+        # dict into the reviewer prompt); the full geometry tree persists via
+        # plan_data.geometry → jobs.plan_data JSONB.
+        geometry = raw.get("geometry")
+        if geometry is not None:
+            plan_data.geometry = geometry
+            self._bridge_geometry(plan_data, geometry)
+
         return plan_data
+
+    @staticmethod
+    def _bridge_geometry(plan_data: ExtractedPlanData, geometry) -> None:
+        """Mirror a compact, reviewer-facing geometry summary into `dimensions`
+        and `extraction_stats`. Measured-from-drawing data is clearly separated
+        from text-label dimensions and never overwrites it."""
+        ds = geometry.dominant_scale
+        if ds and ds.points_per_foot:
+            plan_data.dimensions["drawing_scale"] = ds.scale_text
+            plan_data.dimensions["drawing_scale_ppf"] = round(ds.points_per_foot, 2)
+
+        # Document-wide deduped catalog of stated dimensions (feet), largest first.
+        # These are the architect's own printed dimensions, parsed to real units —
+        # useful context for reviewers even before any measurement exists.
+        all_in = set()
+        for pg in geometry.pages:
+            for v in pg.measured_features.get("stated_dimensions_in", []):
+                all_in.add(v)
+        if all_in:
+            big_ft = sorted((round(v / 12.0, 1) for v in all_in if v >= 24), reverse=True)
+            plan_data.dimensions["stated_dimensions_ft"] = big_ft[:40]
+
+        plan_data.extraction_stats["geometry"] = {
+            **geometry.stats,
+            "dominant_scale": ds.scale_text if ds else None,
+            "dominant_scale_ppf": round(ds.points_per_foot, 2) if (ds and ds.points_per_foot) else None,
+        }
 
     def _extract_project_name(self, text: str, title_block: str) -> Optional[str]:
         patterns = [
