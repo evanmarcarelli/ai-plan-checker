@@ -175,6 +175,28 @@ class Settings(BaseSettings):
     # spend per plan if a particular workflow needs it.
     textract_max_pages: int = 0
 
+    # ── Geometry extraction (net-new: measure the drawing vector layer) ──
+    # Off by default — when off the pipeline behaves exactly as before. When on,
+    # geometry_extractor pulls vector primitives via PyMuPDF page.get_drawings(),
+    # calibrates the drawing scale from the printed scale note, and surfaces a
+    # real-unit dimension catalog. Outputs land in ExtractedPlanData.geometry and
+    # mirror into the `dimensions` dict so the reviewers consume them. $0 when off.
+    # Perf note: a full pass is ~1 min on a 37-page set (get_drawings on dense
+    # sheets); it runs in the background worker. Cap with geometry_max_pages if needed.
+    geometry_extraction_enabled: bool = False
+    # Phase D: Claude vision locates measurable features (corridors/egress/doors) and
+    # the gray-wall geometry measures each precisely. Advisory. Costs vision tokens —
+    # keep off until trusted. Requires geometry_extraction_enabled + an API key.
+    geometry_vision_enabled: bool = False
+    # Target long-edge pixels for the geometry-vision page render (Phase D). Kept
+    # just under Anthropic's ~1568px image-resize threshold so the model sees the
+    # image at the resolution we render — required for the returned (normalized)
+    # feature boxes to map back to the page correctly.
+    geometry_vision_max_px: int = 1536
+    # Cap pages per document processed for geometry. 0 = no cap (covers the whole
+    # set; floor plans can sit mid-document). Set positive to bound cost per plan.
+    geometry_max_pages: int = 0
+
     # Playwright fallback for Cloudflare-blocked publishers
     # (amlegal, municode, qcode, ecode360). Off by default — turning this on
     # is an operational decision the operator owns. Renders the page in a

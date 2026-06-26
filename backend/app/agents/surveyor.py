@@ -150,6 +150,18 @@ OUTPUT: Return ONLY valid JSON matching this schema:
         )
         self._apply_vision_fields(plan_data, vision_data)
 
+        # Vision-guided geometry measurement (Phase D, feature-flagged off by
+        # default). Vision locates corridors/egress/doors on the floor plans and the
+        # gray-wall geometry measures each precisely; results attach to
+        # plan_data.geometry (advisory) and high-confidence ones mirror into the
+        # dimensions dict for the reviewers. No-op without GEOMETRY_VISION_ENABLED +
+        # an API key, and never blocks the survey on failure.
+        try:
+            from app.services.geometry_vision import geometry_vision_measurer
+            await geometry_vision_measurer.augment(file_path, plan_data)
+        except Exception as e:
+            logger.error(f"[Surveyor] geometry-vision measurement failed (continuing): {e}")
+
         # Deterministic-engine inputs the extractors already find but used to
         # drop on the floor: the regex extractor stores occupant load in the
         # dimensions dict, and vision reads "sprinklered" off the title sheet —
