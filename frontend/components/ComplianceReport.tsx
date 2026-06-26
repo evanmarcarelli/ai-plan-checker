@@ -197,10 +197,10 @@ function FindingCard({
               style={{
                 background: "var(--needs-review-bg)",
                 border: "1px solid rgba(245,158,11,0.2)",
-                color: "#fcd34d"
+                color: "#000000"
               }}
             >
-              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500" />
               <span>{finding.recommendation}</span>
             </div>
           )}

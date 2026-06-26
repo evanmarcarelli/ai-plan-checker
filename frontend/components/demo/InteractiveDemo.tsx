@@ -70,10 +70,10 @@ export default function InteractiveDemo() {
 
   const urlText =
     stage === "idle"
-      ? "up2code.ai/dashboard"
+      ? "architechtura.ai/dashboard"
       : selected
-      ? `up2code.ai/dashboard · ${selected.label}`
-      : "up2code.ai/dashboard";
+      ? `architechtura.ai/dashboard · ${selected.label}`
+      : "architechtura.ai/dashboard";
 
   return (
     <BrowserChrome urlText={urlText}>

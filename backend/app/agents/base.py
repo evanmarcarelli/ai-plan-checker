@@ -90,10 +90,14 @@ class BaseAgent(ABC):
         if cache_prefix:
             # Cached prefix first, fresh content second. The cache_control
             # breakpoint caches everything up to and including this block
-            # (system prompt + prefix).
+            # (system prompt + prefix). The TTL governs how long that cached
+            # prefix stays warm — "1h" keeps it alive across plans reviewed up to
+            # an hour apart (see settings.prompt_cache_ttl). "5m" is Anthropic's
+            # default; "1h" doubles the write premium but pays off on repeat
+            # reviews in the same jurisdiction within the hour.
             content = [
                 {"type": "text", "text": cache_prefix,
-                 "cache_control": {"type": "ephemeral"}},
+                 "cache_control": {"type": "ephemeral", "ttl": settings.prompt_cache_ttl}},
                 {"type": "text", "text": user_content},
             ]
         else:

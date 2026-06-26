@@ -1,0 +1,74 @@
+{
+  "slug": "la-sfr-v5b-stair-geometry-standard",
+  "title": "LA SFR — Type V-B, R-3 STANDARD stair with geometry outside the CRC limits (hard fail)",
+  "jurisdiction_key": "CA:LOS_ANGELES",
+  "archetype": "la_sfr_typ_vb_ministerial",
+  "project_address": "1234 Canyon Dr, Los Angeles, CA 90049",
+  "source": "synthetic",
+  "notes": "Hard-fail twin of la-sfr-v5b-stair-geometry-violation. Same sub-limit CRC geometry — tread 9 in (< 10 in, CRC R318.5), riser 8 in (> 7-3/4 in), guard 36 in (< 42 in, CRC R312.1.2), handrail 40 in (> 34-38 in, CRC R311.7.8.1) — but the plan declares 'Stair type: standard'. That closes the spiral/winder exception (hard_when met), so all four CRC geometry twins assert a hard violation instead of needs_review. plan_type residential gates the IBC commercial twins (EGR-*) off (info, no double-fire). stair_type is declared ONLY in plan_text, exercising the run_eval _TEXT_FIELDS mirror.",
+  "plan_data": {
+    "plan_type": "residential",
+    "occupancy_type": "R-3 (single-family dwelling)",
+    "construction_type": "V-B",
+    "dimensions": { "tread_depth": 9, "riser_height": 8, "guard_height": 36, "handrail_height": 40 }
+  },
+  "plan_text": "PROJECT DATA - 1234 CANYON DR, LOS ANGELES CA 90049\nCODE ANALYSIS SHEET A-0.1\n2023 LA BUILDING CODE (LABC)\nOccupancy Group: R-3 (single-family dwelling)\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 24 ft\nTotal building area: 2,800 sf\nPer-story area: 1,400 sf\nFully sprinklered: yes (NFPA 13D residential)\nDesign occupant load: 10\nIECC compliance path: Title 24 Part 6 prescriptive\nElectrical service: 200 A service main breaker\nWater closets: WC 3\nLavatories: LAV 3\nEXIT 1 (front door)\nEXIT 2 (rear door)\nEXIT DOOR 36\" min clear width\nStair type: standard. Tread depth: 9 in. Max riser: 8 in. Guard height: 36 in. Handrail height: 40 in.\nFire alarm: NFPA 72 smoke alarms per CRC R314.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE",    "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical", "rationale": "Table 506.2 R-3 = UL; no IBC area limit applies to a dwelling" },
+    { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
+    {
+      "rule_id": "CRC-TREAD-DEPTH",
+      "expected_status": "fail",
+      "expected_severity": "major",
+      "reviewer_finding": true,
+      "rationale": "Tread depth is 9 in, below the 10 in CRC R318.5 minimum. Declared stair type 'standard' closes the spiral/winder exception, so the 10 in minimum binds (hard fail)."
+    },
+    {
+      "rule_id": "CRC-RISER-HEIGHT",
+      "expected_status": "fail",
+      "expected_severity": "major",
+      "reviewer_finding": true,
+      "rationale": "Riser height is 8 in, over the 7-3/4 in CRC R318.5 maximum (max_dimension_check at the fractional limit). 'Standard' stair closes the exception (hard fail)."
+    },
+    {
+      "rule_id": "CRC-GUARD-HEIGHT",
+      "expected_status": "fail",
+      "expected_severity": "major",
+      "reviewer_finding": true,
+      "rationale": "Guard height is 36 in, below the 42 in CRC R312.1.2 minimum. 'Standard' stair closes the stair-side-handrail-guard exception (hard fail)."
+    },
+    {
+      "rule_id": "CRC-HANDRAIL-HEIGHT",
+      "expected_status": "fail",
+      "expected_severity": "major",
+      "reviewer_finding": true,
+      "rationale": "Handrail height is 40 in, above the 34-38 in CRC R311.7.8.1 range (HIGH side of check_range). 'Standard' stair closes the handrail-type exception (hard fail)."
+    },
+    {
+      "rule_id": "EGR-TREAD-DEPTH",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "The IBC commercial tread rule is gated off for a residential plan type — the CRC twin scores this dimension, so the IBC rule is not-applicable (no double-fire)."
+    },
+    {
+      "rule_id": "EGR-RISER-HEIGHT",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "IBC commercial riser rule gated off for residential — CRC twin scores it; not-applicable."
+    },
+    {
+      "rule_id": "EGR-GUARD-HEIGHT",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "IBC commercial guard rule gated off for residential — CRC twin scores it; not-applicable."
+    },
+    {
+      "rule_id": "EGR-HANDRAIL-HEIGHT",
+      "expected_status": "info",
+      "expected_severity": "high",
+      "rationale": "IBC commercial handrail rule gated off for residential — CRC twin scores it; not-applicable."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "office-iib-min-exits-violation",
+  "title": "Commercial office, Type II-B, occupant load 600 with only 2 exits",
+  "source": "synthetic",
+  "notes": "First true-positive case for EGR-MIN-EXITS. IBC 1006.3.2 requires 3 exits for an occupant load of 501-1000; only 2 are labeled. Area/stories/height/fixtures are clean so the exit-count violation is isolated. EGR-MIN-EXITS requires_citation=True, so the ungated baseline scores this as a fail (TP); under --with-gate it downgrades to needs_review until IBC 1006.3.2 text is in the corpus.",
+  "plan_data": {
+    "project_address": "555 Figueroa St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type II-B",
+    "per_story_area": 20000,
+    "building_area": 40000,
+    "stories": 2,
+    "building_height": 40,
+    "occupant_load": 600,
+    "sprinklered": true,
+    "declared_exits": 2,
+    "actual_wc": 24,
+    "actual_lav": 15
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: II-B\nNumber of stories: 2\nBuilding height: 40 ft\nPer-story area: 20,000 sf\nFully sprinklered: yes\nDesign occupant load: 600\nIECC: Title 24 Part 6\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nEXIT 1 (east stair). EXIT 2 (west stair).\nWC 24 LAV 15.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "EGR-OCCUPANT-LOAD", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "Occupant load 600 is declared" },
+    { "rule_id": "EGR-MIN-EXITS", "expected_status": "fail", "expected_severity": "critical",
+      "rationale": "OL 600 falls in the 501-1000 band, which requires 3 exits (IBC 1006.3.2); only 2 are labeled." },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "20,000 sf per story within the 23,000 sf allowable for B/II-B" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "2 stories within the B/II-B 3-story NS limit" },
+    { "rule_id": "PLUMB-FIXTURES", "expected_status": "pass", "expected_severity": "major",
+      "rationale": "OL 600 Group B needs 24 WC / 15 lav; 24 / 15 provided" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "slug": "office-vb-stair-width-violation",
+  "title": "Commercial office, Type V-B, egress stair below the 44-inch minimum",
+  "notes": "Tests IBC 1011.2: the labeled egress stair (38 in) is below the 44 in minimum for stairways serving OL >= 50. Declared occupant load is 80 (>= 50), so the 44 in minimum binds and the deterministic rule asserts a hard violation an examiner would cite. Area/stories/exits/corridor are clean so only the stair rule fires.",
+  "plan_data": {
+    "project_address": "321 Hill St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 6000,
+    "building_area": 12000,
+    "stories": 2,
+    "building_height": 28,
+    "occupant_load": 80,
+    "sprinklered": true,
+    "dimensions": { "corridor_widths": [48, 60], "stair_width": 38 }
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 2\nBuilding height: 28 ft\nPer-story area: 6,000 sf\nFully sprinklered: yes\nDesign occupant load: 80\nIECC: Title 24 Part 6\nElectrical: 200 A main breaker\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nCorridor width: 48 in. Corridor width: 60 in (lobby).\nStairway width: 38 in.\nEXIT 1 (north). EXIT 2 (south). EXIT DOOR 36 in each.\nWC 4 LAV 4. CALGreen low-flow fixtures. Construction waste management plan.",
+  "ground_truth": [
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-AREA-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "6,000 sf per-story sprinklered B/V-B is within the Table 506.2 allowance"
+    },
+    {
+      "rule_id": "COM-STORIES-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "2 stories within the B/V-B sprinklered 3-story limit"
+    },
+    {
+      "rule_id": "EGR-CORRIDOR-WIDTH",
+      "expected_status": "pass",
+      "expected_severity": "high",
+      "rationale": "Both corridors (48, 60 in) clear the 44 in IBC 1020.3 minimum — clean true negative for the corridor rule alongside the stair violation"
+    },
+    {
+      "rule_id": "EGR-STAIR-WIDTH",
+      "expected_status": "fail",
+      "expected_severity": "high",
+      "reviewer_finding": true,
+      "rationale": "Egress stair is 38 in, below the 44 in IBC 1011.2 minimum. Declared occupant load is 80 (>= 50), so the 44 in minimum binds and this is a hard violation an examiner would cite (not a needs_review)."
+    },
+    {
+      "rule_id": "EGR-MIN-EXITS",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "OL 80 requires 2 exits; 2 labeled"
+    }
+  ]
+}

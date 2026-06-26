@@ -1,0 +1,40 @@
+{
+  "slug": "office-vb-stair-geometry-hard-violation",
+  "title": "Commercial office, Type V-B, standard-run stair geometry outside the IBC limits (hard fail)",
+  "source": "synthetic",
+  "notes": "Hard-fail twin of office-vb-stair-geometry-violation. The plan declares Stair type: standard, which closes the spiral/winder/alternating-tread (and stair-side-handrail-guard) exceptions, so the four geometry rules assert hard violations instead of needs_review. Magnitudes differ from the soft case to add variance: tread 9 in (< 11), riser 8 in (> 7), guard 36 in (< 42), handrail 40 in (> 38 — exercises the HIGH side of the two-sided range). Stair width and corridors are clean true negatives.",
+  "plan_data": {
+    "project_address": "120 Broadway, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 6000,
+    "building_area": 12000,
+    "stories": 2,
+    "building_height": 28,
+    "occupant_load": 80,
+    "sprinklered": true,
+    "declared_exits": 2,
+    "stair_type": "standard",
+    "dimensions": { "corridor_widths": [48, 60], "stair_width": 48, "tread_depth": 9, "riser_height": 8, "guard_height": 36, "handrail_height": 40 }
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 28 ft\nPer-story area: 6,000 sf\nFully sprinklered: yes\nDesign occupant load: 80\nStair type: standard\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nCorridor width: 48 in. Corridor width: 60 in (lobby).\nStairway width: 48 in. Tread depth: 9 in. Max riser: 8 in. Guard height: 36 in. Handrail height: 40 in.\nEXIT 1 (north). EXIT 2 (south).\nWC 4 LAV 4.",
+  "ground_truth": [
+    { "rule_id": "EGR-TREAD-DEPTH", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Tread 9 in below the 11 in IBC 1011.5.2 minimum; standard stair type closes the spiral/winder exception — hard fail." },
+    { "rule_id": "EGR-RISER-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Riser 8 in over the 7 in IBC 1011.5.2 maximum; standard stair type closes the exception — hard fail." },
+    { "rule_id": "EGR-GUARD-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Guard 36 in below the 42 in IBC 1015.3 minimum; standard stair type closes the stair-side-handrail-guard exception — hard fail." },
+    { "rule_id": "EGR-HANDRAIL-HEIGHT", "expected_status": "fail", "expected_severity": "high",
+      "rationale": "Handrail 40 in above the 34-38 in IBC 1014.2 range (high side); standard stair type closes the exception — hard fail." },
+    { "rule_id": "EGR-STAIR-WIDTH", "expected_status": "pass", "expected_severity": "high",
+      "rationale": "48 in clears the 44 in IBC 1011.2 minimum" },
+    { "rule_id": "EGR-CORRIDOR-WIDTH", "expected_status": "pass", "expected_severity": "high",
+      "rationale": "48 / 60 in clear the 44 in IBC 1020.3 minimum" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "6,000 sf per story within the B/V-B allowable" },
+    { "rule_id": "EGR-MIN-EXITS", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "OL 80 requires 2 exits; 2 labeled" }
+  ]
+}

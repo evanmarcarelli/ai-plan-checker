@@ -119,6 +119,36 @@ PILOT_EDGE_ARCHETYPES: tuple[str, ...] = ()
 
 
 # =====================================================================
+# Department routing pre-screen (Phase 2 cost lever)
+#
+# All 10 LLM department reviewers run on every plan today. For an archetype
+# whose irrelevance to a department is PROVABLE, we can skip that reviewer
+# (a direct token + latency win). This map is the ONLY place a department is
+# ever skipped — anything not listed here, or any unknown/out-of-scope
+# archetype, runs ALL departments (fail OPEN). Read by
+# app.agents.routing.select_departments.
+#
+# Each entry maps an in-pilot archetype -> the set of department CATEGORIES
+# that are provably not applicable to it. Conservative by construction:
+# only categories whose entire scope is site/soil/ROW work absent from the
+# archetype are listed. Add a category here only when you can defend its
+# irrelevance to a real reviewer.
+ARCHETYPE_SKIP_DEPARTMENTS: dict[str, frozenset[str]] = {
+    # Interior commercial tenant improvement on an existing building shell.
+    # No site disturbance, no grading, no ROW work, no demolition of the
+    # structure, no soil work. Public Works (driveway/curb/sidewalk/grading/
+    # stormwater/sewer-lateral) and Environmental (SWPPP/grading, WUI new-
+    # construction ignition-resistance, lead/asbestos demo survey) have no
+    # applicable scope for an interior TI. Egress, fixtures, electrical,
+    # mechanical, energy, accessibility (path-of-travel on alteration),
+    # building & safety, and zoning (occupancy/use, parking on use change)
+    # all still apply, so they keep running.
+    ARCHETYPE_LA_TI_COMMERCIAL: frozenset({"public_works", "environmental"}),
+    ARCHETYPE_VENTURA_TI_COMMERCIAL: frozenset({"public_works", "environmental"}),
+}
+
+
+# =====================================================================
 # Helpers
 # =====================================================================
 

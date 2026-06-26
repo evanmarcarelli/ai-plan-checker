@@ -384,9 +384,34 @@ class PlanCheckerWorkflow:
         # working..." for the full parallel phase. The 10 reviewers fire
         # together; there is no single current agent.
         job.current_agent = None
+
+        # Department routing pre-screen (default OFF). When enabled, run only
+        # the departments the router deems applicable for this archetype;
+        # provably-irrelevant reviewers are skipped. FAILS OPEN — unknown /
+        # out-of-scope / unmapped archetypes run the full panel. Disabled =>
+        # active_departments is the full panel, so behavior is unchanged.
+        active_departments = self.departments
+        if getattr(settings, "department_routing_enabled", False):
+            from app.agents.routing import select_departments
+            selected = select_departments(
+                (d.category for d in self.departments), state.get("archetype")
+            )
+            active_departments = [d for d in self.departments if d.category in selected]
+            skipped = [d.department_name for d in self.departments if d.category not in selected]
+            if skipped:
+                await emit(
+                    "Coordinator",
+                    f"Department routing: skipping {len(skipped)} provably-inapplicable "
+                    f"reviewer(s) for archetype "
+                    f"{getattr(state.get('archetype'), 'archetype', 'unknown')} "
+                    f"({', '.join(skipped)}).",
+                    data={"skipped": skipped,
+                          "ran": [d.department_name for d in active_departments]},
+                )
+
         await emit(
             "Coordinator",
-            f"Dispatching to {len(self.departments)} department reviewers in parallel...",
+            f"Dispatching to {len(active_departments)} department reviewers in parallel...",
         )
 
         # Pull codes per department from the FULL applicable code set
@@ -569,9 +594,9 @@ class PlanCheckerWorkflow:
                 # each); the final 5 is reserved for synthesis after gather.
                 job.agents_completed.append(dept.department_name)
                 done_count = sum(
-                    1 for d in self.departments if d.department_name in job.agents_completed
+                    1 for d in active_departments if d.department_name in job.agents_completed
                 )
-                job.progress = 25 + int(done_count / len(self.departments) * 70)
+                job.progress = 25 + int(done_count / len(active_departments) * 70)
                 await emit(
                     dept.department_name,
                     f"Review complete. status: {review.review_status.upper()} | "
@@ -593,9 +618,9 @@ class PlanCheckerWorkflow:
                 if dept.department_name not in job.agents_completed:
                     job.agents_completed.append(dept.department_name)
                 done_count = sum(
-                    1 for d in self.departments if d.department_name in job.agents_completed
+                    1 for d in active_departments if d.department_name in job.agents_completed
                 )
-                job.progress = 25 + int(done_count / len(self.departments) * 70)
+                job.progress = 25 + int(done_count / len(active_departments) * 70)
                 await emit(dept.department_name, f"Review failed: {e}", level="error")
                 return DepartmentReview(
                     department=dept.department_name,
@@ -605,7 +630,7 @@ class PlanCheckerWorkflow:
                     review_status="rejected",
                 )
 
-        reviews: List[DepartmentReview] = await asyncio.gather(*(run_one(d) for d in self.departments))
+        reviews: List[DepartmentReview] = await asyncio.gather(*(run_one(d) for d in active_departments))
 
         # ----- HOLLOW-REPORT GUARD -----
         # A failed LLM call falls back to a mock response, which backfills the
@@ -614,10 +639,10 @@ class PlanCheckerWorkflow:
         # visible in the agent log; when a third of the panel is hollow, the
         # report is not worth a credit. Raising here routes through the
         # worker's terminal-fail path, which refunds idempotently.
-        failed_depts = [d.department_name for d in self.departments if d.last_llm_error]
+        failed_depts = [d.department_name for d in active_departments if d.last_llm_error]
         if len(failed_depts) >= 3:
             raise RuntimeError(
-                f"{len(failed_depts)} of {len(self.departments)} department reviews "
+                f"{len(failed_depts)} of {len(active_departments)} department reviews "
                 f"failed at the LLM layer ({', '.join(failed_depts[:4])}) — failing this "
                 f"run (with refund) instead of shipping a hollow report."
             )

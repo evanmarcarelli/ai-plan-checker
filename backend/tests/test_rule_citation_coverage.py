@@ -16,10 +16,13 @@ from app.code_library.deterministic.rules import (
 )
 
 # rule_id -> why it's missing + what retires the debt.
+# CBC 708A (FIRE-WUI-VENT) and Chapter 7A (FIRE-WUI-7A) were ingested and are
+# now corpus-backed — removed so the gate counts their TRUE positives. CBC 709A
+# (FIRE-WUI-DECK) is still un-ingested, which is the lone --with-gate recall
+# miss (wui-vhfhsz-deck-missing): its NON_COMPLIANT finding still mutes to
+# needs_review until 709A lands.
 KNOWN_MISSING = {
-    "FIRE-WUI-VENT": "CBC 708A — retire via licensed 2025 CBC PDF ingest",
     "FIRE-WUI-DECK": "CBC 709A — retire via licensed 2025 CBC PDF ingest",
-    "FIRE-WUI-7A": "CBC Chapter 7A — retire via licensed 2025 CBC PDF ingest",
 }
 
 ALL_RULES = BASELINE_RULES + CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES

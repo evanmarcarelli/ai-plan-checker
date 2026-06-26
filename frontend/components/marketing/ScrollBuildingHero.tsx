@@ -38,6 +38,9 @@ const TRUSTED_BY = ["SKANSKA", "AECOM", "PROCORE", "AUTODESK", "GENSLER", "JACOB
 
 export default function ScrollBuildingHero() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isTouchRef = useRef(
+    typeof window !== "undefined" && window.matchMedia("(pointer:coarse)").matches
+  );
 
   // Progress is 0 at top of container, 1 when its bottom hits viewport bottom.
   const { scrollYProgress } = useScroll({
@@ -48,16 +51,13 @@ export default function ScrollBuildingHero() {
   // Smooth the raw scroll value before anything consumes it. Wheel notches,
   // trackpad momentum, and low-frequency touch scroll arrive in coarse chunks;
   // feeding those straight into the scene makes the tower snap between steps.
-  // An over-damped spring (damping ≫ critical, so no overshoot) glides between
-  // states and settles fast enough to still read as scroll-linked, not floaty.
-  // Both the 3D scene and the HTML overlays read from this single smoothed
-  // source so they stay perfectly in sync.
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 110,
-    damping: 30,
-    mass: 0.5,
-    restDelta: 0.0008,
-  });
+  // Touch devices use a tighter spring so flick-scroll doesn't create a lag
+  // dead zone at the start of the animation. Both the 3D scene and the HTML
+  // overlays read from this single smoothed source so they stay in sync.
+  const smoothProgress = useSpring(scrollYProgress, isTouchRef.current
+    ? { stiffness: 200, damping: 40, mass: 0.3,  restDelta: 0.0008 }
+    : { stiffness: 110, damping: 30, mass: 0.5,  restDelta: 0.0008 }
+  );
 
   // Overlay opacity curves — keep them in sync with BuildingScene's phase ranges.
   // The tagline stays anchored above the scene the entire scroll — it's the
@@ -81,7 +81,7 @@ export default function ScrollBuildingHero() {
       style={{ height: "350vh", background: "#FFFFFF" }}
       aria-label="Architechtura: from blueprint to building"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         {/* 3D scene fills the viewport (gracefully degrades if WebGL fails) */}
         <SceneBoundary>
           <BuildingScene progress={smoothProgress} />

@@ -5,7 +5,8 @@
   "archetype": "la_sfr_typ_vb_ministerial",
   "project_address": "1234 Maple St, Los Angeles, CA 90026",
   "source": "synthetic",
-  "notes": "Clean baseline. Code-analysis sheet has all required fields; no overlay zones flagged.",
+  "notes": "Clean baseline. Code-analysis sheet has all required fields; no overlay zones flagged. Stair geometry (tread 10 in, riser 7-3/4 in, guard 42 in) is at the CRC R318.5 / R312.1.2 limits — clean true negative for the CRC geometry rules.",
+  "plan_data": { "plan_type": "residential", "dimensions": { "tread_depth": 10, "riser_height": 7.75, "guard_height": 42, "handrail_height": 36 } },
   "plan_text": "PROJECT DATA - 1234 MAPLE ST, LOS ANGELES CA 90026\nCODE ANALYSIS SHEET A-0.1\n2023 LA BUILDING CODE (LABC) - based on 2022 CBC with LA amendments\nOccupancy Group: R-3 (single-family dwelling)\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 24 ft\nTotal building area: 2,800 sf\nPer-story area: 1,400 sf\nFully sprinklered: yes (NFPA 13D residential)\nDesign occupant load: 10\nIECC compliance path: Title 24 Part 6 prescriptive\nElectrical service: 200 A service main breaker\nWater closets: WC 3\nLavatories: LAV 3\nEXIT 1 (front door)\nEXIT 2 (rear door)\nEXIT DOOR 36\" min clear width\nFire alarm: NFPA 72 smoke alarms per CRC R314\nNo commercial kitchen. No atrium. No elevator.",
   "ground_truth": [
     { "rule_id": "COM-OCCUPANCY-DECL",       "expected_status": "pass", "expected_severity": "critical" },
@@ -13,13 +14,17 @@
     { "rule_id": "COM-AREA-ALLOWABLE",       "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "COM-STORIES-ALLOWABLE",    "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "COM-HIGH-RISE",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "COM-MIXED-OCCUPANCY",      "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "COM-MIXED-OCCUPANCY",      "expected_status": "info", "expected_severity": "major", "rationale": "A lone R-3 single-family dwelling is a single occupancy — IBC 508 mixed-occupancy separation/analysis does not apply, so this check is not-applicable rather than an affirmative pass" },
     { "rule_id": "EGR-OCCUPANT-LOAD",        "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "EGR-MIN-EXITS",            "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "GEN-CODE-ANALYSIS",        "expected_status": "pass", "expected_severity": "critical" },
     { "rule_id": "FLS-SPRINKLER",            "expected_status": "pass", "expected_severity": "critical" },
-    { "rule_id": "FLS-ALARM",                "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "FLS-ALARM",                "expected_status": "info", "expected_severity": "critical", "rationale": "R-3 dwellings use CRC R310 smoke alarms, not an NFPA 72 fire-alarm SYSTEM (scored by CRC-SMOKE-CO); FLS-ALARM is gated off for R-3, so not-applicable is correct" },
     { "rule_id": "NEC-SERVICE-RATING",       "expected_status": "pass", "expected_severity": "major" },
-    { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" }
+    { "rule_id": "ENR-IECC",                 "expected_status": "pass", "expected_severity": "major" },
+    { "rule_id": "CRC-TREAD-DEPTH",          "expected_status": "pass", "expected_severity": "major", "rationale": "Tread depth 10 in meets the CRC R318.5 minimum — clean true negative for the R-3 tread rule" },
+    { "rule_id": "CRC-RISER-HEIGHT",         "expected_status": "pass", "expected_severity": "major", "rationale": "Riser height 7.75 in is within the CRC R318.5 7-3/4 in maximum — clean true negative for the R-3 riser max check" },
+    { "rule_id": "CRC-GUARD-HEIGHT",         "expected_status": "pass", "expected_severity": "major", "rationale": "Guard height 42 in meets the CRC R312.1.2 minimum — clean true negative for the R-3 guard rule" },
+    { "rule_id": "CRC-HANDRAIL-HEIGHT",      "expected_status": "pass", "expected_severity": "major", "rationale": "Handrail height 36 in is within the 34-38 in CRC R311.7.8.1 range — clean true negative that gates false positives" }
   ]
 }

@@ -43,8 +43,9 @@
     },
     {
       "rule_id": "FLS-ALARM",
-      "expected_status": "pass",
-      "expected_severity": "critical"
+      "expected_status": "info",
+      "expected_severity": "critical",
+      "rationale": "R-3 dwellings use CRC R310 smoke alarms, not an NFPA 72 fire-alarm SYSTEM (scored by CRC-SMOKE-CO); FLS-ALARM is gated off for R-3, so not-applicable is correct"
     }
   ]
 }

@@ -52,6 +52,12 @@ def _fmt(n: float) -> str:
     return f"{int(n):,}"
 
 
+def _fmt_dim(n: float) -> str:
+    """Like _fmt but preserves a fractional part (e.g. 7.75" CRC riser max),
+    which the integer _fmt would silently truncate to '7'."""
+    return f"{int(n):,}" if float(n).is_integer() else f"{n:,g}"
+
+
 # =====================================================================
 # Allowable area (IBC Table 506.2)
 # =====================================================================
@@ -156,6 +162,55 @@ def check_min_dimension(
             [f"{_fmt(value)}{unit} shown", f"{_fmt(minimum)}{unit} required"],
         )
     return _pass(f"{label} {_fmt(value)}{unit} meets the {_fmt(minimum)}{unit} minimum.")
+
+
+def check_max_dimension(
+    value: Optional[float],
+    maximum: float,
+    unit: str,
+    label: str,
+    code_ref: str,
+) -> CheckResult:
+    """One extracted dimension vs a code maximum (mirror of check_min_dimension
+    for upper-bound limits like stair riser height). None → warn (not found),
+    never a false fail — absence of a regex match is not a violation."""
+    if value is None:
+        return _warn(f"{label} not found on plans — verify {code_ref} maximum of {_fmt_dim(maximum)}{unit}.")
+    if value > maximum:
+        return _fail(
+            f"{label} {_fmt_dim(value)}{unit} exceeds the {_fmt_dim(maximum)}{unit} maximum ({code_ref}).",
+            [f"{_fmt_dim(value)}{unit} shown", f"{_fmt_dim(maximum)}{unit} allowed"],
+        )
+    return _pass(f"{label} {_fmt_dim(value)}{unit} within the {_fmt_dim(maximum)}{unit} maximum.")
+
+
+def check_range(
+    value: Optional[float],
+    minimum: float,
+    maximum: float,
+    unit: str,
+    label: str,
+    code_ref: str,
+) -> CheckResult:
+    """One extracted dimension vs a two-sided code range (e.g. handrail height
+    34-38"): both too-low AND too-high fail. None → warn (not found), never a
+    false fail — absence of a regex match is not a violation."""
+    if value is None:
+        return _warn(
+            f"{label} not found on plans — verify {code_ref} range of "
+            f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit}."
+        )
+    if value < minimum or value > maximum:
+        return _fail(
+            f"{label} {_fmt_dim(value)}{unit} is outside the "
+            f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} range ({code_ref}).",
+            [f"{_fmt_dim(value)}{unit} shown",
+             f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} required"],
+        )
+    return _pass(
+        f"{label} {_fmt_dim(value)}{unit} within the "
+        f"{_fmt_dim(minimum)}-{_fmt_dim(maximum)}{unit} range."
+    )
 
 
 # =====================================================================

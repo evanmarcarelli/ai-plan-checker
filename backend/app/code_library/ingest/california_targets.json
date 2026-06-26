@@ -1,0 +1,1399 @@
+{
+  "scope": {
+    "priority": "California first",
+    "code_families": [
+      "CBC",
+      "CRC",
+      "ICC"
+    ],
+    "include_local_amendments": true,
+    "preferred_formats": [
+      "PDF",
+      "HTML text",
+      "OCR-capable scans"
+    ],
+    "exclude": [
+      "paid-only scans",
+      "login-gated content without public text",
+      "non-downloadable image-only views"
+    ]
+  },
+  "canonical_sources": [
+    {
+      "id": "ca_dgs_codes",
+      "name": "California Building Standards Commission - Codes",
+      "url": "https://www.dgs.ca.gov/bsc/codes",
+      "type": "official_state_index",
+      "free_access": true,
+      "ingestable": true,
+      "why_it_matters": "Primary index for current Title 24 parts, errata, and supplements.",
+      "notes": "Use to discover current CBC, CRC, and related parts; the page lists 2025, 2022, 2019, 2016 editions and update links."
+    },
+    {
+      "id": "ca_dgs_bsc",
+      "name": "California Building Standards Commission main resources",
+      "url": "https://www.dgs.ca.gov/bsc",
+      "type": "official_state_portal",
+      "free_access": true,
+      "ingestable": true,
+      "why_it_matters": "Contains Title 24 access, guidebooks, and resource links."
+    }
+  ],
+  "core_code_targets": [
+    {
+      "id": "cbc_2025_state",
+      "name": "2025 California Building Code",
+      "part": "Title 24 Part 2",
+      "source": "ca_dgs_codes",
+      "url_hint": "linked from DGS Codes page",
+      "format": "HTML/PDF via publisher links",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high"
+    },
+    {
+      "id": "crc_2025_state",
+      "name": "2025 California Residential Code",
+      "part": "Title 24 Part 2.5",
+      "source": "ca_dgs_codes",
+      "url_hint": "linked from DGS Codes page",
+      "format": "HTML/PDF via publisher links",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high"
+    },
+    {
+      "id": "icc_public_access",
+      "name": "ICC Digital Codes public access",
+      "url": "https://codes.iccsafe.org",
+      "type": "public_text_viewer",
+      "free_access": true,
+      "ingestable": "partial",
+      "priority": "medium",
+      "notes": "Useful for reading and section lookup; may not provide clean bulk PDFs."
+    }
+  ],
+  "archive_targets": [
+    {
+      "id": "ia_cbc_2007_vol1",
+      "name": "Title 24, Part 2, Volume 1, 2007 California Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.title24.part02.vol01",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": [
+        "PDF",
+        "JP2",
+        "OCR text when available"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "ia_cbc_2007_vol2",
+      "name": "Title 24, Part 2, Volume 2, 2007 California Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.title24.part02.vol02",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": [
+        "PDF",
+        "JP2",
+        "OCR text when available"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "ia_cbc_2019",
+      "name": "Title 24, Part 02.1, 2019 California Building Code, Vol. 1",
+      "url": "https://archive.org/details/2019californiabu01unse",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": [
+        "PDF",
+        "JP2",
+        "OCR text when available"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "ia_existing_2025",
+      "name": "California 2025 Existing Building Code",
+      "url": "https://archive.org/details/gov.ca.bsc.existing.2025",
+      "type": "internet_archive_item",
+      "free_access": true,
+      "ingestable": true,
+      "formats": [
+        "PDF",
+        "JP2",
+        "OCR text when available"
+      ],
+      "priority": "medium"
+    }
+  ],
+  "local_amendment_targets": [
+    {
+      "id": "contra_costa_2025_19",
+      "name": "Contra Costa County Ordinance No. 2025-19",
+      "jurisdiction": "Contra Costa County",
+      "source_url": "https://moraga.ca.us/DocumentCenter/View/10325/8A-Public-Hearing",
+      "type": "county_ordinance_pdf_or_attachment",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "high",
+      "why_it_matters": "Explicitly adopts and amends the 2025 California Building Standards Code with county-specific changes.",
+      "notable_amendment_topics": [
+        "smoke detection in existing flat-roof buildings when pitched roofs are added",
+        "enhanced concrete inspection and design requirements",
+        "slab-on-ground minimum standards",
+        "fire-treated wood shakes/shingles for exterior wall coverings",
+        "wall-bracing restrictions in CRC",
+        "CalGreen EV charging requirements",
+        "C&D debris recycling"
+      ]
+    },
+    {
+      "id": "san_diego_local_amendments",
+      "name": "San Diego County building code amendments",
+      "jurisdiction": "San Diego County",
+      "source_url": "https://codelibrary.amlegal.com/codes/san_diego/latest/sandiego_regs/0-0-0-101714",
+      "type": "county_code_ordinance_html",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "medium",
+      "notes": "Useful as a pattern for local amendment language and codified ordinance structure."
+    },
+    {
+      "id": "county_amendments_general",
+      "name": "County-specific local amendments throughout California",
+      "jurisdiction": "California counties",
+      "source_url": "https://www.dgs.ca.gov/bsc/codes",
+      "type": "discovery_seed",
+      "free_access": true,
+      "ingestable": true,
+      "priority": "medium",
+      "notes": "Use DGS codes page plus county ordinance searches to find adopted local amendments and supplements."
+    },
+    {
+      "id": "san_mateo_city_2025",
+      "name": "City of San Mateo 2025 Building Code Amendments (Ord. 2025-09)",
+      "jurisdiction": "San Mateo",
+      "source_url": "https://law.cityofsanmateo.org/us/ca/cities/san-mateo/ordinances/2025/adopted/2025-09.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-09",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "long_beach_2025",
+      "name": "Long Beach 2025 Building Code Amendments (Ord. 25-0019)",
+      "jurisdiction": "Long Beach",
+      "source_url": "https://www.longbeach.gov/globalassets/city-clerk/media-library/documents/public-notices/ordinances/ord-25-0019",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0019",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "contra_costa_county_building_amendments_2025",
+      "name": "Contra Costa County 2025 Building Code Amendments (Ord. 2025-19)",
+      "jurisdiction": "Contra Costa County",
+      "source_url": "https://contra-costa.legistar1.com/contra-costa/attachments/ebbf4e5d-87b3-43a9-842a-cff803187860.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-19",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "riverside_county_fire_wui_amendments_2025",
+      "name": "Riverside County 2025 Fire Code & WUI Code Amendments (Ord. 787.11)",
+      "jurisdiction": "Riverside County",
+      "source_url": "https://rivcocob.org/sites/g/files/aldnop311/files/2025-12/787.11.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "787.11",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "santa_cruz_county_building_amendments_2025",
+      "name": "Santa Cruz County 2025 Building Code Amendments (Ord. 5502)",
+      "jurisdiction": "Santa Cruz County",
+      "source_url": "https://santacruzcountyca.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=18d915b7-4ec7-422f-a958-b0c325c3ceac",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "5502",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_cruz_county_fire_amendments_2025",
+      "name": "Santa Cruz County 2025 Fire Code Amendments (Ord. 5503)",
+      "jurisdiction": "Santa Cruz County",
+      "source_url": "https://santacruzcountyca.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=daa0f9d0-1eb5-467c-842b-5a2de0c5e9e2",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "5503",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "kern_county_2025",
+      "name": "Kern County 2025 Building Code Amendments (Ord. G-9359)",
+      "jurisdiction": "Kern County",
+      "source_url": "https://itsapps.kerncounty.com/clerk/minutes/granicus/2410311/2410332/2410334/2410389/2410578/Code%20of%20Building%20Regs-Complete%20PDF2410578.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "G-9359",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "san_benito_county_2025",
+      "name": "San Benito County 2025 Building Code Amendments (Ord. 1088)",
+      "jurisdiction": "San Benito County",
+      "source_url": "https://legistarweb-production.s3.amazonaws.com/uploads/attachment/pdf/3717922/Ordinance_amending_building_code_2025.docx.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1088",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "sonoma_county_2025",
+      "name": "Sonoma County 2025 Building Code Amendments (Ord. 6539)",
+      "jurisdiction": "Sonoma County",
+      "source_url": "https://sonoma-county.legistar.com/View.ashx?M=F&ID=14903471&GUID=1444FDE3-B66E-4C13-94D6-9E6B89AEC553",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6539",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "anaheim_2025",
+      "name": "Anaheim 2025 Building Code Amendments (Ord. 6613)",
+      "jurisdiction": "Anaheim",
+      "source_url": "https://local.anaheim.net/docs_agend/questys_pub/24123/24153/24150/24514/24518/1.%20Ordinance%20(Building%20Code)24518.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6613",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "palo_alto_2025",
+      "name": "Palo Alto 2025 Building Code Amendments (Ord. 5674)",
+      "jurisdiction": "Palo Alto",
+      "source_url": "https://www.paloalto.gov/files/assets/public/v/1/development-services/building-division/adoptive-ordinances/2025-edition/ord-5674-cbc.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "5674",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "los_angeles_county_building_2025",
+      "name": "Los Angeles County 2025 Building Code Amendments (Ord. 25-0047, Title 26)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2026%20-%20Building%20Code%20Ordinance%2008192025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0047",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "los_angeles_county_electrical_2025",
+      "name": "Los Angeles County 2025 Electrical Code Amendments (Ord. 25-0048, Title 27)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2027%20-%20Electrical%20Code%20Ordinance%2008212025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0048",
+      "version": "2025",
+      "code_short": "CEC-AMD"
+    },
+    {
+      "id": "los_angeles_county_plumbing_2025",
+      "name": "Los Angeles County 2025 Plumbing Code Amendments (Ord. 25-0049, Title 28)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2028%20-%20Plumbing%20Code%20Ordinance%2008212025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0049",
+      "version": "2025",
+      "code_short": "CPC-AMD"
+    },
+    {
+      "id": "los_angeles_county_mechanical_2025",
+      "name": "Los Angeles County 2025 Mechanical Code Amendments (Ord. 25-0050, Title 29)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2029%20-%20Mechanical%20Code%20Ordinance%2008192025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0050",
+      "version": "2025",
+      "code_short": "CMC-AMD"
+    },
+    {
+      "id": "los_angeles_county_residential_2025",
+      "name": "Los Angeles County 2025 Residential Code Amendments (Ord. 25-0051, Title 30)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2030%20-%20Residential%20Code%20Ordinance%2008192025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0051",
+      "version": "2025",
+      "code_short": "CRC-AMD"
+    },
+    {
+      "id": "los_angeles_county_green_2025",
+      "name": "Los Angeles County 2025 Green Building Standards Code Amendments (Ord. 25-0052, Title 31)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2031%20-%20Green%20Building%20Standards%20Code%20Ordinance%2008142025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0052",
+      "version": "2025",
+      "code_short": "CALGREEN-AMD"
+    },
+    {
+      "id": "los_angeles_county_existing_building_2025",
+      "name": "Los Angeles County 2025 Existing Building Code Amendments (Ord. 25-0053, Title 33)",
+      "jurisdiction": "Los Angeles County",
+      "source_url": "https://dpw.lacounty.gov/bsd/lib/fp/Stakeholder%20Outreach%20Meeting%20on%20September%2011,%202025/Title%2033%20-%20Existing%20Building%20Code%20Ordinance%2008192025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0053",
+      "version": "2025",
+      "code_short": "CEBC-AMD"
+    },
+    {
+      "id": "san_bernardino_county_2025",
+      "name": "San Bernardino County 2025 Building Code Amendments (Ord. 4501)",
+      "jurisdiction": "San Bernardino County",
+      "source_url": "https://sanbernardino.legistar.com/View.ashx?M=F&ID=14907208&GUID=98AC3334-DC18-4433-A796-A2D7321618B6",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4501",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "stanislaus_county_2025",
+      "name": "Stanislaus County 2025 Building Code Amendments (Ord. C.S. 1402)",
+      "jurisdiction": "Stanislaus County",
+      "source_url": "https://www.stancounty.com/bos/agenda/2025/20251118/PH02.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "CS1402",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "orange_ca_building_2025",
+      "name": "City of Orange 2025 Building Code Amendments (Ord. 16-25)",
+      "jurisdiction": "Orange",
+      "source_url": "https://cityoforange.legistar1.com/cityoforange/attachments/64cfd1d4-85ee-4b0f-8fcb-705e42549b75.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "16-25",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "orange_ca_fire_2025",
+      "name": "City of Orange 2025 Fire & WUI Code Amendments (Ord. 17-25)",
+      "jurisdiction": "Orange",
+      "source_url": "https://cityoforange.legistar1.com/cityoforange/attachments/570ad908-11a7-4b02-87c1-ab52efcaacc6.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "17-25",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "mountain_view_ca_2025",
+      "name": "City of Mountain View 2025 Building Code Amendments (Ord. 9.2025)",
+      "jurisdiction": "Mountain View",
+      "source_url": "https://mountainview.legistar.com/View.ashx?M=F&ID=14613700&GUID=B41F3370-AE5C-4C91-824A-752F08AF993F",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "9.2025",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "marin_county_2025",
+      "name": "Marin County 2025 Building Code Amendments (Ord. 3837)",
+      "jurisdiction": "Marin County",
+      "source_url": "https://marin.granicus.com/DocumentViewer.php?file=marin_6fd15de8359290cb6e5c324dc1250ea6.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "3837",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "marin_county_calgreen_2025",
+      "name": "Marin County 2025 Green Building (CALGreen) Amendments (Ord. 26-002)",
+      "jurisdiction": "Marin County",
+      "source_url": "https://marin.granicus.com/DocumentViewer.php?file=marin_85e1d2bf9d4daaaedb02224a79a4ccfd.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "26-002",
+      "version": "2025",
+      "code_short": "CALGREEN-AMD"
+    },
+    {
+      "id": "san_francisco_2025",
+      "name": "San Francisco 2025 Building Code Amendments (Ord. 230-25/231-25)",
+      "jurisdiction": "San Francisco City and County",
+      "source_url": "https://media.api.sf.gov/documents/2025_SFBC_Amendments_oLQVozH.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "230-25",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "berkeley_2025",
+      "name": "Berkeley 2025 Building Code Amendments (Ord. 7988-NS)",
+      "jurisdiction": "Berkeley",
+      "source_url": "https://berkeleyca.gov/sites/default/files/documents/2025-11-18%20Item%2028%20Adoption%20of%20Berkeley%20Building%20Codes,%20including%20Local%20Amend.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "7988-NS",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "sunnyvale_2025",
+      "name": "Sunnyvale 2025 Building Code Amendments (Ord. 3248-25)",
+      "jurisdiction": "Sunnyvale",
+      "source_url": "https://sunnyvaleca.legistar.com/View.ashx?M=F&ID=14818184&GUID=E569E04F-F61E-48B2-9B84-E59A8F8A9C60",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "3248-25",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "mariposa_county_2025",
+      "name": "Mariposa County 2025 Building Code Amendments (Ord. 2025-1202)",
+      "jurisdiction": "Mariposa County",
+      "source_url": "https://mariposacoca.api.civicclerk.com/v1/Meetings/GetAttachmentFile(fileId=6963)",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-1202",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "san_joaquin_county_2025",
+      "name": "San Joaquin County 2025 Building Code Amendments (Ord. 4686)",
+      "jurisdiction": "San Joaquin County",
+      "source_url": "https://www.sjgov.org/docs/default-source/community-development/building/ordinances/ord-4686.pdf?sfvrsn=35df3ed2_4",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4686",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "city_of_san_diego_2025_o22042",
+      "name": "City of San Diego 2025 WUI Code Amendments (Ord. O-22042)",
+      "jurisdiction": "San Diego",
+      "source_url": "https://www.sandiego.gov/sites/default/files/2026-02/o-22042_signed.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "22042",
+      "version": "2025",
+      "code_short": "CWUIC-AMD"
+    },
+    {
+      "id": "city_of_san_diego_2025_o22043",
+      "name": "City of San Diego 2025 Fire Code Amendments (Ord. O-22043)",
+      "jurisdiction": "San Diego",
+      "source_url": "https://www.sandiego.gov/sites/default/files/2026-02/o-22043_signed.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "22043",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "san_diego_county_2025",
+      "name": "San Diego County 2025 Building Code Amendments (Ord. 10982)",
+      "jurisdiction": "San Diego County",
+      "source_url": "https://www.sandiegocounty.gov/content/dam/sdc/pds/bldg/ord10982.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "10982",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "pasadena_2025",
+      "name": "Pasadena 2025 Building Code Amendments (Ord. 7461)",
+      "jurisdiction": "Pasadena",
+      "source_url": "https://ww2.cityofpasadena.net/2025%20Agendas/Nov_03_25/AR%206%20ORDINANCE%202025%20Building%20Code%20Amendment%20Blackline_Redline%20Annotated.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "7461",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "glendale_2025_ord6043",
+      "name": "Glendale 2025 Building Code Amendments (Ord. 6043)",
+      "jurisdiction": "Glendale",
+      "source_url": "https://glendaleca.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=172fcbce-9ddc-4eb9-874a-0bed0a607a75",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6043",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "glendale_2025_ord6044",
+      "name": "Glendale 2025 Green Building (CALGreen) Amendments (Ord. 6044)",
+      "jurisdiction": "Glendale",
+      "source_url": "https://glendaleca.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=4cecbbf0-97da-4c3a-80e2-c8065f2ff9b8",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6044",
+      "version": "2025",
+      "code_short": "CALGREEN-AMD"
+    },
+    {
+      "id": "fremont_2025",
+      "name": "Fremont 2025 Building Code Amendments (Ord. 11-2025/12-2025/13-2025)",
+      "jurisdiction": "Fremont",
+      "source_url": "https://fremontcityca.iqm2.com/Citizens/FileOpen.aspx?Type=4&ID=11241&MeetingID=2045",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "11-2025/12-2025/13-2025",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "mendocino_county_2025",
+      "name": "Mendocino County 2025 Building Code Amendments (Ord. 4553)",
+      "jurisdiction": "Mendocino County",
+      "source_url": "https://mendocino.legistar1.com/mendocino/attachments/2a3d2859-10e1-4c77-909b-4af519d21147.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4553",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "mendocino_county_4547_2025",
+      "name": "Mendocino County 2025 Building Code Amendments (Ord. 4547)",
+      "jurisdiction": "Mendocino County",
+      "source_url": "https://mendocino.legistar1.com/mendocino/attachments/706e8dec-1395-4b5f-85b5-023c3695256f.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4547",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "hayward_2025",
+      "name": "Hayward 2025 Building Code Amendments (Ord. 25-13)",
+      "jurisdiction": "Hayward",
+      "source_url": "https://hayward.legistar1.com/hayward/attachments/22dff26f-719c-4828-bc17-25e649b6f297.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-13",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "orange_county_25-018_2025",
+      "name": "Orange County 2025 Building Code Amendments (Ord. 25-018)",
+      "jurisdiction": "Orange County",
+      "source_url": "https://pwds.oc.gov/sites/ocpwocds/files/2026-04/Building%20Code%20-%20California%20Building%20Code%202025%20Edition%2C%20adopted%20and%20amended%20by%20Ordinance%20No%2025-018%20on%20November%204%2C%202025..pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-018",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "orange_county_25-019_2025",
+      "name": "Orange County 2025 Plumbing Code Amendments (Ord. 25-019)",
+      "jurisdiction": "Orange County",
+      "source_url": "https://pwds.oc.gov/sites/ocpwocds/files/2026-04/Plumbing%20Code%20-%20California%20Plumbing%20Code%202025%20Edition%2C%20adopted%20and%20amended%20by%20Ordinance%20No%2025-019%20on%20November%204%2C%202025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-019",
+      "version": "2025",
+      "code_short": "CPC-AMD"
+    },
+    {
+      "id": "orange_county_25-020_2025",
+      "name": "Orange County 2025 Mechanical Code Amendments (Ord. 25-020)",
+      "jurisdiction": "Orange County",
+      "source_url": "https://pwds.oc.gov/sites/ocpwocds/files/2026-04/Mechanical%20Code%20-%20California%20Mechanical%20Code%202025%20Edition%2C%20adopted%20and%20amended%20by%20Ordinance%20No%2025-020%20on%20November%204%2C%202025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-020",
+      "version": "2025",
+      "code_short": "CMC-AMD"
+    },
+    {
+      "id": "orange_county_25-021_2025",
+      "name": "Orange County 2025 Electrical Code Amendments (Ord. 25-021)",
+      "jurisdiction": "Orange County",
+      "source_url": "https://pwds.oc.gov/sites/ocpwocds/files/2026-04/Electrical%20Code%20-%20California%20Electrical%20Code%202025%20Edition%2C%20adopted%20and%20amended%20by%20Ordinance%20No%2025-021%20on%20November%204%2C%202025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-021",
+      "version": "2025",
+      "code_short": "CEC-AMD"
+    },
+    {
+      "id": "orange_county_25-022_2025",
+      "name": "Orange County 2025 Fire Code Amendments (Ord. 25-022)",
+      "jurisdiction": "Orange County",
+      "source_url": "https://pwds.oc.gov/sites/ocpwocds/files/2026-04/Fire%20Code%20-%20California%20Fire%20Code%202025%20Edition%2C%20adopted%20and%20amended%20by%20Ordinance%20No%2025-022%20on%20November%204%2C%202025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-022",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "san_mateo_county_4916_2025",
+      "name": "San Mateo County 2025 Building Code Amendments (Ord. 4916)",
+      "jurisdiction": "San Mateo County",
+      "source_url": "https://sanmateocounty.legistar1.com/sanmateocounty/attachments/d4a6c480-3f03-4cb3-bb93-eabfe943895e.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4916",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "oakland_13860_2025",
+      "name": "Oakland 2025 Energy & Green Building Code Amendments (Ord. 13860 C.M.S.)",
+      "jurisdiction": "Oakland",
+      "source_url": "https://oakland.legistar1.com/oakland/attachments/45cd2714-aaad-4524-8b38-cfe0f18e6da6.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "13860 C.M.S.",
+      "version": "2025",
+      "code_short": "CALGREEN-AMD"
+    },
+    {
+      "id": "oakland_13861_2025",
+      "name": "Oakland 2025 Building Code Amendments (Ord. 13861 C.M.S.)",
+      "jurisdiction": "Oakland",
+      "source_url": "https://oakland.legistar1.com/oakland/attachments/5d587f36-0fdc-4cc6-badf-47fed26ba558.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "13861 C.M.S.",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_clara_2079_2025",
+      "name": "City of Santa Clara 2025 Fire Code Amendments (Ord. 2079)",
+      "jurisdiction": "Santa Clara",
+      "source_url": "https://santaclara.legistar1.com/santaclara/attachments/54731415-ff65-4281-888a-cbe75273be03.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2079",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "santa_clara_2081_2025",
+      "name": "City of Santa Clara 2025 Building Code Amendments (Ord. 2081)",
+      "jurisdiction": "Santa Clara",
+      "source_url": "https://santaclara.legistar.com/View.ashx?GUID=CE79EC75-EE3B-4318-8AE9-5C98D6936708&ID=14977584&M=F",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2081",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "san_rafael_2052_2025",
+      "name": "San Rafael 2025 Building Code Amendments (Ord. 2052)",
+      "jurisdiction": "San Rafael",
+      "source_url": "https://efiling.energy.ca.gov/GetDocument.aspx?tn=267676&DocumentContentId=104691",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2052",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "arcadia_2025",
+      "name": "Arcadia 2025 Building Code Amendments (Ord. 2409)",
+      "jurisdiction": "Arcadia",
+      "source_url": "https://mcclibraryfunctions.azurewebsites.us/api/ordinanceDownload/16197/1397259/pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2409",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "mission_viejo_2025",
+      "name": "Mission Viejo 2025 Building Code Amendments (Ord. 25-357)",
+      "jurisdiction": "Mission Viejo",
+      "source_url": "https://storageocfaprod001.blob.core.windows.net/blobocfaprod01/2025/12/Mission-Viejo-Ordinance.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-357",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "ojai_2025",
+      "name": "Ojai 2025 Building Code Amendments (Ord. 969)",
+      "jurisdiction": "Ojai",
+      "source_url": "https://ojai.ca.gov/DocumentCenter/View/3114/Ordinance-No-969_Building-Code-Update_-12-09-25",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "969",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "petaluma_2025",
+      "name": "Petaluma 2025 Building Code Amendments (Ord. 2914)",
+      "jurisdiction": "Petaluma",
+      "source_url": "https://cityofpetaluma.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=4f29e4af-42c2-4cf4-a0fb-8b8fb202c75a",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2914",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "stockton_2025",
+      "name": "Stockton 2025 Building Code Amendments (Ord. 1206)",
+      "jurisdiction": "Stockton",
+      "source_url": "https://legistar1.granicus.com/stockton/attachments/fad60e71-8473-4cd6-8f24-4fa3a9c2d858.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-11-18-1206-Partial",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_ana_2025",
+      "name": "Santa Ana 2025 Building Code Amendments (Ord. NS-3088)",
+      "jurisdiction": "Santa Ana",
+      "source_url": "https://santa-ana.primegov.com/api/compilemeetingattachmenthistory/historyattachment/?historyId=349a0034-f46d-48ea-be14-49e8fe55ddaf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "NS-3088",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "foster_city_2025",
+      "name": "Foster City 2025 Building Code Amendments (Ord. 697)",
+      "jurisdiction": "Foster City",
+      "source_url": "https://www.fostercity.org/sites/default/files/fileattachments/community_development/page/47842/ordinance_no._697.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "697",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "foster_city_secondary_2025",
+      "name": "Foster City 2025 Secondary Codes Adoption (Ord. 696)",
+      "jurisdiction": "Foster City",
+      "source_url": "https://www.fostercity.org/sites/default/files/fileattachments/community_development/page/47842/ordinance_no._696.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "696",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "marina_2025",
+      "name": "Marina 2025 Building Code Amendments (Ord. 2025-16)",
+      "jurisdiction": "Marina",
+      "source_url": "https://www.cityofmarina.org/Archive.aspx?ADID=14885",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-16",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "laguna_hills_2025",
+      "name": "Laguna Hills 2025 Building Code Amendments (Ord. 2025-5)",
+      "jurisdiction": "Laguna Hills",
+      "source_url": "https://lagunahillsca.gov/DocumentCenter/View/9163/Ordinance-Summary-Certification-Adoption-of-CA-Building-Codes",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-5",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "norco_2025",
+      "name": "Norco 2025 Fire/WUI Code Amendments (Ord. 1135)",
+      "jurisdiction": "Norco",
+      "source_url": "https://norco.civicweb.net/document/208070/Second%20Reading%2C%20Ordinance%20No.1135%20(City%20of%20Norc.pdf?handle=17F9CB66024A47BAA14374F94DB512D3",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1135",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "aliso_viejo_2025",
+      "name": "Aliso Viejo 2025 Building Code Amendments (Ord. 2025-246)",
+      "jurisdiction": "Aliso Viejo",
+      "source_url": "https://avcity.org/DocumentCenter/View/4348/2025-08-28-Ord-2025-246-2025-Building-Code-Adoption?bidId=",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-246",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "chino_hills_building_amendments_2025",
+      "name": "Chino Hills 2025 Building Code Amendments (Ord. 427)",
+      "jurisdiction": "Chino Hills",
+      "source_url": "https://www.chinohills.org/DocumentCenter/View/31524/Building-Code-Update-Ordinance",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "427",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "chula_vista_fire_amendments_2025",
+      "name": "Chula Vista 2025 Fire Code Amendments (Ord. 3603-3614)",
+      "jurisdiction": "Chula Vista",
+      "source_url": "https://pub-chulavista.escribemeetings.com/filestream.ashx?DocumentId=57425",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "3603-3614",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "corte_madera_2025",
+      "name": "Corte Madera 2025 Building Code Amendments (Ord. 1048)",
+      "jurisdiction": "Corte Madera",
+      "source_url": "https://www.cortemadera.gov/Archive.aspx?ADID=6367",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1048",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "daly_city_2025",
+      "name": "Daly City 2025 Building Standards Code Amendments (Ord. 1484)",
+      "jurisdiction": "Daly City",
+      "source_url": "https://www.dalycity.org/DocumentCenter/View/11766",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1484",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "el_paso_de_robles_2025",
+      "name": "El Paso de Robles 2025 Building Code Amendments (Ord. 1164 N.S.)",
+      "jurisdiction": "El Paso De Robles",
+      "source_url": "https://pub-pasorobles.escribemeetings.com/filestream.ashx?DocumentId=10720",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1164 N.S.",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "elk_grove_2025",
+      "name": "Elk Grove 2025 Building Code Amendments (Ord. 24-2025)",
+      "jurisdiction": "Elk Grove",
+      "source_url": "https://elkgrove.gov/sites/default/files/city-files/City%20Government/City%20Clerk/city-council-2025/Attachments/11-12-25-7-6.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "24-2025",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "encinitas_2025",
+      "name": "Encinitas 2025 Building Code Amendments (Ord. 2025-10)",
+      "jurisdiction": "Encinitas",
+      "source_url": "https://encinitas.granicus.com/MetaViewer.php?view_id=7&clip_id=3568&meta_id=191123",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-10",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "fullerton_2025",
+      "name": "Fullerton 2025 Building Code Amendments (Ord. 3348)",
+      "jurisdiction": "Fullerton",
+      "source_url": "https://fullerton.legistar.com/View.ashx?M=F&ID=14775314&GUID=E1FA5478-E366-4C2D-8394-1A4A91591697",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "3348",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "gilroy_2025",
+      "name": "Gilroy 2025 Building Code Amendments (Ord. 2025-06)",
+      "jurisdiction": "Gilroy",
+      "source_url": "https://cityofgilroy.org/DocumentCenter/View/16720/Ordinance_2025-06_Adopting-by-Reference-the-2025-California-Building-Codes-with-Amendmentsdoc?bidId=",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-06",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "goleta_2025",
+      "name": "Goleta 2025 Building Code Amendments (Ord. 25-11, 25-12)",
+      "jurisdiction": "Goleta",
+      "source_url": "https://goleta.legistar1.com/goleta/attachments/77f7902b-7830-4dda-876e-d41944462707.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-11, 25-12",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "grover_beach_2025",
+      "name": "Grover Beach 2025 Building Code Amendments (Ord. 25-08)",
+      "jurisdiction": "Grover Beach",
+      "source_url": "https://grover.org/DocumentCenter/View/16868/2025_BuildingCode?bidId=",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-08-Partial",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "guadalupe_2025",
+      "name": "Guadalupe 2025 Building Code Amendments (Ord. 2025-524)",
+      "jurisdiction": "Guadalupe",
+      "source_url": "https://cityofguadalupe.org/wp-content/uploads/2025/11/13.-Ordinance-No.-2025-524-Adoption-of-2025-Building-Standards-Code.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-524",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "half_moon_bay_2025",
+      "name": "Half Moon Bay 2025 Building Code Amendments (Ord. 2025-01)",
+      "jurisdiction": "Half Moon Bay",
+      "source_url": "https://legistarweb-production.s3.amazonaws.com/uploads/attachment/pdf/3741290/ATTACHMENT_1_WITH_EXHIBITS.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-01-Partial",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "hermosa_beach_2025",
+      "name": "Hermosa Beach 2025 Building Code Amendments (Ord. 25-1493U)",
+      "jurisdiction": "Hermosa Beach",
+      "source_url": "https://pub-hermosabeach.escribemeetings.com/filestream.ashx?DocumentId=17721",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-1493U",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "hillsborough_2025",
+      "name": "Hillsborough 2025 Electrical Code Amendments (Ord. 799)",
+      "jurisdiction": "Hillsborough",
+      "source_url": "https://www.hillsborough.net/DocumentCenter/View/6463/2025-Electrical-Code",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "799",
+      "version": "2025",
+      "code_short": "CEC-AMD"
+    },
+    {
+      "id": "indio_2025",
+      "name": "Indio 2025 Building Code Amendments (Ord. 1825)",
+      "jurisdiction": "Indio",
+      "source_url": "https://indio.civicweb.net/document/189423/Ordinance%20No.%201825%20-%20Building%20Code.pdf?handle=0140D67A6BF243749F06484946AE90CA",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1825",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "jurupa_valley_2025",
+      "name": "Jurupa Valley 2025 Building and Fire Code Amendments (Ord. 2025-24)",
+      "jurisdiction": "Jurupa Valley",
+      "source_url": "https://jurupavalley.org/DocumentCenter/View/4559/25-1106---Public-Hearing-B---Building-and-Fire-Codes?bidId=",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-24",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "lake_forest_2025",
+      "name": "Lake Forest 2025 Building Code Amendments (Ord. 382)",
+      "jurisdiction": "Lake Forest",
+      "source_url": "https://www.lakeforestca.gov/Documents/Departments/Community%20Development/Building/Ord.%20382.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "382",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "malibu_2025",
+      "name": "Malibu 2025 Building Code Amendments (Ord. 531U)",
+      "jurisdiction": "Malibu",
+      "source_url": "https://www.malibucity.org/AgendaCenter/ViewFile/Item/7821?fileID=85288",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "531U",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "manhattan_beach_2025",
+      "name": "Manhattan Beach 2025 Building Code Amendments (Ord. 25-0009)",
+      "jurisdiction": "Manhattan Beach",
+      "source_url": "https://legistar.granicus.com/ManhattanBeach/attachments/9a4d95ed-0af6-4827-b654-28e3929a0a85.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-0009",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "menlo_park_2025",
+      "name": "Menlo Park 2025 Building Code Amendments (Ord. 1127)",
+      "jurisdiction": "Menlo Park",
+      "source_url": "https://efiling.energy.ca.gov/GetDocument.aspx?tn=268897&DocumentContentId=106093",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1127",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "pacific_grove_2025",
+      "name": "Pacific Grove 2025 Building Code Amendments (Ord. 25-019)",
+      "jurisdiction": "Pacific Grove",
+      "source_url": "https://files.cityofpacificgrove.org/Document_Center/Resolutions%20&%20Ordinances/Ordinances/2025/25-019%20CA%20Bldg%20Standards%20Code%20Ord.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-019",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "placer_county_2025",
+      "name": "Placer County 2025 Building Code Amendments (Ord. 6345-B)",
+      "jurisdiction": "Placer County",
+      "source_url": "https://www.placer.ca.gov/DocumentCenter/View/98752/09B",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6345-B",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "port_hueneme_2025",
+      "name": "Port Hueneme 2025 Building Code Amendments (Ord. 828)",
+      "jurisdiction": "Port Hueneme",
+      "source_url": "https://www.ci.port-hueneme.ca.us/DocumentCenter/View/9600/2025-11-17-PN-2025-Bldg-Code-Adoption-ORD-ADOPTED",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "828",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "port_of_san_francisco_2025",
+      "name": "Port of San Francisco 2025 Building Code Amendments (Ord. 02-05,10-11)",
+      "jurisdiction": "Port of San Francisco",
+      "source_url": "https://www.sfport.com/sites/default/files/2025-11/111825_12a_port_building_standards_code_amendment_-_info_action_0.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "02-Partial,03-Partial,04-Partial,05-Partial,10-Partial,11-Partial",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "rancho_santa_margarita_2025",
+      "name": "Rancho Santa Margarita 2025 Building Code Amendments (Ord. 25-06)",
+      "jurisdiction": "Rancho Santa Margarita",
+      "source_url": "https://www.cityofrsm.org/DocumentCenter/View/12844/Ordinance-No-25-06-Adopting-2025-Fire-Code",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-06",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "redondo_beach_2025",
+      "name": "Redondo Beach 2025 Building Code Amendments (Ord. 3307-25)",
+      "jurisdiction": "Redondo Beach",
+      "source_url": "https://redondo.legistar.com/View.ashx?M=F&ID=14870851&GUID=22F18F51-D7ED-4845-9344-C02C338A7973",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "3307-25",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "rialto_2025",
+      "name": "Rialto 2025 Building Code Amendments (Ord. 1702)",
+      "jurisdiction": "Rialto",
+      "source_url": "https://rialto.legistar.com/View.ashx?M=F&ID=14610259&GUID=F24706AF-853C-4355-8D16-7DAFC3F4E8CE",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1702",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_clarita_2025",
+      "name": "Santa Clarita 2025 Building Code Amendments (Ord. 25-5)",
+      "jurisdiction": "Santa Clarita",
+      "source_url": "https://santaclarita.gov/building-safety/wp-content/uploads/sites/12/2025/12/SCBC_2025.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-5",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_rosa_2025",
+      "name": "Santa Rosa 2025 Building Code Amendments (Ord. 2025-017, 2025-018)",
+      "jurisdiction": "Santa Rosa",
+      "source_url": "https://santa-rosa.legistar.com/View.ashx?M=F&ID=11345976&GUID=2D95DBCE-CEF7-4D23-9DDB-73041B2D8F5A",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-017, 2025-018",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "truckee_2025",
+      "name": "Truckee 2025 Building Code Amendments (Ord. 2025-09)",
+      "jurisdiction": "Truckee",
+      "source_url": "https://mccmeetingspublic.blob.core.usgovcloudapi.net/truckeeca-meet-a9e13787e3c04369983e48db162394cc/ITEM-Attachment-002-b5f47e6560644791a150279dcb5af3e0.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-09",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "tustin_2025",
+      "name": "Tustin 2025 Building Code Amendments (Ord. 1569)",
+      "jurisdiction": "Tustin",
+      "source_url": "https://tustin.granicus.com/MetaViewer.php?view_id=5&event_id=2038&meta_id=168420",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1569",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "westminster_2025",
+      "name": "Westminster 2025 Building Code Amendments (Ord. 2629)",
+      "jurisdiction": "Westminster",
+      "source_url": "https://westminsterca.legistar.com/View.ashx?M=F&ID=14856953&GUID=572525A5-0DA0-4D5C-BF35-041177F2151E",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2629",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "yuba_city_2025",
+      "name": "Yuba City 2025 Building Code Amendments (Ord. 011-25)",
+      "jurisdiction": "Yuba City",
+      "source_url": "https://yubacityca.api.civicclerk.com/v1/Meetings/GetMeetingFileStream(fileId=349,plainText=false)",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "011-25",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "carlsbad_building_2025",
+      "name": "Carlsbad 2025 Building Code Amendments (Ord. CS-498)",
+      "jurisdiction": "Carlsbad",
+      "source_url": "https://ecode360.com/CA4913/laws/LF2552285.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "CS-498",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "carlsbad_fire_2025",
+      "name": "Carlsbad 2025 Fire Code Amendments (Ord. CS-499)",
+      "jurisdiction": "Carlsbad",
+      "source_url": "https://ecode360.com/CA4913/laws/LF2552287.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "CS-499",
+      "version": "2025",
+      "code_short": "CFC-AMD"
+    },
+    {
+      "id": "carlsbad_residential_2025",
+      "name": "Carlsbad 2025 Residential Code Amendments (Ord. CS-500)",
+      "jurisdiction": "Carlsbad",
+      "source_url": "https://ecode360.com/CA4913/laws/LF2552289.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "CS-500",
+      "version": "2025",
+      "code_short": "CRC-AMD"
+    },
+    {
+      "id": "stanton_2025",
+      "name": "Stanton 2025 Building Code Amendments (Ord. 1164)",
+      "jurisdiction": "Stanton",
+      "source_url": "https://ecode360.com/ST5018/laws/LF2486492.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1164",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "union_city_2025",
+      "name": "Union City 2025 Building Code Amendments (Ord. 2025-006)",
+      "jurisdiction": "Union City",
+      "source_url": "https://ecode360.com/UN5025/laws/LF2540278.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-006",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "bellflower_2025",
+      "name": "Bellflower 2025 Building Code Amendments (Ord. 1450)",
+      "jurisdiction": "Bellflower",
+      "source_url": "https://ecode360.com/BE4904/laws/LF2487255.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1450",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "healdsburg_2025",
+      "name": "Healdsburg 2025 Building Code Amendments (Ord. 1250)",
+      "jurisdiction": "Healdsburg",
+      "source_url": "https://ecode360.com/HE4475/laws/LF2541377.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1250",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "rancho_cucamonga_2025",
+      "name": "Rancho Cucamonga 2025 Building Code Amendments (Ord. 1048)",
+      "jurisdiction": "Rancho Cucamonga",
+      "source_url": "https://ecode360.com/RA4992/laws/LF2538456.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1048",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "costa_mesa_2025_building_code_amendments_2025",
+      "name": "Costa Mesa 2025 Building Code Amendments (Ord. 2025-08)",
+      "jurisdiction": "Costa Mesa",
+      "source_url": "https://costamesa.legistar.com/View.ashx?GUID=D39EBC4B-4538-4109-AF1F-A09D6A5B6838&ID=14894915&M=F",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-08",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "roseville_2025_building_code_amendments_2025",
+      "name": "Roseville 2025 Building Code Amendments (Ord. 6990)",
+      "jurisdiction": "Roseville",
+      "source_url": "https://ecode360.com/RO4998/laws/LF2514690.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6990",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santa_barbara_2025_building_code_amendments_2025",
+      "name": "Santa Barbara 2025 Building Code Amendments (Ord. 6198)",
+      "jurisdiction": "Santa Barbara",
+      "source_url": "https://ecode360.com/SA5006/laws/LF2563951.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "6198",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "indian_wells_2025",
+      "name": "Indian Wells 2025 Building Code Amendments (Ord. 766)",
+      "jurisdiction": "Indian Wells",
+      "source_url": "https://ecode360.com/IN4940/laws/LF2535156.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "766",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "los_alamitos_2025",
+      "name": "Los Alamitos 2025 Building Code Amendments (Ord. 2025-09)",
+      "jurisdiction": "Los Alamitos",
+      "source_url": "https://ecode360.com/LO4963/laws/LF2558239.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-09",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "palmdale_2025",
+      "name": "Palmdale 2025 Building Code Amendments (Ord. 1661)",
+      "jurisdiction": "Palmdale",
+      "source_url": "https://ecode360.com/PA4578/laws/LF2533992.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "1661",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "san_jacinto_2025",
+      "name": "San Jacinto 2025 Building Code Amendments (Ord. 25-08)",
+      "jurisdiction": "San Jacinto",
+      "source_url": "https://ecode360.com/SA4621/laws/LF2541236.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-08",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "santee_2025",
+      "name": "Santee 2025 Building Code Amendments (Ord. 629)",
+      "jurisdiction": "Santee",
+      "source_url": "https://ecode360.com/SA5010/laws/LF2565066.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "629",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "newport_beach_2025",
+      "name": "Newport Beach 2025 Building Code Amendments (Ord. 2025-23) [OCR]",
+      "jurisdiction": "Newport Beach",
+      "source_url": "https://newportbeach.legistar1.com/newportbeach/attachments/bd3a14de-6ce8-4266-b0ac-ef4e76bfc4b6.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-23",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "fresno_2025",
+      "name": "Fresno 2025 Building Code Amendments (Ord. 2025-39) [OCR]",
+      "jurisdiction": "Fresno",
+      "source_url": "https://legistar2.granicus.com/fresno/attachments/fe47e07d-4cba-4af0-947e-d4dcebcad30a.pdf",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "2025-39",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "huntington_beach_2025",
+      "name": "Huntington Beach 2025 Building Code Amendments (Ord. 4343) [OCR]",
+      "jurisdiction": "Huntington Beach",
+      "source_url": "https://huntingtonbeach.legistar.com/View.ashx?M=F&ID=15022715&GUID=EF978023-7301-4306-869A-4630408F1B1E",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "4343",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "rancho_santa_margarita_building_2025",
+      "name": "Rancho Santa Margarita 2025 Building Code Amendments (Ord. 25-05) [OCR]",
+      "jurisdiction": "Rancho Santa Margarita",
+      "source_url": "https://www.cityofrsm.org/DocumentCenter/View/12843",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "25-05",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    },
+    {
+      "id": "milpitas_2025",
+      "name": "Milpitas 2025 Building Code Amendments (Ord. 65.155) [OCR]",
+      "jurisdiction": "Milpitas",
+      "source_url": "https://www.milpitas.gov/DocumentCenter/View/8915",
+      "type": "county_ordinance_pdf_or_attachment",
+      "ordinance": "65.155",
+      "version": "2025",
+      "code_short": "CBC-AMD"
+    }
+  ],
+  "crawl_strategy": {
+    "order": [
+      "1. DGS codes index for current CBC/CRC links.",
+      "2. Internet Archive items for prior editions and downloadable scans.",
+      "3. County ordinances / staff reports for amendments.",
+      "4. ICC public access for section-level cross-checking."
+    ],
+    "filters": {
+      "accept": [
+        "pdf",
+        "html",
+        "ocr text",
+        "scan with downloadable files"
+      ],
+      "reject": [
+        "paywalled download",
+        "login required to access full text",
+        "image-only with no OCR if avoidable"
+      ]
+    }
+  },
+  "county_amendment_hunt_list": {
+    "tier_1_counties": [
+      "Contra Costa",
+      "Los Angeles",
+      "Orange",
+      "San Diego",
+      "Santa Clara",
+      "Alameda",
+      "San Mateo",
+      "Marin",
+      "Ventura",
+      "Sacramento"
+    ],
+    "search_patterns": [
+      "\"ordinance\" \"California Building Code\" county pdf",
+      "\"local amendments\" \"Title 24\" county pdf",
+      "\"adopts and amends\" \"California Building Standards Code\" county",
+      "\"building code\" \"Health and Safety Code sections 17958.5\" county"
+    ]
+  }
+}

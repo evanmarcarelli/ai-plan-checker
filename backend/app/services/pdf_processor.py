@@ -223,6 +223,9 @@ class PDFProcessor:
         plan_data.dimensions = self._extract_dimensions(all_text)
         plan_data.building_height = plan_data.dimensions.get("building_height")
         plan_data.building_area = plan_data.dimensions.get("building_area")
+        # Stair configuration (disambiguates the stair-geometry rules — a
+        # declared "standard" straight-run stair hard-fails sub-limit geometry).
+        plan_data.stair_type = self._extract_stair_type(all_text)
 
         # Extract elements
         plan_data.elements = self._extract_elements(all_text)
@@ -332,6 +335,30 @@ class PDFProcessor:
         match = re.search(pattern, text, re.IGNORECASE)
         return match.group(1).strip() if match else None
 
+    def _extract_stair_type(self, text: str) -> Optional[str]:
+        """Stair configuration declared on an egress / stair sheet.
+
+        Normalizes the straight-run family to "standard" — the value the
+        deterministic stair-geometry rules treat as the disambiguator that
+        closes the spiral/winder/alternating-tread exception (so a sub-limit
+        tread/riser/guard/handrail hard-fails instead of needs_review). Other
+        recognized configurations are returned verbatim so the soft posture is
+        preserved. No match -> None (stays soft).
+        """
+        m = re.search(
+            r'STAIR\s*(?:TYPE|CONFIG(?:URATION)?)[:\s]+'
+            r'(STANDARD|STRAIGHT(?:[-\s]?RUN)?|SPIRAL|WINDER|ALTERNATING[-\s]?TREAD)',
+            text, re.IGNORECASE
+        )
+        if not m:
+            return None
+        raw = m.group(1).lower()
+        if raw.startswith("standard") or raw.startswith("straight"):
+            return "standard"
+        if raw.startswith("alternating"):
+            return "alternating_tread"
+        return raw  # "spiral" | "winder"
+
     @staticmethod
     def _safe_float(v: str) -> Optional[float]:
         """Parse a regex-captured value to float. Returns None if junk (e.g. '.' or '')."""
@@ -414,6 +441,50 @@ class PDFProcessor:
             v = self._safe_float(ceiling_match.group(1))
             if v is not None:
                 dims["ceiling_height"] = v
+
+        # Guard height (IBC 1015.3 / CRC R312: 42" min) — labeled scalar in
+        # inches on egress/code-analysis sheets.
+        guard_match = re.search(
+            r'GUARD(?:RAIL)?\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if guard_match:
+            v = self._safe_float(guard_match.group(1))
+            if v is not None:
+                dims["guard_height"] = v
+
+        # Handrail height (IBC 1014.2 / CRC R317: 34-38") — labeled scalar in
+        # inches.
+        handrail_match = re.search(
+            r'HAND\s*RAIL\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if handrail_match:
+            v = self._safe_float(handrail_match.group(1))
+            if v is not None:
+                dims["handrail_height"] = v
+
+        # Stair riser (IBC 1011.5.2 max 7" / CRC R318.5 max 7-3/4") — labeled
+        # "MAX RISER", "RISER HEIGHT", "RISER: 7".
+        riser_match = re.search(
+            r'(?:MAX(?:IMUM)?\s+)?RISER\s*(?:HEIGHT|HT\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if riser_match:
+            v = self._safe_float(riser_match.group(1))
+            if v is not None:
+                dims["riser_height"] = v
+
+        # Stair tread depth (IBC 1011.5.2 min 11" / CRC R318.5 min 10") —
+        # labeled "MIN TREAD", "TREAD DEPTH", "TREAD: 11".
+        tread_match = re.search(
+            r'(?:MIN(?:IMUM)?\s+)?TREAD\s*(?:DEPTH|RUN|D\.?)?[:\s]*([\d.]+)\s*(?:"|INCHES|IN\.?|\')?',
+            text, re.IGNORECASE
+        )
+        if tread_match:
+            v = self._safe_float(tread_match.group(1))
+            if v is not None:
+                dims["tread_depth"] = v
 
         # Occupant load
         occupant_match = re.search(

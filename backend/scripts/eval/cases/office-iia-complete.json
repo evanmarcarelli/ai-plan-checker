@@ -4,6 +4,7 @@
   "notes": "Negative control — nothing should fail. Tests false-positive rate.",
   "plan_data": {
     "project_address": "900 Wilshire Blvd, Los Angeles, CA",
+    "plan_type": "commercial",
     "occupancy_type": "B",
     "construction_type": "II-A",
     "per_story_area": 20000,
@@ -11,9 +12,10 @@
     "stories": 3,
     "building_height": 45,
     "occupant_load": 300,
-    "sprinklered": true
+    "sprinklered": true,
+    "dimensions": { "corridor_widths": [60, 48], "stair_width": 52, "tread_depth": 11, "riser_height": 7, "guard_height": 42, "handrail_height": 36 }
   },
-  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: II-A\nStories: 3\nHeight: 45 ft\nPer-story area: 20,000 sf (limit 37,500)\nFully sprinklered: NFPA 13\nDesign occupant load: 300\nFire alarm: NFPA 72\nAccessible parking with van-accessible space. Accessible route / path of travel. ADA restroom per ANSI A117.1. Tactile and braille signage.\nIECC energy code compliance path identified.\nVentilation rate / outdoor air per IMC Table 403.3.\nPanic hardware at all Group B exits.\nElectrical: 800 A service, main breaker.\nCALGreen water-efficient fixtures (1.28 gpf). Construction waste management plan diverts 75%.",
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: II-A\nStories: 3\nHeight: 45 ft\nPer-story area: 20,000 sf (limit 37,500)\nFully sprinklered: NFPA 13\nDesign occupant load: 300\nFire alarm: NFPA 72\nAccessible parking with van-accessible space. Accessible route / path of travel. ADA restroom per ANSI A117.1. Tactile and braille signage.\nIECC energy code compliance path identified.\nVentilation rate / outdoor air per IMC Table 403.3.\nPanic hardware at all Group B exits.\nStairway width: 52 in.\nElectrical: 800 A service, main breaker.\nCALGreen water-efficient fixtures (1.28 gpf). Construction waste management plan diverts 75%.",
   "ground_truth": [
     { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass" },
     { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass" },
@@ -29,6 +31,12 @@
     { "rule_id": "ENR-IECC", "expected_status": "pass" },
     { "rule_id": "MECH-VENTILATION", "expected_status": "pass" },
     { "rule_id": "CAL-WATER-EFF", "expected_status": "pass" },
-    { "rule_id": "CAL-CONST-WASTE", "expected_status": "pass" }
+    { "rule_id": "CAL-CONST-WASTE", "expected_status": "pass" },
+    { "rule_id": "EGR-CORRIDOR-WIDTH", "expected_status": "pass", "expected_severity": "high", "rationale": "Narrowest corridor is 48 in, clearing the 44 in IBC 1020.3 minimum — clean true negative for the corridor-width rule" },
+    { "rule_id": "EGR-STAIR-WIDTH", "expected_status": "pass", "expected_severity": "high", "rationale": "Egress stair is 52 in, clearing the 44 in IBC 1011.2 minimum — clean true negative for the stair-width rule (gates false positives)" },
+    { "rule_id": "EGR-TREAD-DEPTH", "expected_status": "pass", "expected_severity": "high", "rationale": "Tread depth 11 in meets the IBC 1011.5.2 minimum — clean true negative" },
+    { "rule_id": "EGR-RISER-HEIGHT", "expected_status": "pass", "expected_severity": "high", "rationale": "Riser height 7 in is within the IBC 1011.5.2 7 in maximum — clean true negative for the max-dimension check" },
+    { "rule_id": "EGR-GUARD-HEIGHT", "expected_status": "pass", "expected_severity": "high", "rationale": "Guard height 42 in meets the IBC 1015.3 minimum — clean true negative" },
+    { "rule_id": "EGR-HANDRAIL-HEIGHT", "expected_status": "pass", "expected_severity": "high", "rationale": "Handrail height 36 in is within the 34-38 in IBC 1014.2 range — clean true negative that gates false positives on the two-sided range" }
   ]
 }

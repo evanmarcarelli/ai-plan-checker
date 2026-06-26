@@ -1,0 +1,50 @@
+{
+  "slug": "office-vb-corridor-violation",
+  "title": "Commercial office, Type V-B, egress corridor below the 44-inch minimum",
+  "notes": "Tests IBC 1020.3: the narrowest labeled corridor (38 in) is below the 44 in minimum. Declared occupant load is 70 (>= 50), so the 44 in minimum binds and the deterministic rule asserts a hard violation an examiner would cite. Area/stories/exits are clean so only the corridor rule fires.",
+  "plan_data": {
+    "project_address": "789 Spring St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 6000,
+    "building_area": 6000,
+    "stories": 1,
+    "building_height": 16,
+    "occupant_load": 70,
+    "sprinklered": true,
+    "dimensions": { "corridor_widths": [44, 38, 52] }
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nStories: 1\nBuilding height: 16 ft\nPer-story area: 6,000 sf\nFully sprinklered: yes\nDesign occupant load: 70\nIECC: Title 24 Part 6\nElectrical: 200 A main breaker\nNFPA 13 sprinkler system. NFPA 72 fire alarm.\nCorridor width: 44 in (north). Corridor width: 38 in (south at column). Corridor width: 52 in (lobby).\nEXIT 1 (north). EXIT 2 (south). EXIT DOOR 36 in each.\nWC 4 LAV 4. CALGreen low-flow fixtures. Construction waste management plan.",
+  "ground_truth": [
+    {
+      "rule_id": "COM-OCCUPANCY-DECL",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-CONSTRUCTION-TYPE",
+      "expected_status": "pass",
+      "expected_severity": "critical"
+    },
+    {
+      "rule_id": "COM-AREA-ALLOWABLE",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "6,000 sf sprinklered single-story B/V-B is within the Table 506.2 allowance"
+    },
+    {
+      "rule_id": "EGR-CORRIDOR-WIDTH",
+      "expected_status": "fail",
+      "expected_severity": "high",
+      "reviewer_finding": true,
+      "rationale": "Narrowest corridor is 38 in, below the 44 in IBC 1020.3 minimum. Declared occupant load is 70 (>= 50), so the 44 in minimum binds and this is a hard violation an examiner would cite (not a needs_review)."
+    },
+    {
+      "rule_id": "EGR-MIN-EXITS",
+      "expected_status": "pass",
+      "expected_severity": "critical",
+      "rationale": "OL 70 requires 2 exits; 2 labeled"
+    }
+  ]
+}

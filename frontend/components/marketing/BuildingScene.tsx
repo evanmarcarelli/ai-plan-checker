@@ -432,7 +432,7 @@ function createFacadeTexture(): THREE.CanvasTexture {
 // ────────────────── Scene contents (inside Canvas) ────────────────────────────
 
 function SceneContents({ progress }: { progress: MotionValue<number> }) {
-  const { scene, camera, gl } = useThree();
+  const { scene, camera, gl, size } = useThree();
 
   // ─── Blueprint plane ───
   const blueprintTex = useMemo(() => createBlueprintTexture(), []);
@@ -464,6 +464,10 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
   const gardenRef = useRef<THREE.Group>(null);   // entrance garden + fountain
   const figuresRef = useRef<THREE.Group>(null);  // people + cars
   const contactRef = useRef<THREE.Group>(null); // contact-shadow plane
+  const streetTreeRefs = useRef<(THREE.Group | null)[]>([]);
+  const formalTreeRefs = useRef<(THREE.Group | null)[]>([]);
+  const fountainRef = useRef<THREE.Group>(null);
+  const portraitRef = useRef<boolean | null>(null);
 
   // Tileable street-grid ground texture
   const groundTex = useMemo(() => createCityGroundTexture(), []);
@@ -488,13 +492,23 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
 
   useFrame(() => {
     const p = progress.get();
+    const portrait = size.width < size.height;
+
+    // ─── One-time FOV adjustment per orientation ───
+    if (portrait !== portraitRef.current) {
+      portraitRef.current = portrait;
+      const cam = camera as THREE.PerspectiveCamera;
+      cam.fov = portrait ? 46 : 35;
+      cam.updateProjectionMatrix();
+    }
 
     // ─── Camera path: high-angle drafting view → 3/4 view ───
     // Start pulled WAY back and looking at a point ahead of the plan so the
     // sheet sits in the LOWER half of the viewport — leaves the top half for
     // the tagline. End farther back / higher so the 22u tall highrise reads.
     const camT = smoothstep(0.05, 0.55, p);
-    camera.position.x = lerp(0,  24, camT);
+    const camXEnd = portrait ? 16 : 24;
+    camera.position.x = lerp(0,  camXEnd, camT);
     camera.position.y = lerp(26, 15, camT);
     camera.position.z = lerp(6,  30, camT);
     // Same close, low 3/4 angle as the live site — just enough distance for the
@@ -599,16 +613,40 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       });
     });
 
-    // Street life reveals in a quick warm cascade once the city ground is in.
+    // Street life parents reveal in a warm cascade once the city ground is in.
     // <Preload> has already compiled every shader and uploaded every geometry/
-    // texture at load — including these props, which mount hidden — so the
-    // frames where they first appear no longer stall the main thread. Staggering
-    // trees → garden → figures also spreads the per-frame draw/shadow work over
-    // a few frames instead of spiking ~260 meshes onto one. Together these kill
-    // the mid-scroll choppiness the greenery used to cause when it popped in.
-    if (treesRef.current)   treesRef.current.visible   = landT > 0.02;
+    // texture at load, so the frames where these groups first paint no longer
+    // stall the main thread. `treesRef` opens early so individual trees can
+    // start their bottom-up rise the moment their start frame hits; figures
+    // and static garden elements still cascade.
+    if (treesRef.current)   treesRef.current.visible   = landT > 0.001;
     if (gardenRef.current)  gardenRef.current.visible  = landT > 0.10;
     if (figuresRef.current) figuresRef.current.visible = landT > 0.18;
+
+    // ─── Street trees: rise from ground, staggered across the land phase ───
+    streetTreeRefs.current.forEach((g, i) => {
+      if (!g) return;
+      const start = 0.57 + streetProps.trees[i].delay * 0.20;
+      const t = smoothstep(start, start + 0.12, p);
+      g.visible = t > 0.001;
+      if (t > 0.001) g.scale.y = t;
+    });
+
+    // ─── Formal entrance trees: stagger front-to-back ───
+    formalTreeRefs.current.forEach((g, i) => {
+      if (!g) return;
+      const start = 0.74 + i * 0.04;
+      const t = smoothstep(start, start + 0.10, p);
+      g.visible = t > 0.001;
+      if (t > 0.001) g.scale.y = t;
+    });
+
+    // ─── Fountain: capstone reveal after trees are mostly in ───
+    if (fountainRef.current) {
+      const t = smoothstep(0.83, 0.93, p);
+      fountainRef.current.visible = t > 0.001;
+      if (t > 0.001) fountainRef.current.scale.y = t;
+    }
   });
 
   // ─── Surrounding city buildings ───
@@ -661,7 +699,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       }
       return true;
     };
-    const trees: { x: number; z: number; s: number; tone: string }[] = [];
+    const trees: { x: number; z: number; s: number; tone: string; delay: number }[] = [];
     const people: { x: number; z: number; rot: number; tone: string }[] = [];
     const cars: { x: number; z: number; rot: number; color: string }[] = [];
     const GREENS = ["#7f9b6e", "#8aa178", "#74925f", "#94a886"];
@@ -672,7 +710,7 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
       const x = (rand() * 2 - 1) * 30, z = -40 + rand() * 50;
       if (z > 4 && Math.abs(x) < 8) continue;             // keep the foreground sightline
       if (!clear(x, z, 1.1)) continue;
-      trees.push({ x, z, s: 0.7 + rand() * 0.8, tone: GREENS[Math.floor(rand() * GREENS.length)] });
+      trees.push({ x, z, s: 0.7 + rand() * 0.8, tone: GREENS[Math.floor(rand() * GREENS.length)], delay: rand() });
     }
     let pp = 0;
     while (people.length < 16 && pp++ < 400) {
@@ -913,19 +951,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
           by <Preload all/> at load, so no group stalls on first paint. */}
       <group ref={treesRef} visible={false}>
         {streetProps.trees.map((t, i) => (
-          <group key={`t${i}`} position={[t.x, 0, t.z]} scale={t.s}>
-            <mesh position={[0, 0.34, 0]} castShadow>
-              <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
-              <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
-            </mesh>
-            <mesh position={[0, 0.98, 0]} castShadow>
-              <icosahedronGeometry args={[0.5, 0]} />
-              <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
-            </mesh>
-            <mesh position={[0.16, 1.28, 0.05]} castShadow>
-              <icosahedronGeometry args={[0.3, 0]} />
-              <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
-            </mesh>
+          <group key={`t${i}`} ref={(el) => { streetTreeRefs.current[i] = el; }} position={[t.x, 0, t.z]} visible={false}>
+            <group scale={t.s}>
+              <mesh position={[0, 0.34, 0]} castShadow>
+                <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
+                <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
+              </mesh>
+              <mesh position={[0, 0.98, 0]} castShadow>
+                <icosahedronGeometry args={[0.5, 0]} />
+                <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
+              </mesh>
+              <mesh position={[0.16, 1.28, 0.05]} castShadow>
+                <icosahedronGeometry args={[0.3, 0]} />
+                <meshStandardMaterial color={t.tone} roughness={0.85} flatShading />
+              </mesh>
+            </group>
           </group>
         ))}
       </group>
@@ -997,19 +1037,21 @@ function SceneContents({ progress }: { progress: MotionValue<number> }) {
         ))}
         {/* Formal trees flanking the approach */}
         {[[-2.5, 5.2], [2.5, 5.2], [-2.5, 8.8], [2.5, 8.8]].map(([tx, tz], i) => (
-          <group key={`ft${i}`} position={[tx, 0, tz]} scale={1.15}>
-            <mesh position={[0, 0.34, 0]} castShadow>
-              <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
-              <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
-            </mesh>
-            <mesh position={[0, 0.98, 0]} castShadow>
-              <icosahedronGeometry args={[0.5, 0]} />
-              <meshStandardMaterial color="#7f9b6e" roughness={0.85} flatShading />
-            </mesh>
+          <group key={`ft${i}`} ref={(el) => { formalTreeRefs.current[i] = el; }} position={[tx, 0, tz]} visible={false}>
+            <group scale={1.15}>
+              <mesh position={[0, 0.34, 0]} castShadow>
+                <cylinderGeometry args={[0.05, 0.08, 0.68, 6]} />
+                <meshStandardMaterial color="#8a6b4f" roughness={0.92} />
+              </mesh>
+              <mesh position={[0, 0.98, 0]} castShadow>
+                <icosahedronGeometry args={[0.5, 0]} />
+                <meshStandardMaterial color="#7f9b6e" roughness={0.85} flatShading />
+              </mesh>
+            </group>
           </group>
         ))}
         {/* Water fountain centerpiece on the walkway */}
-        <group position={[0, 0, 7.0]}>
+        <group ref={fountainRef} position={[0, 0, 7.0]} visible={false}>
           <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
             <cylinderGeometry args={[1.05, 1.18, 0.32, 28]} />
             <meshStandardMaterial color="#cdd2d8" roughness={0.8} metalness={0.05} />

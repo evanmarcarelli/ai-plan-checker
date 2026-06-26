@@ -1,0 +1,35 @@
+{
+  "slug": "office-vb-height-violation",
+  "title": "Commercial office, Type V-B, building height over the Table 504.3 limit",
+  "source": "synthetic",
+  "notes": "First case to exercise COM-HEIGHT-ALLOWABLE at all (the rule was absent from the baseline). Type V-B NS height limit is 40 ft (Table 504.3); 55 ft NON-sprinklered exceeds it and stays under the 75 ft high-rise threshold, isolating the height check. requires_citation=False (table-store provenance), so the fail survives the citation gate.",
+  "plan_data": {
+    "project_address": "210 Hope St, Los Angeles, CA",
+    "plan_type": "commercial",
+    "occupancy_type": "Group B Business",
+    "construction_type": "Type V-B",
+    "per_story_area": 5000,
+    "building_area": 10000,
+    "stories": 2,
+    "building_height": 55,
+    "occupant_load": 50,
+    "sprinklered": false,
+    "declared_exits": 2,
+    "actual_wc": 4,
+    "actual_lav": 4
+  },
+  "plan_text": "CODE ANALYSIS A-0.1\nOccupancy Group: B\nConstruction Type: V-B\nNumber of stories: 2\nBuilding height: 55 ft\nPer-story area: 5,000 sf\nNon-sprinklered\nDesign occupant load: 50\nIECC: Title 24 Part 6\nElectrical: 200 A main breaker\nEXIT 1 (north). EXIT 2 (south).\nWC 4 LAV 4.",
+  "ground_truth": [
+    { "rule_id": "COM-OCCUPANCY-DECL", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-CONSTRUCTION-TYPE", "expected_status": "pass", "expected_severity": "critical" },
+    { "rule_id": "COM-HEIGHT-ALLOWABLE", "expected_status": "fail", "expected_severity": "critical",
+      "rationale": "55 ft exceeds the 40 ft NS limit for Type V-B (Table 504.3); non-sprinklered, so no 504.2 +20 ft increase applies." },
+    { "rule_id": "COM-HIGH-RISE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "55 ft is below the 75 ft high-rise threshold" },
+    { "rule_id": "COM-AREA-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "5,000 sf per story within the 9,000 sf NS allowable for B/V-B" },
+    { "rule_id": "COM-STORIES-ALLOWABLE", "expected_status": "pass", "expected_severity": "critical",
+      "rationale": "2 stories within the B/V-B 2-story NS limit" },
+    { "rule_id": "GEN-CODE-ANALYSIS", "expected_status": "pass", "expected_severity": "critical" }
+  ]
+}
