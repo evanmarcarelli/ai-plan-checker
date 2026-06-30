@@ -43,12 +43,15 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           {/* Wordmark — "Architechtura" followed by the northeast arrow */}
-          <h1
-            className="text-3xl font-bold inline-flex items-center gap-1.5"
+          <div
+            className="flex justify-center items-center gap-1 mb-4 text-xl font-semibold tracking-tight"
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
           >
             Architechtura
-            <ArrowUpRight className="w-5 h-5" strokeWidth={2.5} style={{ color: "var(--text-primary)" }} />
+            <ArrowUpRight className="w-4 h-4" strokeWidth={2.5} style={{ color: "var(--text-primary)" }} />
+          </div>
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+            Sign in
           </h1>
           <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>
             Sign in to your account
