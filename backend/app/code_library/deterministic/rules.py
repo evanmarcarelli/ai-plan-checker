@@ -63,14 +63,21 @@ DISCIPLINE_TO_CATEGORY = {
 
 
 CALFIRE_WUI_RULES: List[Rule] = [
+    # 2025 cycle: the WUI provisions formerly in CBC Chapter 7A were relocated to
+    # the standalone California Wildland-Urban Interface Code (Title 24 Part 7) and
+    # renumbered (ingested as corpus/ca_cbc_7a_2025.jsonl, code_short CBC-7A). These
+    # rules cite the adopted 2025 WUI Code section as the primary ref, with the
+    # legacy CBC 7xxA / Gov Code ref kept as a secondary for recognition + the older
+    # 2007/2019 CBC corpus layers. CBC §101.4.8 points the CBC at this Part 7 code.
     Rule(
         id="FIRE-WUI-7A",
         discipline="Fire & Life Safety",
-        code_ref="CBC Chapter 7A · CA Gov Code §51182",
+        code_ref="CBC-7A 504.1 · CA Gov Code §51182",
         description=(
             "Projects in a CalFire High or Very High Fire Hazard Severity Zone (FHSZ) "
-            "require wildfire-resistive exterior construction per CBC Chapter 7A: "
-            "ignition-resistant materials for roofing, exterior walls, decks, vents, and glazing."
+            "require ignition-resistant exterior construction per the California WUI Code "
+            "(T24 Pt 7) Section 504.1 (formerly CBC Chapter 7A): ignition-resistant materials "
+            "for roofing, exterior walls, decks, vents, and glazing."
         ),
         severity="critical",
         check={"type": "wui_zone_check"},
@@ -79,29 +86,42 @@ CALFIRE_WUI_RULES: List[Rule] = [
     Rule(
         id="FIRE-WUI-VENT",
         discipline="Fire & Life Safety",
-        code_ref="CBC Section 708A",
+        code_ref="CBC-7A 504.10 · CBC 708A",
         description=(
             "WUI zone: attic, crawl space, and foundation vents must be ember-resistant "
-            "(CalFire-listed). Verify vent spec on architectural drawings."
+            "(CA State Fire Marshal listed) per California WUI Code (T24 Pt 7) Section 504.10 "
+            "(formerly CBC 708A). Verify vent spec on architectural drawings."
         ),
         severity="major",
         # Gated on WUI zone — only applies when the project sits in a CalFire
         # FHSZ. The keyword list is the spec the engine looks for once gated.
         check={"type": "wui_keyword_check",
-               "patterns": [r"ember[-\s]?resistant", r"708A", r"CalFire[-\s]?listed\s+vent"]},
+               "patterns": [r"ember[-\s]?resistant", r"504\.10", r"708A",
+                            r"(?:CalFire|SFM)[-\s]?listed\s+vent"]},
         requires_citation=True,
     ),
     Rule(
         id="FIRE-WUI-DECK",
         discipline="Architectural",
-        code_ref="CBC Section 709A",
+        # In the 2025 code cycle the WUI provisions were RELOCATED out of CBC
+        # Chapter 7A into the standalone California Wildland-Urban Interface Code
+        # (Title 24 Part 7) and renumbered: old CBC 709A "Decking" is now WUI Code
+        # Section 504.7.3 "Decks" (corpus/ca_cbc_7a_2025.jsonl, source
+        # gov.ca.bsc.wildland.2025). 2025 CBC Chapter 7A is now only a 2-page
+        # pointer stub. Primary ref is the adopted 2025 WUI Code section; the
+        # legacy "CBC 709A" is kept as a secondary ref for recognition + the
+        # older 2007/2019 CBC corpus layers. This retires the FIRE-WUI-DECK debt
+        # formerly tracked in tests/test_rule_citation_coverage.py KNOWN_MISSING.
+        code_ref="CBC-7A 504.7.3 · CBC 709A",
         description=(
-            "WUI zone: exterior decks and balconies >= 6 ft above grade or in Very High "
-            "FHSZ must use ignition-resistant or noncombustible material. Deck material spec required."
+            "WUI zone: the walking surface of decks, porches, balconies and stairs must use "
+            "ignition-resistant, noncombustible, or other approved material per California WUI "
+            "Code (T24 Pt 7) Section 504.7.3 (formerly CBC 709A). Deck material spec required."
         ),
         severity="major",
         check={"type": "wui_keyword_check",
-               "patterns": [r"ignition[-\s]?resistant", r"noncombustible\s+deck", r"709A"]},
+               "patterns": [r"ignition[-\s]?resistant", r"noncombustible\s+deck",
+                            r"504\.7", r"709A"]},
         requires_citation=True,
     ),
 ]
@@ -461,6 +481,49 @@ CALGREEN_MANDATORY_RULES: List[Rule] = [
          "moderate", {"type": "required_keyword",
                       "patterns": [r"construction\s+waste\s+management", r"waste\s+management\s+plan",
                                    r"CALGreen\s+4\.408"]}, requires_citation=False),
+]
+
+
+# CBC 2025 California structural-submittal completeness items. Injected for CA
+# jurisdictions only (default_rules_for / rules_for_jurisdiction), same as the
+# CALGreen and CalFire WUI packs — these cite the California Building Code, so
+# they must not fire on a non-CA plan. Each rule cites a section verified present
+# in corpus/ca_cbc_2025.jsonl (the adopted 2025 CBC main volume, Title 24 Part 2,
+# ingested from archive.org gov.ca.bsc.building.1/2.2025, source_tier=licensed),
+# so requires_citation=True findings ground against real 2025 CBC text through
+# the citation gate instead of being muted. They cover commercial-submittal items
+# the IBC baseline does not check as discrete findings; coverage is enforced by
+# tests/test_rule_citation_coverage.py. Gated to non-dwelling plan types: an
+# SFR/duplex is reviewed under the CRC prescriptive path and carries no separate
+# soils report or statement of special inspections (same posture as EGR-*).
+CBC_2025_RULES: List[Rule] = [
+    Rule("CBC-GEOTECH-REPORT", "Structural", "CBC 1803.2",
+         "A geotechnical (soils) investigation report shall be provided per CBC "
+         "Section 1803 where required by the building official or site conditions.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"geotechnical\s+(?:investigation|report|engineer)",
+                                r"soils?\s+(?:report|investigation)",
+                                r"\bsoils\s+engineer\b"]},
+         requires_citation=True,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
+    Rule("CBC-SPECIAL-INSPECTION", "Structural", "CBC 1704.2.3",
+         "A statement of special inspections shall be submitted as a condition "
+         "of permit issuance per CBC Section 1704.2.3.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"statement\s+of\s+special\s+inspections?",
+                                r"special\s+inspections?", r"\bspecial\s+inspector\b"]},
+         requires_citation=True,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
+    Rule("CBC-SEISMIC-DESIGN-DATA", "Structural", "CBC 1603.1.5",
+         "Earthquake (seismic) design data — risk category, site class, mapped "
+         "spectral response accelerations, and seismic design category — shall "
+         "be shown on the construction documents per CBC Section 1603.1.5.",
+         "major", {"type": "required_keyword",
+                   "patterns": [r"seismic\s+design\s+category", r"\bSDC\b",
+                                r"risk\s+category", r"site\s+class",
+                                r"spectral\s+(?:response\s+)?acceleration"]},
+         requires_citation=True,
+         applies={"plan_types": ["commercial", "industrial", "mixed_use"]}),
 ]
 
 

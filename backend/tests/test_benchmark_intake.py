@@ -46,7 +46,7 @@ PLAN CHECK CORRECTION SHEET
     ("Per CRC R337.7 exterior", ["CRC R337.7"]),
     ("IBC Table 506.2 area", ["IBC 506.2"]),
     ("ADA 404.2.3 door", ["ADA 404.2.3"]),
-    ("see CBC-7A 704A.1 vents", ["CBC-7A 704A.1"]),
+    ("see CBC-7A 504.10 vents", ["CBC-7A 504.10"]),
 ])
 def test_find_sections(text, expected):
     assert I.find_sections(text) == expected

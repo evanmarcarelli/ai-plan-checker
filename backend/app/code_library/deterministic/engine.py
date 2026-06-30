@@ -21,6 +21,7 @@ from app.code_library.deterministic.rules import (
     BASELINE_RULES,
     CALFIRE_WUI_RULES,
     CALGREEN_MANDATORY_RULES,
+    CBC_2025_RULES,
     DISCIPLINE_TO_CATEGORY,
     Rule,
 )
@@ -439,9 +440,9 @@ def default_rules_for(
         if fire_overlay:
             rules += CALFIRE_WUI_RULES
         if is_ca:
-            rules += CALGREEN_MANDATORY_RULES
+            rules += CALGREEN_MANDATORY_RULES + CBC_2025_RULES
     elif is_ca:
-        rules += CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES
+        rules += CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES + CBC_2025_RULES
 
     if ladbs_sfd:
         from app.code_library.deterministic.ladbs_rules import LADBS_SFD_RULES
@@ -453,5 +454,5 @@ def rules_for_jurisdiction(state: Optional[str]) -> List[Rule]:
     """Rule set for a given state code, independent of a plan object."""
     rules = list(BASELINE_RULES)
     if (state or "").upper() == "CA":
-        rules += CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES
+        rules += CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES + CBC_2025_RULES
     return rules

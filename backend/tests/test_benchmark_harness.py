@@ -50,15 +50,15 @@ def test_parse_extended_schema_preserved():
         "input_quality": "vector", "labelers": ["jc_pe", "ms_arch"],
         "expected_findings": [{
             "issue_id": "wui-siding-5ft",
-            "acceptable_sections": ["CBC-7A 704A.1", "CRC R337.7"],
+            "acceptable_sections": ["CBC-7A 504.5", "CRC R337.7"],
             "objectivity": "soft", "severity": "critical", "status": "non_compliant",
             "acceptance_criteria": "flags combustible siding within 5 ft in a VHFHSZ",
         }],
     }, "ext_case")
     e = gt.expected_findings[0]
     assert e.issue_id == "wui-siding-5ft"
-    assert e.acceptable_sections == ["CBC-7A 704A.1", "CRC R337.7"]
-    assert e.section == "CBC-7A 704A.1"              # primary = first acceptable
+    assert e.acceptable_sections == ["CBC-7A 504.5", "CRC R337.7"]
+    assert e.section == "CBC-7A 504.5"              # primary = first acceptable
     assert e.objectivity == "soft"
     assert gt.tier == "B" and gt.split == "holdout"
     assert gt.labelers == ["jc_pe", "ms_arch"]

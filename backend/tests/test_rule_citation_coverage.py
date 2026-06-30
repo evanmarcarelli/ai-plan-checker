@@ -12,20 +12,21 @@ the stale entry so the list can't rot.
 """
 from app.code_library.adapter import CorpusCodeSource
 from app.code_library.deterministic.rules import (
-    BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES,
+    BASELINE_RULES, CALFIRE_WUI_RULES, CALGREEN_MANDATORY_RULES, CBC_2025_RULES,
 )
 
 # rule_id -> why it's missing + what retires the debt.
-# CBC 708A (FIRE-WUI-VENT) and Chapter 7A (FIRE-WUI-7A) were ingested and are
-# now corpus-backed — removed so the gate counts their TRUE positives. CBC 709A
-# (FIRE-WUI-DECK) is still un-ingested, which is the lone --with-gate recall
-# miss (wui-vhfhsz-deck-missing): its NON_COMPLIANT finding still mutes to
-# needs_review until 709A lands.
-KNOWN_MISSING = {
-    "FIRE-WUI-DECK": "CBC 709A — retire via licensed 2025 CBC PDF ingest",
-}
+# FIRE-WUI-DECK is now corpus-backed and removed from this list: in the 2025 code
+# cycle the WUI provisions were relocated out of CBC Chapter 7A into the standalone
+# California Wildland-Urban Interface Code (Title 24 Part 7) and renumbered, so old
+# CBC 709A "Decking" is now WUI Code Section 504.7.3 — ingested as
+# corpus/ca_cbc_7a_2025.jsonl (source gov.ca.bsc.wildland.2025). The rule's primary
+# code_ref is now "CBC-7A 504.7.3", which the gate counts as a TRUE positive.
+# Keep this list empty unless a requires_citation rule's section is genuinely not
+# yet in the corpus; each entry must name the ingest that retires it.
+KNOWN_MISSING = {}
 
-ALL_RULES = BASELINE_RULES + CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES
+ALL_RULES = BASELINE_RULES + CALFIRE_WUI_RULES + CALGREEN_MANDATORY_RULES + CBC_2025_RULES
 
 
 def _refs(rule) -> list:

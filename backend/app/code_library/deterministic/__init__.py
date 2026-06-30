@@ -20,6 +20,7 @@ from app.code_library.deterministic.rules import (
     BASELINE_RULES,
     CALFIRE_WUI_RULES,
     CALGREEN_MANDATORY_RULES,
+    CBC_2025_RULES,
     Rule,
 )
 
@@ -29,5 +30,6 @@ __all__ = [
     "BASELINE_RULES",
     "CALFIRE_WUI_RULES",
     "CALGREEN_MANDATORY_RULES",
+    "CBC_2025_RULES",
     "Rule",
 ]

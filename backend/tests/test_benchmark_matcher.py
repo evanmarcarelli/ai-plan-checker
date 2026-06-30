@@ -35,7 +35,7 @@ def _f(cite, status="non_compliant", severity="medium"):
 
 def test_norm_strips_code_prefix():
     assert norm("IBC 1011.5.2") == "1011.5.2"
-    assert norm("CBC-7A 704A.1") == "704a.1"
+    assert norm("CBC-7A 504.5") == "504.5"
 
 
 def test_family_match_ancestor():
@@ -48,7 +48,7 @@ def test_family_match_ancestor():
 def test_acceptable_sections_lets_a_different_valid_citation_match():
     # GT accepts EITHER the CBC-7A or the CRC citation for the same WUI issue.
     exp = [_Exp(severity="critical",
-                acceptable_sections=["CBC-7A 704A.1", "CRC R337.7"])]
+                acceptable_sections=["CBC-7A 504.5", "CRC R337.7"])]
     # Model cited the OTHER acceptable one — must count as a hit, not a miss.
     res = match_findings(exp, [_f("CRC R337.7", severity="critical")])
     assert len(res.tp) == 1 and not res.fn

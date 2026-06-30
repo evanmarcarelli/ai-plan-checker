@@ -59,7 +59,7 @@ records:
     prior_edition: "2022 Title 24"          # permits filed before 2026-01-01
     prior_effective_until: "2025-12-31"
     adopts:
-      building:      { code: CBC,        part: "T24 Pt 2",    edition: "2025", base_model: "2024 IBC" }   # [confirmed]
+      building:      { code: CBC,        part: "T24 Pt 2",    edition: "2025", base_model: "2024 IBC" }   # [confirmed] ingested: corpus/ca_cbc_2025.jsonl (gov.ca.bsc.building.1+2.2025); licensed. 2025 CBC Ch.7A (WUI) relocated to T24 Pt 7 CA WUI Code -> ingested corpus/ca_cbc_7a_2025.jsonl (gov.ca.bsc.wildland.2025; code_short CBC-7A); licensed
       residential:   { code: CRC,        part: "T24 Pt 2.5",  edition: "2025", base_model: "2024 IRC" }   # [confirmed]
       electrical:    { code: CEC,        part: "T24 Pt 3",    edition: "2025", base_model: "2023 NEC" }   # [confirmed]
       mechanical:    { code: CMC,        part: "T24 Pt 4",    edition: "2025", base_model: "2024 UMC" }   # [verify] UMC year
